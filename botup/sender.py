@@ -1,0 +1,820 @@
+import os.path
+import threading
+import time
+from datetime import datetime
+
+import requests
+
+try:
+    import ujson as json
+except ImportError:
+    import json
+
+from .mixins import DBMixin
+from .utils import error_response
+
+
+class Sender(DBMixin):
+
+    def __init__(
+            self,
+            token,
+            connection=None,
+            queue='botup-sender-queue',
+            rate_limit=0.5,
+            proxy_url=None,
+            basic_auth_string=None,
+            socks_proxy_string=None
+    ):
+        super().__init__(connection)
+        self.token = token
+        self.queue = queue
+        self._rate_limit = rate_limit
+        self._url = f'https://api.telegram.org/bot{self.token}/'
+        self._req_kwargs = dict()
+        self._set_proxy_url(proxy_url) if proxy_url else None
+        self._set_basic_auth(basic_auth_string) if basic_auth_string else None
+        self._set_socks_proxy(socks_proxy_string) if socks_proxy_string else None
+        self.functions = {
+            self.get_updates.__name__: self.get_updates,
+            self.set_webhook.__name__: self.set_webhook,
+            self.delete_webhook.__name__: self.delete_webhook,
+            self.get_webhook_info.__name__: self.get_webhook_info,
+            self.get_me.__name__: self.get_me,
+            self.send_message.__name__: self.send_message,
+            self.forward_message.__name__: self.forward_message,
+            self.send_photo.__name__: self.send_photo,
+            self.send_audio.__name__: self.send_audio,
+            self.send_document.__name__: self.send_document,
+            self.send_video.__name__: self.send_video,
+            self.send_animation.__name__: self.send_animation,
+            self.send_voice.__name__: self.send_voice,
+            self.send_video_note.__name__: self.send_video_note,
+            self.send_media_group.__name__: self.send_media_group,
+            self.send_location.__name__: self.send_location,
+            self.edit_message_live_location.__name__: self.edit_message_live_location,
+            self.stop_message_live_location.__name__: self.stop_message_live_location,
+            self.send_venue.__name__: self.send_venue,
+            self.send_contact.__name__: self.send_contact,
+            self.send_poll.__name__: self.send_poll,
+            self.send_chat_action.__name__: self.send_chat_action,
+            self.get_user_profile_photos.__name__: self.get_user_profile_photos,
+            self.get_file.__name__: self.get_file,
+            self.kick_chat_member.__name__: self.kick_chat_member,
+            self.unban_chat_member.__name__: self.unban_chat_member,
+            self.restrict_chat_member.__name__: self.restrict_chat_member,
+            self.promote_chat_member.__name__: self.promote_chat_member,
+            self.export_chat_invite_link.__name__: self.export_chat_invite_link,
+            self.set_chat_photo.__name__: self.set_chat_photo,
+            self.delete_chat_photo.__name__: self.delete_chat_photo,
+            self.set_chat_title.__name__: self.set_chat_title,
+            self.set_chat_description.__name__: self.set_chat_description,
+            self.pin_chat_message.__name__: self.pin_chat_message,
+            self.unpin_chat_message.__name__: self.unpin_chat_message,
+            self.leave_chat.__name__: self.leave_chat,
+            self.get_chat.__name__: self.get_chat,
+            self.get_chat_administrators.__name__: self.get_chat_administrators,
+            self.get_chat_members_count.__name__: self.get_chat_members_count,
+            self.get_chat_member.__name__: self.get_chat_member,
+            self.set_chat_sticker_set.__name__: self.set_chat_sticker_set,
+            self.delete_chat_sticker_set.__name__: self.delete_chat_sticker_set,
+            self.answer_callback_query.__name__: self.answer_callback_query,
+            self.edit_message_text.__name__: self.edit_message_text,
+            self.edit_message_caption.__name__: self.edit_message_caption,
+            self.edit_message_media.__name__: self.edit_message_media,
+            self.edit_message_reply_markup.__name__: self.edit_message_reply_markup,
+            self.stop_poll.__name__: self.stop_poll,
+            self.delete_message.__name__: self.delete_message,
+            self.send_sticker.__name__: self.send_sticker,
+            self.get_sticker_set.__name__: self.get_sticker_set,
+            self.upload_sticker_file.__name__: self.upload_sticker_file,
+            self.create_new_sticker_set.__name__: self.create_new_sticker_set,
+            self.add_sticker_to_set.__name__: self.add_sticker_to_set,
+            self.set_sticker_position_in_set.__name__: self.set_sticker_position_in_set,
+            self.delete_sticker_from_set.__name__: self.delete_sticker_from_set,
+            self.answer_inline_query.__name__: self.answer_inline_query,
+            self.send_invoice.__name__: self.send_invoice,
+            self.answer_shipping_query.__name__: self.answer_shipping_query,
+            self.answer_pre_checkout_query.__name__: self.answer_pre_checkout_query,
+            self.set_passport_data_errors.__name__: self.set_passport_data_errors,
+            self.send_game.__name__: self.send_game,
+            self.set_game_score.__name__: self.set_game_score,
+            self.get_game_high_scores.__name__: self.get_game_high_scores
+        }
+
+    @classmethod
+    def new(
+            cls,
+            token,
+            redis_host,
+            redis_port,
+            redis_db,
+            queue,
+            rate_limit,
+            proxy_url,
+            basic_auth_string,
+            socks_proxy_string
+    ):
+        import redis
+        rdb = redis.StrictRedis(host=redis_host, port=redis_port, decode_responses=True, encoding='utf-8', db=redis_db)
+        return cls(
+            token=token,
+            connection=rdb,
+            queue=queue,
+            rate_limit=rate_limit,
+            proxy_url=proxy_url,
+            basic_auth_string=basic_auth_string,
+            socks_proxy_string=socks_proxy_string
+        )
+
+    def _set_proxy_url(self, proxy_url):
+        if not proxy_url.startswith('https://') and not proxy_url.startswith('http://'):
+            proxy_url = f'http://{proxy_url}'
+        if not proxy_url.endswith('/'):
+            proxy_url = f'{proxy_url}/'
+        self._url = f'{proxy_url}bot{self.token}/'
+
+    def _set_basic_auth(self, basic_auth_string):
+        self._req_kwargs['auth'] = requests.auth.HTTPBasicAuth(*basic_auth_string.split(':'))
+
+    def _set_socks_proxy(self, socks_proxy_string):
+        if '://' in socks_proxy_string:
+            _, creds = socks_proxy_string.split('://')
+        else:
+            creds = socks_proxy_string
+        proxy = 'socks5h://' + creds
+        self._req_kwargs['proxies'] = dict(http=proxy, https=proxy)
+
+    def _delay(self, **kwargs):
+        chat_id = kwargs.get('chat_id')
+        if not chat_id:
+            return 0
+        last_time = self._get_last_time(chat_id)
+        if not last_time:
+            return 0
+        time_diff = time.time() - float(last_time)
+        return 0 if time_diff > self._rate_limit else self._rate_limit - time_diff
+
+    def start_task(self, **payload):
+        func = payload['func']
+        kwargs = payload['kwargs']
+        result = self.functions[func](**kwargs)
+        self._save_result(payload['correlation_id'], result)
+        if payload['save_id'] and 'chat_id' in kwargs:
+            data = json.loads(result)
+            if not data['ok']:
+                return
+            if 'message_id' not in data['result']:
+                return
+            self._set_form_message_id(kwargs['chat_id'], data['result']['message_id'])
+
+    def run(self, fake_mode=False):
+        print('Sender-worker started')
+        subscriber = self.rdb.pubsub()
+        subscriber.subscribe([self.queue])
+        for message in subscriber.listen():
+            if message['type'] == 'subscribe':
+                continue
+            payload = json.loads(message['data'])
+            if payload['func'] not in self.functions:
+                continue
+            print("|{}| Run {} with {}".format(
+                datetime.now().strftime('%d.%m.%Y %H:%M:%S'),
+                payload['func'],
+                payload['kwargs']
+            ))
+            if fake_mode:
+                continue
+            timer = threading.Timer(self._delay(**payload['kwargs']), self.start_task, kwargs=payload)
+            timer.start()
+            timer.join()
+            chat_id = payload['kwargs'].get('chat_id')
+            self._set_last_time(chat_id) if chat_id else None
+
+    def get_updates(self, offset=None, limit=None, timeout=None, allowed_updates=None):
+        kwargs = dict(
+            offset=offset,
+            limit=limit,
+            timeout=timeout,
+            allowed_updates=allowed_updates
+        )
+        resp = requests.post(self._url + 'getUpdates', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def set_webhook(self, url, certificate=None, max_connections=None, allowed_updates=None):
+        kwargs = dict(
+            url=url,
+            certificate=certificate,
+            max_connections=max_connections,
+            allowed_updates=allowed_updates
+        )
+        files_kwargs = dict()
+        if certificate:
+            path = certificate.get('path')
+            if not path:
+                return error_response('Field path in certificate not found')
+            if not os.path.isfile(path):
+                return error_response('File not found')
+            files_kwargs['certificate'] = open(path, 'rb')
+        resp = requests.post(self._url + 'setWebhook', data=kwargs, files=files_kwargs, **self._req_kwargs)
+        return resp.text
+
+    def delete_webhook(self):
+        resp = requests.post(self._url + 'deleteWebhook', **self._req_kwargs)
+        return resp.text
+
+    def get_webhook_info(self):
+        resp = requests.post(self._url + 'getWebhookInfo', **self._req_kwargs)
+        return resp.text
+
+    def get_me(self):
+        resp = requests.post(self._url + 'getMe', **self._req_kwargs)
+        return resp.text
+
+    def send_message(self, chat_id, text, parse_mode=None, disable_web_page_preview=None, disable_notification=None,
+                     reply_to_message_id=None, reply_markup=None):
+        resp = requests.post(url=self._url + 'sendMessage', data=dict(chat_id=chat_id,
+                                                                      text=text,
+                                                                      parse_mode=parse_mode,
+                                                                      disable_web_page_preview=disable_web_page_preview,
+                                                                      disable_notification=disable_notification,
+                                                                      reply_to_message_id=reply_to_message_id,
+                                                                      reply_markup=reply_markup), **self._req_kwargs)
+        return resp.text
+
+    def forward_message(self, chat_id, from_chat_id, message_id, disable_notification=None):
+        resp = requests.post(self._url + 'forwardMessage', data=dict(chat_id=chat_id,
+                                                                     from_chat_id=from_chat_id,
+                                                                     message_id=message_id,
+                                                                     disable_notification=disable_notification),
+                             **self._req_kwargs)
+        return resp.text
+
+    def send_photo(self, chat_id, photo, caption=None, parse_mode=None, disable_notification=None,
+                   reply_to_message_id=None, reply_markup=None):
+        kwargs = {'chat_id': chat_id, 'caption': caption, 'parse_mode': parse_mode,
+                  'disable_notification': disable_notification, 'reply_to_message_id': reply_to_message_id,
+                  'reply_markup': reply_markup}
+        files_kwargs = dict()
+        file_id = photo.get('file_id')
+        url = photo.get('url')
+        path = photo.get('path')
+        if file_id:
+            kwargs['photo'] = file_id
+        elif url:
+            kwargs['photo'] = url
+        elif path:
+            if not os.path.isfile(path):
+                return error_response('File not found')
+            files_kwargs['photo'] = open(path, 'rb')
+        else:
+            return error_response('Location not found')
+        resp = requests.post(self._url + 'sendPhoto', data=kwargs, files=files_kwargs, **self._req_kwargs)
+        return resp.text
+
+    def send_audio(self, chat_id, audio, caption=None, parse_mode=None, duration=None,
+                   performer=None, title=None, thumb=None, disable_notification=None, reply_to_message_id=None,
+                   reply_markup=None):
+        kwargs = dict(chat_id=chat_id, caption=caption, parse_mode=parse_mode, duration=duration, title=title,
+                      performer=performer, disable_notification=disable_notification,
+                      reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
+        files_kwargs = dict()
+        file_id = audio.get('file_id')
+        url = audio.get('url')
+        path = audio.get('path')
+        if thumb:
+            if not os.path.isfile(thumb):
+                return error_response('Thumb file not found')
+            files_kwargs['thumb'] = open(thumb, 'rb')
+        if file_id:
+            kwargs['audio'] = file_id
+        elif url:
+            kwargs['audio'] = url
+        elif path:
+            if not os.path.isfile(path):
+                return error_response('File not found')
+            files_kwargs['audio'] = open(path, 'rb')
+        else:
+            return error_response('Location not found')
+        resp = requests.post(self._url + 'sendAudio', data=kwargs, files=files_kwargs, **self._req_kwargs)
+        return resp.text
+
+    def send_document(self, chat_id, document, thumb=None, caption=None, parse_mode=None,
+                      disable_notification=None, reply_to_message_id=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, caption=caption, parse_mode=parse_mode,
+                      disable_notification=disable_notification, reply_to_message_id=reply_to_message_id,
+                      reply_markup=reply_markup)
+        files_kwargs = dict()
+        file_id = document.get('file_id')
+        url = document.get('url')
+        path = document.get('path')
+        if thumb:
+            if not os.path.isfile(thumb):
+                return error_response('Thumb file not found')
+            files_kwargs['thumb'] = open(thumb, 'rb')
+        if file_id:
+            kwargs['document'] = file_id
+        elif url:
+            kwargs['document'] = url
+        elif path:
+            if not os.path.isfile(path):
+                return error_response('File not found')
+            files_kwargs['document'] = open(path, 'rb')
+        else:
+            return error_response('Location not found')
+        resp = requests.post(self._url + 'sendDocument', data=kwargs, files=files_kwargs, **self._req_kwargs)
+        return resp.text
+
+    def send_video(self, chat_id, video, duration=None, width=None, height=None,
+                   thumb=None, caption=None, parse_mode=None, supports_streaming=None, disable_notification=None,
+                   reply_to_message_id=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, duration=duration, width=width, height=height, caption=caption,
+                      parse_mode=parse_mode, supports_streaming=supports_streaming,
+                      disable_notification=disable_notification,
+                      reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
+        files_kwargs = dict()
+        file_id = video.get('file_id')
+        url = video.get('url')
+        path = video.get('path')
+        if thumb:
+            if not os.path.isfile(thumb):
+                return error_response('Thumb file not found')
+            files_kwargs['thumb'] = open(thumb, 'rb')
+        if file_id:
+            kwargs['video'] = file_id
+        elif url:
+            kwargs['video'] = url
+        elif path:
+            if not os.path.isfile(path):
+                return error_response('File not found')
+            files_kwargs['video'] = open(path, 'rb')
+        else:
+            return error_response('Location not found')
+        resp = requests.post(self._url + 'sendVideo', data=kwargs, files=files_kwargs, **self._req_kwargs)
+        return resp.text
+
+    def send_animation(self, chat_id, animation, duration=None, width=None, height=None,
+                       thumb=None, caption=None, parse_mode=None, disable_notification=None, reply_to_message_id=None,
+                       reply_markup=None):
+        kwargs = dict(chat_id=chat_id, duration=duration, width=width, height=height, caption=caption,
+                      parse_mode=parse_mode, disable_notification=disable_notification,
+                      reply_to_message_id=reply_to_message_id,
+                      reply_markup=reply_markup)
+        files_kwargs = dict()
+        file_id = animation.get('file_id')
+        url = animation.get('url')
+        path = animation.get('path')
+        if thumb:
+            if not os.path.isfile(thumb):
+                return error_response('Thumb file not found')
+            files_kwargs['thumb'] = open(thumb, 'rb')
+        if file_id:
+            kwargs['animation'] = file_id
+        elif url:
+            kwargs['animation'] = url
+        elif path:
+            if not os.path.isfile(path):
+                return error_response('File not found')
+            files_kwargs['animation'] = open(path, 'rb')
+        else:
+            return error_response('Location not found')
+        resp = requests.post(self._url + 'sendAnimation', data=kwargs, files=files_kwargs, **self._req_kwargs)
+        return resp.text
+
+    def send_voice(self, chat_id, voice, caption=None, parse_mode=None, duration=None,
+                   disable_notification=None, reply_to_message_id=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, caption=caption, parse_mode=parse_mode, duration=duration,
+                      disable_notification=disable_notification, reply_to_message_id=reply_to_message_id,
+                      reply_markup=reply_markup)
+        files_kwargs = dict()
+        file_id = voice.get('file_id')
+        url = voice.get('url')
+        path = voice.get('path')
+        if file_id:
+            kwargs['voice'] = file_id
+        elif url:
+            kwargs['voice'] = url
+        elif path:
+            if not os.path.isfile(path):
+                return error_response('File not found')
+            files_kwargs['voice'] = open(path, 'rb')
+        else:
+            return error_response('Location not found')
+        resp = requests.post(self._url + 'sendVoice', data=kwargs, files=files_kwargs, **self._req_kwargs)
+        return resp.text
+
+    def send_video_note(self, chat_id, video_note, duration=None, length=None, thumb=None,
+                        disable_notification=None, reply_to_message_id=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, duration=duration, length=length, disable_notification=disable_notification,
+                      reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
+        files_kwargs = dict()
+        file_id = video_note.get('file_id')
+        url = video_note.get('url')
+        path = video_note.get('path')
+        if thumb:
+            if not os.path.isfile(thumb):
+                return error_response('Thumb file not found')
+            files_kwargs['thumb'] = open(thumb, 'rb')
+        if file_id:
+            kwargs['video_note'] = file_id
+        elif url:
+            kwargs['video_note'] = url
+        elif path:
+            if not os.path.isfile(path):
+                return error_response('File not found')
+            files_kwargs['video_note'] = open(path, 'rb')
+        else:
+            return error_response('Location not found')
+        resp = requests.post(self._url + 'sendVideoNote', data=kwargs, files=files_kwargs, **self._req_kwargs)
+        return resp.text
+
+    def send_media_group(self, chat_id, media, disable_notification=None, reply_to_message_id=None):
+        kwargs = dict(chat_id=chat_id, disable_notification=disable_notification,
+                      reply_to_message_id=reply_to_message_id)
+        kwargs['media'] = list()
+        files_kwargs = dict()
+        assert len(media) <= 10, 'Media length must be less then 11'
+        assert len(media) >= 2, 'Media length must be up then 1'
+        for m in media:
+            assert m['type'] in ('photo', 'video'), 'Media must be photo or video'
+            if m['media'].startswith('attach://'):
+                #  attach://<path/to/file>
+                path = m['media'].split('://')[-1]
+                files_kwargs[path] = open(path, 'rb')
+            kwargs['media'].append(m)
+        kwargs['media'] = json.dumps(kwargs['media'])
+        resp = requests.post(self._url + 'sendMediaGroup', data=kwargs, files=files_kwargs, **self._req_kwargs)
+        return resp.text
+
+    def send_location(self, chat_id, latitude, longitude, live_period=None, disable_notification=None,
+                      reply_to_message_id=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, latitude=latitude, longitude=longitude, live_period=live_period,
+                      disable_notification=disable_notification, reply_to_message_id=reply_to_message_id,
+                      reply_markup=reply_markup)
+        resp = requests.post(self._url + 'sendLocation', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def edit_message_live_location(self, latitude, longitude, chat_id=None, message_id=None, inline_message_id=None,
+                                   reply_markup=None):
+        kwargs = dict(chat_id=chat_id, latitude=latitude, longitude=longitude, message_id=message_id,
+                      inline_message_id=inline_message_id, reply_markup=reply_markup)
+        resp = requests.post(self._url + 'editMessageLiveLocation', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def stop_message_live_location(self, chat_id=None, message_id=None, inline_message_id=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id,
+                      reply_markup=reply_markup)
+        resp = requests.post(self._url + 'stopMessageLiveLocation', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def send_venue(self, chat_id, latitude, longitude, title, address, foursquare_id=None, foursquare_type=None,
+                   disable_notification=None, reply_to_message_id=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, latitude=latitude, longitude=longitude, title=title, address=address,
+                      foursquare_id=foursquare_id, foursquare_type=foursquare_type,
+                      disable_notification=disable_notification,
+                      reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
+        resp = requests.post(self._url + 'sendVenue', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def send_contact(self, chat_id, phone_number, first_name, last_name=None, vcard=None, disable_notification=None,
+                     reply_to_message_id=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, phone_number=phone_number, first_name=first_name, last_name=last_name,
+                      vcard=vcard,
+                      disable_notification=disable_notification, reply_to_message_id=reply_to_message_id,
+                      reply_markup=reply_markup)
+        resp = requests.post(self._url + 'sendContact', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def send_poll(self, chat_id, question, options, disable_notification=None, reply_to_message_id=None,
+                  reply_markup=None):
+        kwargs = dict(chat_id=chat_id, question=question, options=options, disable_notification=disable_notification,
+                      reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
+        resp = requests.post(self._url + 'sendPoll', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def send_chat_action(self, chat_id, action):
+        resp = requests.post(self._url + 'sendChatAction', data=dict(chat_id=chat_id, action=action), auth=self.auth)
+        return resp.text
+
+    def get_user_profile_photos(self, user_id, offset=None, limit=None):
+        resp = requests.post(self._url + 'getUserProfilePhotos', data=dict(
+            user_id=user_id, offset=offset, limit=limit
+        ), **self._req_kwargs)
+        return resp.text
+
+    def get_file(self, file_id):
+        resp = requests.post(self._url + 'getFile', data=dict(file_id=file_id), **self._req_kwargs)
+        return resp.text
+
+    def kick_chat_member(self, chat_id, user_id, until_date=None):
+        resp = requests.post(self._url + 'kickChatMember', data=dict(
+            chat_id=chat_id, user_id=user_id, until_date=until_date
+        ), **self._req_kwargs)
+        return resp.text
+
+    def unban_chat_member(self, chat_id, user_id):
+        resp = requests.post(self._url + 'unbanChatMember', data=dict(chat_id=chat_id, user_id=user_id),
+                             **self._req_kwargs)
+        return resp.text
+
+    def restrict_chat_member(self, chat_id, user_id, until_date=None, can_send_messages=None,
+                             can_send_media_messages=None, can_send_other_messages=None,
+                             can_add_web_page_previews=None):
+        kwargs = dict(chat_id=chat_id, user_id=user_id, until_date=until_date, can_send_messages=can_send_messages,
+                      can_send_media_messages=can_send_media_messages, can_send_other_messages=can_send_other_messages,
+                      can_add_web_page_previews=can_add_web_page_previews)
+        resp = requests.post(self._url + 'restrictChatMember', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def promote_chat_member(self, chat_id, user_id, can_change_info=None, can_post_messages=None,
+                            can_edit_messages=None,
+                            can_delete_messages=None, can_invite_users=None, can_restrict_members=None,
+                            can_pin_messages=None, can_promote_members=None):
+        kwargs = dict(chat_id=chat_id, user_id=user_id, can_change_info=can_change_info,
+                      can_post_messages=can_post_messages,
+                      can_edit_messages=can_edit_messages, can_delete_messages=can_delete_messages,
+                      can_invite_users=can_invite_users,
+                      can_restrict_members=can_restrict_members, can_pin_messages=can_pin_messages,
+                      can_promote_members=can_promote_members)
+        resp = requests.post(self._url + 'promoteChatMember', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def export_chat_invite_link(self, chat_id):
+        resp = requests.post(self._url + 'exportChatInviteLink', data=dict(chat_id=chat_id), **self._req_kwargs)
+        return resp.text
+
+    def set_chat_photo(self, chat_id, photo):
+        kwargs = dict(chat_id=chat_id)
+        files_kwargs = dict()
+        file_id = photo.get('file_id')
+        url = photo.get('url')
+        path = photo.get('path')
+        if file_id:
+            kwargs['photo'] = file_id
+        elif url:
+            kwargs['photo'] = url
+        elif path:
+            if not os.path.isfile(path):
+                return error_response('File not found')
+            files_kwargs['photo'] = open(path, 'rb')
+        else:
+            return error_response('Location not found')
+        resp = requests.post(self._url + 'setChatPhoto', data=kwargs, files=files_kwargs, **self._req_kwargs)
+        return resp.text
+
+    def delete_chat_photo(self, chat_id):
+        resp = requests.post(self._url + 'deleteChatPhoto', data=dict(chat_id=chat_id), **self._req_kwargs)
+        return resp.text
+
+    def set_chat_title(self, chat_id, title):
+        resp = requests.post(self._url + 'setChatTitle', data=dict(chat_id=chat_id, title=title), **self._req_kwargs)
+        return resp.text
+
+    def set_chat_description(self, chat_id, description=''):
+        resp = requests.post(self._url + 'setChatDescription', data=dict(chat_id=chat_id, description=description),
+                             **self._req_kwargs)
+        return resp.text
+
+    def pin_chat_message(self, chat_id, message_id, disable_notification=None):
+        resp = requests.post(self._url + 'pinChatMessage', data=dict(
+            chat_id=chat_id, message_id=message_id, disable_notification=disable_notification
+        ), **self._req_kwargs)
+        return resp.text
+
+    def unpin_chat_message(self, chat_id):
+        resp = requests.post(self._url + 'unpinChatMessage', data=dict(chat_id=chat_id), **self._req_kwargs)
+        return resp.text
+
+    def leave_chat(self, chat_id):
+        resp = requests.post(self._url + 'leaveChat', data=dict(chat_id=chat_id), **self._req_kwargs)
+        return resp.text
+
+    def get_chat(self, chat_id):
+        resp = requests.post(self._url + 'getChat', data=dict(chat_id=chat_id), **self._req_kwargs)
+        return resp.text
+
+    def get_chat_administrators(self, chat_id):
+        resp = requests.post(self._url + 'getChatAdministrators', data=dict(chat_id=chat_id), **self._req_kwargs)
+        return resp.text
+
+    def get_chat_members_count(self, chat_id):
+        resp = requests.post(self._url + 'getChatMembersCount', data=dict(chat_id=chat_id), **self._req_kwargs)
+        return resp.text
+
+    def get_chat_member(self, chat_id, user_id):
+        resp = requests.post(self._url + 'getChatMember', data=dict(chat_id=chat_id, user_id=user_id),
+                             **self._req_kwargs)
+        return resp.text
+
+    def set_chat_sticker_set(self, chat_id, sticker_set_name):
+        resp = requests.post(self._url + 'setChatStickerSet',
+                             data=dict(chat_id=chat_id, sticker_set_name=sticker_set_name), **self._req_kwargs)
+        return resp.text
+
+    def delete_chat_sticker_set(self, chat_id):
+        resp = requests.post(self._url + 'deleteChatStickerSet', data=dict(chat_id=chat_id), **self._req_kwargs)
+        return resp.text
+
+    def answer_callback_query(self, callback_query_id, text=None, show_alert=None, url=None, cache_time=None):
+        kwargs = dict(callback_query_id=callback_query_id, text=text, show_alert=show_alert, url=url,
+                      cache_time=cache_time)
+        resp = requests.post(self._url + 'answerCallbackQuery', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def edit_message_text(self, text, chat_id=None, message_id=None, inline_message_id=None,
+                          parse_mode=None, disable_web_page_preview=None, reply_markup=None):
+        kwargs = dict(text=text, chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id,
+                      parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview,
+                      reply_markup=reply_markup)
+        resp = requests.post(self._url + 'editMessageText', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def edit_message_caption(self, chat_id=None, message_id=None, inline_message_id=None, caption=None,
+                             parse_mode=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id, caption=caption,
+                      parse_mode=parse_mode, reply_markup=reply_markup)
+        resp = requests.post(self._url + 'editMessageCaption', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def edit_message_media(self, media, chat_id=None, message_id=None, inline_message_id=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id,
+                      reply_markup=reply_markup)
+        kwargs['media'] = json.dumps(media)
+        resp = requests.post(self._url + 'editMessageMedia', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def edit_message_reply_markup(self, chat_id=None, message_id=None, inline_message_id=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id,
+                      reply_markup=reply_markup)
+        resp = requests.post(self._url + 'editMessageReplyMarkup', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def stop_poll(self, chat_id, message_id, reply_markup=None):
+        resp = requests.post(self._url + 'stopPoll', data=dict(
+            chat_id=chat_id, message_id=message_id, reply_markup=reply_markup
+        ), **self._req_kwargs)
+        return resp.text
+
+    def delete_message(self, chat_id, message_id):
+        resp = requests.post(self._url + 'deleteMessage', data=dict(chat_id=chat_id, message_id=message_id),
+                             **self._req_kwargs)
+        return resp.text
+
+    def send_sticker(self, chat_id, sticker, disable_notification=None,
+                     reply_to_message_id=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, disable_notification=disable_notification,
+                      reply_to_message_id=reply_to_message_id,
+                      reply_markup=reply_markup)
+        files_kwargs = dict()
+        file_id = sticker.get('file_id')
+        url = sticker.get('url')
+        path = sticker.get('path')
+        if file_id:
+            kwargs['sticker'] = file_id
+        elif url:
+            kwargs['sticker'] = url
+        elif path:
+            if not os.path.isfile(path):
+                return error_response('File not found')
+            files_kwargs['sticker'] = open(path, 'rb')
+        else:
+            return error_response('Location not found')
+        resp = requests.post(self._url + 'sendSticker', data=kwargs, files=files_kwargs, **self._req_kwargs)
+        return resp.text
+
+    def get_sticker_set(self, name):
+        resp = requests.post(self._url + 'getStickerSet', data=dict(name=name), **self._req_kwargs)
+        return resp.text
+
+    def upload_sticker_file(self, user_id, png_sticker):
+        kwargs = dict(user_id=user_id)
+        files_kwargs = dict()
+        file_id = png_sticker.get('file_id')
+        url = png_sticker.get('url')
+        path = png_sticker.get('path')
+        if file_id:
+            kwargs['png_sticker'] = file_id
+        elif url:
+            kwargs['png_sticker'] = url
+        elif path:
+            if not os.path.isfile(path):
+                return error_response('File not found')
+            files_kwargs['png_sticker'] = open(path, 'rb')
+        else:
+            return error_response('Location not found')
+        resp = requests.post(self._url + 'uploadStickerFile', data=kwargs, files=files_kwargs, **self._req_kwargs)
+        return resp.text
+
+    def create_new_sticker_set(self, user_id, name, title, png_sticker, emojis,
+                               contains_masks=None, mask_position=None):
+        kwargs = dict(user_id=user_id, name=name, title=title, emojis=emojis, contains_masks=contains_masks)
+        files_kwargs = dict()
+        file_id = png_sticker.get('file_id')
+        url = png_sticker.get('url')
+        path = png_sticker.get('path')
+        if file_id:
+            kwargs['png_sticker'] = file_id
+        elif url:
+            kwargs['png_sticker'] = url
+        elif path:
+            if not os.path.isfile(path):
+                return error_response('File not found')
+            files_kwargs['png_sticker'] = open(path, 'rb')
+        else:
+            return error_response('Location not found')
+        if contains_masks:
+            kwargs['mask_position'] = json.dumps(mask_position)
+        resp = requests.post(self._url + 'createNewStickerSet', data=kwargs, files_kwargs=files_kwargs,
+                             **self._req_kwargs)
+        return resp.text
+
+    def add_sticker_to_set(self, user_id, name, png_sticker, emojis, mask_position=None):
+        kwargs = dict(user_id=user_id, name=name, emojis=emojis)
+        files_kwargs = dict()
+        file_id = png_sticker.get('file_id')
+        url = png_sticker.get('url')
+        path = png_sticker.get('path')
+        if file_id:
+            kwargs['png_sticker'] = file_id
+        elif url:
+            kwargs['png_sticker'] = url
+        elif path:
+            if not os.path.isfile(path):
+                return error_response('File not found')
+            files_kwargs['png_sticker'] = open(path, 'rb')
+        else:
+            return error_response('Location not found')
+        if mask_position:
+            kwargs['mask_position'] = json.dumps(mask_position)
+        resp = requests.post(self._url + 'addStickerToSet', data=kwargs, files_kwargs=files_kwargs, **self._req_kwargs)
+        return resp.text
+
+    def set_sticker_position_in_set(self, sticker, position):
+        resp = requests.post(self._url + 'setStickerPositionInSet', data=dict(sticker=sticker, position=position),
+                             **self._req_kwargs)
+        return resp.text
+
+    def delete_sticker_from_set(self, sticker):
+        resp = requests.post(self._url + 'deleteStickerFromSet', data=dict(sticker=sticker), **self._req_kwargs)
+        return resp.text
+
+    def answer_inline_query(self, inline_query_id, results, cache_time=None, is_personal=None,
+                            next_offset=None, switch_pm_text=None, switch_pm_parameter=None):
+        kwargs = dict(inline_query_id=inline_query_id, cache_time=cache_time, is_personal=is_personal,
+                      next_offset=next_offset, switch_pm_text=switch_pm_text, switch_pm_parameter=switch_pm_parameter)
+        kwargs['results'] = json.dumps(results)
+        resp = requests.post(self._url + 'answerInlineQuery', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def send_invoice(self, chat_id, title, description, payload, provider_token, start_parameter, currency, prices,
+                     provider_data=None, photo_url=None, photo_size=None, photo_width=None, photo_height=None,
+                     need_name=None, need_phone_number=None, need_email=None, need_shipping_address=None,
+                     send_phone_number_to_provider=None, send_email_to_provider=None, is_flexible=None,
+                     disable_notification=None, reply_to_message_id=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, title=title, description=description, payload=payload,
+                      provider_token=provider_token,
+                      start_parameter=start_parameter, currency=currency, prices=prices, provider_data=provider_data,
+                      photo_url=photo_url, photo_size=photo_size, photo_width=photo_width, photo_height=photo_height,
+                      need_name=need_name, need_phone_number=need_phone_number, need_email=need_email,
+                      need_shipping_address=need_shipping_address,
+                      send_phone_number_to_provider=send_phone_number_to_provider,
+                      send_email_to_provider=send_email_to_provider, is_flexible=is_flexible,
+                      disable_notification=disable_notification, reply_to_message_id=reply_to_message_id,
+                      reply_markup=reply_markup)
+        resp = requests.post(self._url + 'sendInvoice', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def answer_shipping_query(self, shipping_query_id, ok, shipping_options=None, error_message=None):
+        kwargs = dict(shipping_query_id=shipping_query_id, ok=ok, shipping_options=shipping_options,
+                      error_message=error_message)
+        resp = requests.post(self._url + 'answerShippingQuery', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def answer_pre_checkout_query(self, pre_checkout_query_id, ok, error_message=None):
+        kwargs = dict(pre_checkout_query_id=pre_checkout_query_id, ok=ok, error_message=error_message)
+        resp = requests.post(self._url + 'answerPreCheckoutQuery', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def set_passport_data_errors(self, user_id, errors):
+        resp = requests.post(self._url + 'setPassportDataErrors', data=dict(user_id=user_id, errors=errors),
+                             **self._req_kwargs)
+        return resp.text
+
+    def send_game(self, chat_id, game_short_name, disable_notification=None, reply_to_message_id=None,
+                  reply_markup=None):
+        kwargs = dict(chat_id=chat_id, game_short_name=game_short_name, disable_notification=disable_notification,
+                      reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
+        resp = requests.post(self._url + 'sendGame', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def set_game_score(self, user_id, score, force=None, disable_edit_message=None, chat_id=None,
+                       message_id=None, inline_message_id=None):
+        kwargs = dict(user_id=user_id, score=score, force=force, disable_edit_message=disable_edit_message,
+                      chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id)
+        resp = requests.post(self._url + 'setGameScore', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def get_game_high_scores(self, user_id, chat_id=None, message_id=None, inline_message_id=None):
+        kwargs = dict(user_id=user_id, chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id)
+        resp = requests.post(self._url + 'getGameHighScores', data=kwargs, **self._req_kwargs)
+        return resp.text
