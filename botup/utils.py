@@ -6,19 +6,19 @@ except ImportError:
     import json
 
 from .mixins import DBMixin
-from .types.files import File
-from .types.stickers import StickerSet
-from .types.games import GameHighScore
-from .types.common import (
+from .types import (
     User,
     Chat,
     Poll,
+    File,
     Update,
     Message,
     ChatMember,
+    StickerSet,
     WebhookInfo,
     ErrorResponse,
-    UserProfilePhotos,
+    GameHighScore,
+    UserProfilePhotos
 )
 
 

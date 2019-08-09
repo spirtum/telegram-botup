@@ -55,3 +55,31 @@ class DBMixin:
             return
         self.rdb.delete(RESULT.format(correlation_id))
         return json.loads(value)
+
+
+class HandlerPatternMixin:
+
+    def __init__(self, update, user_handlers):
+        self.update = update
+        self.handlers = user_handlers
+
+    def get_handler(self, command):
+        handler = self.handlers.get(command) if command != '*' else None
+        if not handler:
+            for pattern in (c for c in self.handlers.keys() if c.endswith('*')):
+                if pattern[:-1] in command:
+                    handler = self.handlers[pattern]
+                    break
+        return handler
+
+
+class HandlerSimpleMixin:
+
+    def __init__(self, update, user_handler):
+        self.update = update
+        self.user_handler = user_handler
+
+    def handle(self):
+        if not self.user_handler:
+            return
+        self.user_handler(chat_id=self.update.message.chat.id, update=self.update)

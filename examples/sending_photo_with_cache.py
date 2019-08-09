@@ -1,5 +1,5 @@
 from botup import Bot, Form
-from botup.types.files import InputFile
+from botup.types import InputFile
 from flask import Flask, request
 
 from my_func import get_random_image

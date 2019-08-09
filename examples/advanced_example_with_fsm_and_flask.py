@@ -1,7 +1,7 @@
 from flask import Flask, request
 from botup import Bot, Form
 from botup.utils import FSM
-from botup.types.common import InlineKeyboardMarkup
+from botup.types import InlineKeyboardMarkup
 
 from config import TOKEN, redis_connection
 
