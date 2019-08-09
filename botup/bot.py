@@ -24,6 +24,7 @@ from .handlers import (
 class Bot:
 
     def __init__(self):
+        self._statements = set()
         self._commands = dict()
         self._callbacks = dict()
         self._messages = dict()
@@ -37,83 +38,101 @@ class Bot:
         self._shipping_query_handler = None
 
     def register_command_handler(self, command, handler):
+        self._statements.add(self._is_command)
         if not command.startswith('/'):
             command = f'/{command}'
         self._commands[command] = handler
 
     def register_message_handler(self, message, handler):
+        self._statements.add(self._is_message)
         self._messages[message] = handler
 
     def register_callback_handler(self, callback, handler):
+        self._statements.add(self._is_callback)
         self._callbacks[callback] = handler
 
     def register_inline_handler(self, inline_query, handler):
+        self._statements.add(self._is_inline)
         self._inlines[inline_query] = handler
 
     def register_channel_post_handler(self, handler):
+        self._statements.add(self._is_channel_post)
         self._channel_post_handler = handler
 
     def register_edited_message_handler(self, handler):
+        self._statements.add(self._is_edited_message)
         self._edited_message_handler = handler
 
     def register_edited_channel_post_handler(self, handler):
+        self._statements.add(self._is_edited_channel_post)
         self._edited_channel_post_handler = handler
 
     def register_chosen_inline_result_handler(self, handler):
+        self._statements.add(self._is_chosen_inline_result)
         self._chosen_inline_result_handler = handler
 
     def register_shipping_query_handler(self, handler):
+        self._statements.add(self._is_shipping_query)
         self._shipping_query_handler = handler
 
     def register_pre_checkout_query_handler(self, handler):
+        self._statements.add(self._is_pre_checkout_query)
         self._pre_checkout_query_handler = handler
 
     def register_poll_handler(self, handler):
+        self._statements.add(self._is_poll)
         self._poll_handler = handler
+
+    def _is_command(self, update):
+        if update.message and update.message.text and update.message.text.startswith('/'):
+            CommandHandler(update=update, user_handlers=self._commands).handle()
+
+    def _is_message(self, update):
+        if update.message and update.message.text and not update.message.text.startswith('/'):
+            MessageHandler(update=update, user_handlers=self._messages).handle()
+
+    def _is_callback(self, update):
+        if update.callback_query:
+            CallbackQueryHandler(update=update, user_handlers=self._callbacks).handle()
+
+    def _is_inline(self, update):
+        if update.inline_query:
+            InlineQueryHandler(update=update, user_handlers=self._inlines).handle()
+
+    def _is_channel_post(self, update):
+        if update.channel_post:
+            ChannelPostHandler(update=update, user_handler=self._channel_post_handler).handle()
+
+    def _is_edited_message(self, update):
+        if update.edited_message:
+            EditedMessageHandler(update=update, user_handler=self._edited_message_handler).handle()
+
+    def _is_edited_channel_post(self, update):
+        if update.edited_channel_post:
+            EditedChannelPostHandler(update=update, user_handler=self._edited_channel_post_handler).handle()
+
+    def _is_chosen_inline_result(self, update):
+        if update.chosen_inline_result:
+            ChosenInlineResultHandler(update=update, user_handler=self._chosen_inline_result_handler).handle()
+
+    def _is_shipping_query(self, update):
+        if update.shipping_query:
+            ShippingQueryHandler(update=update, user_handler=self._shipping_query_handler).handle()
+
+    def _is_pre_checkout_query(self, update):
+        if update.pre_checkout_query:
+            PreCheckoutQueryHandler(update=update, user_handler=self._pre_checkout_query_handler).handle()
+
+    def _is_poll(self, update):
+        if update.poll:
+            PollHandler(update=update, user_handler=self._poll_handler).handle()
 
     def handle(self, request):
         if 'update_id' not in request:
             return
         update = Update(**request)
-        keyword_arguments = dict(update=update)
-        if update.callback_query:
-            keyword_arguments['user_handlers'] = self._callbacks
-            handler = CallbackQueryHandler(**keyword_arguments)
-        elif update.message:
-            if not update.message.text:
-                return
-            keyword_arguments['user_handlers'] = self._messages
-            handler = MessageHandler(**keyword_arguments)
-            if update.message.text.startswith('/'):
-                keyword_arguments['user_handlers'] = self._commands
-                handler = CommandHandler(**keyword_arguments)
-        elif update.inline_query:
-            keyword_arguments['user_handlers'] = self._inlines
-            handler = InlineQueryHandler(**keyword_arguments)
-        elif update.edited_message:
-            keyword_arguments['user_handler'] = self._edited_message_handler
-            handler = EditedMessageHandler(**keyword_arguments)
-        elif update.channel_post:
-            keyword_arguments['user_handler'] = self._channel_post_handler
-            handler = ChannelPostHandler(**keyword_arguments)
-        elif update.edited_channel_post:
-            keyword_arguments['user_handler'] = self._edited_channel_post_handler
-            handler = EditedChannelPostHandler(**keyword_arguments)
-        elif update.chosen_inline_result:
-            keyword_arguments['user_handler'] = self._chosen_inline_result_handler
-            handler = ChosenInlineResultHandler(**keyword_arguments)
-        elif update.shipping_query:
-            keyword_arguments['user_handler'] = self._shipping_query_handler
-            handler = ShippingQueryHandler(**keyword_arguments)
-        elif update.pre_checkout_query:
-            keyword_arguments['user_handler'] = self._pre_checkout_query_handler
-            handler = PreCheckoutQueryHandler(**keyword_arguments)
-        elif update.poll:
-            keyword_arguments['user_handler'] = self._poll_handler
-            handler = PollHandler(**keyword_arguments)
-        else:
-            return
-        handler.handle()
+        for statement in self._statements:
+            statement(update)
 
     def polling(self, form, tick=1.0, limit=None, timeout=None, allowed_updates=None):
         from .form import Form
