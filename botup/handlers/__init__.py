@@ -9,3 +9,4 @@ from .message_handler import MessageHandler
 from .poll_handler import PollHandler
 from .pre_checkout_query_handler import PreCheckoutQueryHandler
 from .shipping_query_handler import ShippingQueryHandler
+from .document_handler import DocumentHandler

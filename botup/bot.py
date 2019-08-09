@@ -17,7 +17,8 @@ from .handlers import (
     EditedMessageHandler,
     PollHandler,
     PreCheckoutQueryHandler,
-    ShippingQueryHandler
+    ShippingQueryHandler,
+    DocumentHandler
 )
 
 
@@ -36,6 +37,7 @@ class Bot:
         self._poll_handler = None
         self._pre_checkout_query_handler = None
         self._shipping_query_handler = None
+        self._document_handler = None
 
     def register_command_handler(self, command, handler):
         self._statements.add(self._is_command)
@@ -83,6 +85,10 @@ class Bot:
         self._statements.add(self._is_poll)
         self._poll_handler = handler
 
+    def register_document_handler(self, handler):
+        self._statements.add(self._is_document)
+        self._document_handler = handler
+
     def _is_command(self, update):
         if update.message and update.message.text and update.message.text.startswith('/'):
             CommandHandler(update=update, user_handlers=self._commands).handle()
@@ -126,6 +132,10 @@ class Bot:
     def _is_poll(self, update):
         if update.poll:
             PollHandler(update=update, user_handler=self._poll_handler).handle()
+
+    def _is_document(self, update):
+        if update.message and update.message.document:
+            DocumentHandler(update=update, user_handler=self._document_handler).handle()
 
     def handle(self, request):
         if 'update_id' not in request:
