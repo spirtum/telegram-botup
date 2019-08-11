@@ -103,7 +103,7 @@ class InlineKeyboardMarkup:
 
     def __init__(self, **kwargs):
         self.inline_keyboard = [
-            [InlineKeyboardButton(**v) for v in line] for line in kwargs.get('inline_keyboard', [])
+            [InlineKeyboardButton(**v) for v in line] for line in kwargs.get('inline_keyboard', list())
         ]
 
     def line(self, *args):
@@ -153,7 +153,7 @@ class ReplyKeyboardMarkup:
     __slots__ = ['keyboard', 'resize_keyboard', 'one_time_keyboard', 'selective']
 
     def __init__(self, **kwargs):
-        self.keyboard = [[KeyboardButton(**v) for v in line] for line in kwargs.get('keyboard', [])]
+        self.keyboard = [[KeyboardButton(**v) for v in line] for line in kwargs.get('keyboard', list())]
         self.resize_keyboard = kwargs.get('resize_keyboard')
         self.one_time_keyboard = kwargs.get('one_time_keyboard')
         self.selective = kwargs.get('selective')
@@ -175,7 +175,7 @@ class ReplyKeyboardRemove:
     __slots__ = ['remove_keyboard', 'selective']
 
     def __init__(self, **kwargs):
-        self.remove_keyboard = True
+        self.remove_keyboard = kwargs.get('remove_keyboard', True)
         self.selective = kwargs.get('selective')
 
     def as_dict(self):
@@ -184,7 +184,7 @@ class ReplyKeyboardRemove:
 
 
 class Location(BaseObject):
-    __slots__ = ['longtitude', 'latitude']
+    __slots__ = ['longitude', 'latitude']
 
     def __init__(self, **kwargs):
         self.longitude = kwargs.get('longitude')
@@ -206,7 +206,7 @@ class Poll(BaseObject):
     def __init__(self, **kwargs):
         self.id = kwargs.get('id')
         self.question = kwargs.get('question')
-        self.options = [PollOption(**v) for v in kwargs['options']] if 'options' in kwargs else []
+        self.options = [PollOption(**v) for v in kwargs['options']] if 'options' in kwargs else list()
         self.is_closed = kwargs.get('is_closed')
 
 
@@ -224,7 +224,7 @@ class UserProfilePhotos(BaseObject):
 
     def __init__(self, **kwargs):
         self.total_count = kwargs.get('total_count')
-        self.photos = [PhotoSize(**v) for v in kwargs['photos']] if 'photos' in kwargs else []
+        self.photos = [PhotoSize(**v) for v in kwargs['photos']] if 'photos' in kwargs else list()
 
 
 class Venue(BaseObject):
@@ -232,7 +232,7 @@ class Venue(BaseObject):
     NESTED = ['location', ]
 
     def __init__(self, **kwargs):
-        self.location = Location(**kwargs['location'])
+        self.location = Location(**kwargs['location']) if 'location' in kwargs else None
         self.title = kwargs.get('title')
         self.address = kwargs.get('address')
         self.foursquare_id = kwargs.get('foursquare_id')
@@ -333,11 +333,12 @@ class User(BaseObject):
 class ChatMember(BaseObject):
     __slots__ = ['user', 'status', 'until_date', 'can_be_edited', 'can_change_info', 'can_post_messages',
                  'can_edit_messages', 'can_delete_messages', 'can_invite_users', 'can_restrict_members',
-                 'can_pin_messages', 'can_promote_members', 'is_member', 'can_send_messages',
-                 'can_send_media_messages', 'can_send_other_messages', 'can_add_web_page_previews']
+                 'can_pin_messages', 'can_promote_members', 'is_member', 'can_send_messages', 'can_send_media_messages',
+                 'can_send_polls', 'can_send_other_messages', 'can_add_web_page_previews']
+    NESTED = ['user', ]
 
     def __init__(self, **kwargs):
-        self.user = User(**kwargs.get('user'))
+        self.user = User(**kwargs['user']) if 'user' in kwargs else None
         self.status = kwargs.get('status')
         self.until_date = kwargs.get('until_date')
         self.can_be_edited = kwargs.get('can_be_edited')
@@ -352,6 +353,7 @@ class ChatMember(BaseObject):
         self.is_member = kwargs.get('is_member')
         self.can_send_messages = kwargs.get('can_send_messages')
         self.can_send_media_messages = kwargs.get('can_send_media_messages')
+        self.can_send_polls = kwargs.get('can_send_polls')
         self.can_send_other_messages = kwargs.get('can_send_other_messages')
         self.can_add_web_page_previews = kwargs.get('can_add_web_page_previews')
 
@@ -475,9 +477,10 @@ class Game(BaseObject):
     def __init__(self, **kwargs):
         self.title = kwargs.get('title')
         self.description = kwargs.get('description')
-        self.photo = [PhotoSize(**v) for v in kwargs['photo']] if 'photo' in kwargs else []
+        self.photo = [PhotoSize(**v) for v in kwargs['photo']] if 'photo' in kwargs else list()
         self.text = kwargs.get('text')
-        self.text_entities = [MessageEntity(**v) for v in kwargs['text_entities']] if 'text_entities' in kwargs else []
+        self.text_entities = [MessageEntity(**v) for v in
+                              kwargs['text_entities']] if 'text_entities' in kwargs else list()
         self.animation = Animation(**kwargs['animation']) if 'animation' in kwargs else None
 
 
@@ -541,7 +544,7 @@ class ChosenInlineResult(BaseObject):
 
     def __init__(self, **kwargs):
         self.result_id = kwargs.get('result_id')
-        self.from_ = User(**kwargs['from'])
+        self.from_ = User(**kwargs['from']) if 'from' in kwargs else None
         self.location = Location(**kwargs['location']) if 'location' in kwargs else None
         self.inline_message_id = kwargs.get('inline_message_id')
         self.query = kwargs.get('query')
@@ -553,7 +556,7 @@ class InlineQuery(BaseObject):
 
     def __init__(self, **kwargs):
         self.id = kwargs.get('id')
-        self.from_ = User(**kwargs.get('from'))
+        self.from_ = User(**kwargs.get('from')) if 'from' in kwargs else None
         self.location = Location(**kwargs['location']) if 'location' in kwargs else None
         self.query = kwargs.get('query')
         self.offset = kwargs.get('offset')
@@ -638,7 +641,7 @@ class InlineQueryResultCachedDocument(InlineQueryResult):
 
 
 class InlineQueryResultCachedGif(InlineQueryResult):
-    __slots__ = ['type', 'id', 'reply_markup', 'input_message_content','gif_file_id', 'title', 'caption', 'parse_mode']
+    __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'gif_file_id', 'title', 'caption', 'parse_mode']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -984,11 +987,11 @@ class EncryptedPassportElement(BaseObject):
         self.data = kwargs.get('data')
         self.phone_number = kwargs.get('phone_number')
         self.email = kwargs.get('email')
-        self.files = [PassportFile(**v) for v in kwargs['files']] if 'files' in kwargs else []
+        self.files = [PassportFile(**v) for v in kwargs['files']] if 'files' in kwargs else list()
         self.front_side = PassportFile(**kwargs['front_side']) if 'front_side' in kwargs else None
         self.reverse_side = PassportFile(**kwargs['reverse_side']) if 'reverse_side' in kwargs else None
         self.selfie = PassportFile(**kwargs['selfie']) if 'selfie' in kwargs else None
-        self.translation = [PassportFile(**v) for v in kwargs['translation']] if 'translation' in kwargs else []
+        self.translation = [PassportFile(**v) for v in kwargs['translation']] if 'translation' in kwargs else list()
         self.hash = kwargs.get('hash')
 
 
@@ -997,7 +1000,7 @@ class PassportData(BaseObject):
     NESTED = ['data', 'credentials']
 
     def __init__(self, **kwargs):
-        self.data = [EncryptedPassportElement(**v) for v in kwargs['data']] if 'data' in kwargs else []
+        self.data = [EncryptedPassportElement(**v) for v in kwargs['data']] if 'data' in kwargs else list()
         self.credentials = EncryptedCredentials(**kwargs['credentials']) if 'credentials' in kwargs else None
 
 
@@ -1081,6 +1084,7 @@ class ShippingQuery(BaseObject):
 class SuccessfulPayment(BaseObject):
     __slots__ = ['currency', 'total_amount', 'invoice_payload', 'shipping_option_id',
                  'order_info', 'telegram_payment_charge_id', 'provider_payment_charge_id']
+    NESTED = ['order_info', ]
 
     def __init__(self, **kwargs):
         self.currency = kwargs.get('currency')
@@ -1103,13 +1107,15 @@ class MaskPosition(BaseObject):
 
 
 class Sticker(BaseObject):
-    __slots__ = ['file_id', 'width', 'height', 'thumb', 'emoji', 'set_name', 'mask_position', 'file_size']
+    __slots__ = ['file_id', 'width', 'height', 'is_animated', 'thumb', 'emoji',
+                 'set_name', 'mask_position', 'file_size']
     NESTED = ['thumb', 'mask_position']
 
     def __init__(self, **kwargs):
         self.file_id = kwargs.get('file_id')
         self.width = kwargs.get('width')
         self.height = kwargs.get('height')
+        self.is_animated = kwargs.get('is_animated')
         self.thumb = PhotoSize(**kwargs['thumb']) if 'thumb' in kwargs else None
         self.emoji = kwargs.get('emoji')
         self.set_name = kwargs.get('set_name')
@@ -1118,20 +1124,37 @@ class Sticker(BaseObject):
 
 
 class StickerSet(BaseObject):
-    __slots__ = ['name', 'title', 'contains_masks', 'stickers']
+    __slots__ = ['name', 'title', 'is_animated', 'contains_masks', 'stickers']
     NESTED = ['stickers', ]
 
     def __init__(self, **kwargs):
         self.name = kwargs.get('name')
         self.title = kwargs.get('title')
+        self.is_animated = kwargs.get('is_animated')
         self.contains_masks = kwargs.get('contains_masks')
-        self.stickers = [Sticker(**v) for v in kwargs['stickers']] if 'stickers' in kwargs else []
+        self.stickers = [Sticker(**v) for v in kwargs['stickers']] if 'stickers' in kwargs else list()
+
+
+class ChatPermissions(BaseObject):
+    __slots__ = ['can_send_messages', 'can_send_media_messages', 'can_send_polls',
+                 'can_send_other_messages', 'can_add_web_page_previews', 'can_change_info',
+                 'can_invite_users', 'can_pin_messages']
+
+    def __init__(self, **kwargs):
+        self.can_send_messages = kwargs.get('can_send_messages')
+        self.can_send_media_messages = kwargs.get('can_send_media_messages')
+        self.can_send_polls = kwargs.get('can_send_polls')
+        self.can_send_other_messages = kwargs.get('can_send_other_messages')
+        self.can_add_web_page_previews = kwargs.get('can_add_web_page_previews')
+        self.can_change_info = kwargs.get('can_change_info')
+        self.can_invite_users = kwargs.get('can_invite_users')
+        self.can_pin_messages = kwargs.get('can_pin_messages')
 
 
 class Chat(BaseObject):
-    __slots__ = ['id', 'type', 'title', 'username', 'first_name', 'last_name', 'all_members_are_administrators',
-                 'photo', 'description', 'invite_link', 'pinned_message', 'sticker_set_name', 'can_set_sticker_set']
-    NESTED = ['photo', 'pinned_message']
+    __slots__ = ['id', 'type', 'title', 'username', 'first_name', 'last_name', 'photo', 'description',
+                 'invite_link', 'pinned_message', 'permissions', 'sticker_set_name', 'can_set_sticker_set']
+    NESTED = ['photo', 'pinned_message', 'permissions']
 
     def __init__(self, **kwargs):
         self.id = kwargs.get('id')
@@ -1140,11 +1163,11 @@ class Chat(BaseObject):
         self.username = kwargs.get('username')
         self.first_name = kwargs.get('first_name')
         self.last_name = kwargs.get('last_name')
-        self.all_members_are_administrators = kwargs.get('all_members_are_administrators')
         self.photo = ChatPhoto(**kwargs['photo']) if 'photo' in kwargs else None
         self.description = kwargs.get('description')
         self.invite_link = kwargs.get('invite_link')
-        self.pinned_message = Message(**kwargs.get('pinned_message')) if 'pinned_message' in kwargs else None
+        self.pinned_message = Message(**kwargs['pinned_message']) if 'pinned_message' in kwargs else None
+        self.permissions = ChatPermissions(**kwargs['permissions']) if 'permissions' in kwargs else None
         self.sticker_set_name = kwargs.get('sticker_set_name')
         self.can_set_sticker_set = kwargs.get('can_set_sticker_set')
 
@@ -1167,7 +1190,7 @@ class Message(BaseObject):
         self.message_id = kwargs.get('message_id')
         self.from_ = User(**kwargs['from']) if 'from' in kwargs else None
         self.date = kwargs.get('date')
-        self.chat = Chat(**kwargs.get('chat'))
+        self.chat = Chat(**kwargs['chat']) if 'chat' in kwargs else None
         self.forward_from_chat = Chat(**kwargs['forward_from_chat']) if 'forward_from_chat' in kwargs else None
         self.forward_from = User(**kwargs['forward_from']) if 'forward_from' in kwargs else None
         self.forward_signature = kwargs.get('forward_signature')
@@ -1178,14 +1201,14 @@ class Message(BaseObject):
         self.media_group_id = kwargs.get('media_group_id')
         self.author_signature = kwargs.get('author_signature')
         self.text = kwargs.get('text')
-        self.entities = [MessageEntity(**v) for v in kwargs['entities']] if 'entities' in kwargs else []
+        self.entities = [MessageEntity(**v) for v in kwargs['entities']] if 'entities' in kwargs else list()
         self.caption_entities = [MessageEntity(**v) for v in
-                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else []
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
         self.audio = Audio(**kwargs['audio']) if 'audio' in kwargs else None
         self.document = Document(**kwargs['document']) if 'document' in kwargs else None
         self.animation = Animation(**kwargs['animation']) if 'animation' in kwargs else None
         self.game = Game(**kwargs['game']) if 'game' in kwargs else None
-        self.photo = [PhotoSize(**v) for v in kwargs['photo']] if 'photo' in kwargs else []
+        self.photo = [PhotoSize(**v) for v in kwargs['photo']] if 'photo' in kwargs else list()
         self.sticker = Sticker(**kwargs['sticker']) if 'sticker' in kwargs else None
         self.video = Video(**kwargs['video']) if 'video' in kwargs else None
         self.voice = Voice(**kwargs['voice']) if 'voice' in kwargs else None
@@ -1195,10 +1218,12 @@ class Message(BaseObject):
         self.location = Location(**kwargs['location']) if 'location' in kwargs else None
         self.venue = Venue(**kwargs['venue']) if 'venue' in kwargs else None
         self.poll = Poll(**kwargs['poll']) if 'poll' in kwargs else None
-        self.new_chat_members = [User(**v) for v in kwargs['new_chat_members']] if 'new_chat_members' in kwargs else []
+        self.new_chat_members = [User(**v) for v in
+                                 kwargs['new_chat_members']] if 'new_chat_members' in kwargs else list()
         self.left_chat_member = User(**kwargs['left_chat_member']) if 'left_chat_member' in kwargs else None
         self.new_chat_title = kwargs.get('new_chat_title')
-        self.new_chat_photo = [PhotoSize(**v) for v in kwargs['new_chat_photo']] if 'new_chat_photo' in kwargs else []
+        self.new_chat_photo = [PhotoSize(**v) for v in
+                               kwargs['new_chat_photo']] if 'new_chat_photo' in kwargs else list()
         self.delete_chat_photo = kwargs.get('delete_chat_photo')
         self.group_chat_created = kwargs.get('group_chat_created')
         self.supergroup_chat_created = kwargs.get('supergroup_chat_created')
@@ -1220,7 +1245,7 @@ class CallbackQuery(BaseObject):
 
     def __init__(self, **kwargs):
         self.id = kwargs.get('id')
-        self.from_ = User(**kwargs.get('from'))
+        self.from_ = User(**kwargs['from']) if 'from' in kwargs else None
         self.message = Message(**kwargs['message']) if 'message' in kwargs else None
         self.inline_message_id = kwargs.get('inline_message_id')
         self.chat_instance = kwargs.get('chat_instance')

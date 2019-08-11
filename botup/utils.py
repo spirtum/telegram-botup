@@ -45,13 +45,13 @@ def parse_response(response):
         return Update(**result)
     elif 'message_id' in result:
         return Message(**result)
-    elif 'is_bot' in result and 'username' in result:
+    elif 'is_bot' in result:
         return User(**result)
     elif 'total_count' in result and 'photos' in result:
         return UserProfilePhotos(**result)
     elif 'file_id' in result and 'file_size' in result and 'file_path' in result:
         return File(**result)
-    elif 'title' in result and 'invite_link' in result:
+    elif 'type' in result and result['type'] in ('private', 'group', 'supergroup', 'channel'):
         return Chat(**result)
     elif 'user' in result and 'status' in result:
         return ChatMember(**result)

@@ -64,6 +64,7 @@ class Sender(DBMixin):
             self.unban_chat_member.__name__: self.unban_chat_member,
             self.restrict_chat_member.__name__: self.restrict_chat_member,
             self.promote_chat_member.__name__: self.promote_chat_member,
+            self.set_chat_permissions.__name__: self.set_chat_permissions,
             self.export_chat_invite_link.__name__: self.export_chat_invite_link,
             self.set_chat_photo.__name__: self.set_chat_photo,
             self.delete_chat_photo.__name__: self.delete_chat_photo,
@@ -433,8 +434,6 @@ class Sender(DBMixin):
                       reply_to_message_id=reply_to_message_id)
         kwargs['media'] = list()
         files_kwargs = dict()
-        assert len(media) <= 10, 'Media length must be less then 11'
-        assert len(media) >= 2, 'Media length must be up then 1'
         for m in media:
             assert m['type'] in ('photo', 'video'), 'Media must be photo or video'
             if m['media'].startswith('attach://'):
@@ -498,8 +497,7 @@ class Sender(DBMixin):
 
     def get_user_profile_photos(self, user_id, offset=None, limit=None):
         resp = requests.post(self._url + 'getUserProfilePhotos', data=dict(
-            user_id=user_id, offset=offset, limit=limit
-        ), **self._req_kwargs)
+            user_id=user_id, offset=offset, limit=limit), **self._req_kwargs)
         return resp.text
 
     def get_file(self, file_id):
@@ -508,8 +506,7 @@ class Sender(DBMixin):
 
     def kick_chat_member(self, chat_id, user_id, until_date=None):
         resp = requests.post(self._url + 'kickChatMember', data=dict(
-            chat_id=chat_id, user_id=user_id, until_date=until_date
-        ), **self._req_kwargs)
+            chat_id=chat_id, user_id=user_id, until_date=until_date), **self._req_kwargs)
         return resp.text
 
     def unban_chat_member(self, chat_id, user_id):
@@ -517,12 +514,13 @@ class Sender(DBMixin):
                              **self._req_kwargs)
         return resp.text
 
-    def restrict_chat_member(self, chat_id, user_id, until_date=None, can_send_messages=None,
-                             can_send_media_messages=None, can_send_other_messages=None,
-                             can_add_web_page_previews=None):
-        kwargs = dict(chat_id=chat_id, user_id=user_id, until_date=until_date, can_send_messages=can_send_messages,
-                      can_send_media_messages=can_send_media_messages, can_send_other_messages=can_send_other_messages,
-                      can_add_web_page_previews=can_add_web_page_previews)
+    def restrict_chat_member(self, chat_id, user_id, permissions, until_date=None):
+        kwargs = dict(
+            chat_id=chat_id,
+            user_id=user_id,
+            permissions=permissions,
+            until_date=until_date
+        )
         resp = requests.post(self._url + 'restrictChatMember', data=kwargs, **self._req_kwargs)
         return resp.text
 
@@ -537,6 +535,14 @@ class Sender(DBMixin):
                       can_restrict_members=can_restrict_members, can_pin_messages=can_pin_messages,
                       can_promote_members=can_promote_members)
         resp = requests.post(self._url + 'promoteChatMember', data=kwargs, **self._req_kwargs)
+        return resp.text
+
+    def set_chat_permissions(self, chat_id, permissions):
+        kwargs = dict(
+            chat_id=chat_id,
+            permissions=permissions
+        )
+        resp = requests.post(self._url + 'setChatPermissions', data=kwargs, **self._req_kwargs)
         return resp.text
 
     def export_chat_invite_link(self, chat_id):
