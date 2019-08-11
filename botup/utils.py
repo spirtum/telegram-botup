@@ -69,10 +69,6 @@ def error_response(text):
     return json.dumps({'ok': False, 'error_code': 502, 'description': text})
 
 
-def is_error(instance):
-    return isinstance(instance, ErrorResponse)
-
-
 class ResultGetter(DBMixin):
     __slots__ = ['rdb', 'correlation_id', '_value']
 
@@ -96,58 +92,3 @@ class ResultGetter(DBMixin):
         if not self._value:
             self._value = {'ok': False, 'error_code': 502, 'description': 'No result'}
         return parse_response(self._value) if parse else self._value
-
-
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-
-class State:
-    __slots__ = ['value', 'setup', 'teardown']
-
-    def __init__(self, value):
-        self.value = value
-        self.setup = None
-        self.teardown = None
-
-    def __repr__(self):
-        return self.value
-
-
-class FSM(metaclass=Singleton):
-
-    KEY = 'botup:user:{}:state'
-    STATES = []
-
-    def __init__(self, connection, initial='initial'):
-        self._rdb = connection
-        assert isinstance(initial, str), '"initial" must be a type str'
-        for value in self.__class__.STATES:
-            assert isinstance(value, str), '"state" must be a type "str"'
-            setattr(self, value, State(value))
-        self.initial = State(initial)
-        self.state = self.initial
-
-    def __getattr__(self, item):
-        setattr(self, item, State(item))
-        return getattr(self, item)
-
-    def set(self, chat_id, state, expire=None):
-        assert isinstance(state, State), '"state" is not a type "State"'
-        self.state.teardown() if self.state.teardown else None
-        self._rdb.set(self.KEY.format(chat_id), state.value, ex=expire)
-        self.state = state
-        self.state.setup() if self.state.setup else None
-
-    def fetch(self, chat_id):
-        value = self._rdb.get(self.KEY.format(chat_id))
-        if value:
-            self.state = getattr(self, value)
-            return self.state
-        else:
-            return self.initial

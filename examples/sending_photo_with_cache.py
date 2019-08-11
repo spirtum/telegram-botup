@@ -1,4 +1,4 @@
-from botup import Bot, Form
+from botup import Dispatcher, Form
 from botup.types import InputFile
 from flask import Flask, request
 
@@ -7,7 +7,7 @@ from config import TOKEN
 from config import redis_connection as rdb
 
 app = Flask(__name__)
-bot = Bot()
+dispatcher = Dispatcher()
 form = Form(token=TOKEN, connection=rdb)
 
 
@@ -39,15 +39,15 @@ def send_image(chat_id, update):
         rdb.set(f'cache:{path}', resp.photo[-1].file_id)
 
 
-bot.register_command_handler('/image', send_image)
-bot.register_command_handler('*', start_handler)
+dispatcher.register_command_handler('/image', send_image)
+dispatcher.register_command_handler('*', start_handler)
 
 
 @app.route(f'/{TOKEN}', methods=['POST'])
 def index():
     try:
         req = request.get_json()
-        bot.handle(req)
+        dispatcher.handle(req)
     except Exception as exc:
         import traceback
         print(traceback.format_exc())

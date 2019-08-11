@@ -24,6 +24,9 @@ class BaseObject:
             result[key] = value.as_dict()
         return result
 
+    def is_error(self):
+        return isinstance(self, ErrorResponse)
+
 
 class PhotoSize(BaseObject):
     __slots__ = ['file_id', 'width', 'height', 'file_size']

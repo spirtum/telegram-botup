@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='telegram-botup',
-    version='0.2.2',
+    version='0.3.0',
     author='Dima Shebotinov',
     author_email='groovestreetmagic@gmail.com',
     py_modules=['botup'],

@@ -1,8 +1,8 @@
 # Telegram-botup
 
-Library for fast development and simple deployment of Telegram bots. She includes four basic component:
+Library for fast development and simple deployment of Telegram bots. She includes:
 
-- **Bot** for handlers registration and receiving incoming updates
+- **Dispatcher** for handlers registration and receiving incoming updates
 - **Form** for working with Telegram API
 - **Sender**-worker for asynchronus requests
 - Other utils, types and etc
@@ -16,65 +16,6 @@ Library for fast development and simple deployment of Telegram bots. She include
 - Built-in command-line tool
 - Support of work with socks5-proxy and proxy-url
 
-# Components
-## Bot
-
-**Bot** handles incoming updates from Telegram API and invokes user handlers. He has two work mode, with webhook and long-polling:
-
-- Webhook
-```
-bot.handle(request)
-```
-- Long-polling
-```
-bot.polling(*args, **kwargs)
-```
-
-## Form
-
-**Form** works in one of two modes: Synchronus and asynchronus
-
-1. *Synchronus*. Simple usage
-
-- Direct invoke API methods
-- Requests block runtime
-- Blocking from Telegram API is possible
-
-```
-form = Form(token=TOKEN)
-resp = form.send_message(**kwargs)
-```
-
-2. *Asynchronus*. Advanced usage
-
-- Runtime no blocking
-- Form send task to **Sender**-worker instead direct request to Telegram API
-- **Sender**-worker regulates requests per seconds
-- Production ready!
-
-```
-form = Form(token=TOKEN, connection=REDIS_CONNECTION)
-form.push(form.send_message, **kwargs)
-```
-
-For getting response from Telegram API in asynchronus mode use a *wait()*:
-```
-resp = form.push(form.send_message, **kwargs).wait()
-```
-
-## Sender-worker
-
-**Sender** works in another proccess and receives tasks using a **Redis**. For start **Sender** needs token and redis-connection credentials. For more information:
-
-```
-$ botup run_sender --help
-```
-
-## Other. CLI
-
-```
-$ botup --help
-```
 
 
 # Installation
@@ -82,40 +23,63 @@ $ botup --help
 $ pip install git+https://bitbucket.org/dimashebo/telegram-botup
 ```
 
-# Simple example. Using a long-polling and sync-mode without Redis
+# Example
 ```
-from botup import Bot, Form
+from botup import Dispatcher, Form
+from botup.types import InputFile
+from flask import Flask, request
 
-TOKEN = '<TOKEN>'
+from my_func import get_random_image
+from config import TOKEN
+from config import redis_connection as rdb
 
-bot = Bot()
-form = Form(token=TOKEN)
+app = Flask(__name__)
+dispatcher = Dispatcher()
+form = Form(token=TOKEN, connection=rdb)
 
 
 def start_handler(chat_id, update):
-    form.send_message(
+    form.push(
+        func=form.send_message,
         chat_id=chat_id,
-        text='Start handler'
+        text='Hi!\nTo get image press to /image'
     )
 
 
-def help_handler(chat_id, update):
-    text = str()
-    text += "Help page:\n\n"
-    text += "/start - to start\n"
-    text += "/help - to show this message again\n"
-    form.send_message(
-        chat_id=chat_id,
-        text=text
+def send_image(chat_id, update):
+    path = get_random_image()
+    cache = rdb.get(f'cache:{path}')
+    if cache:
+        input_file = InputFile(file_id=cache)
+        form.push(
+            func=form.send_photo,
+            chat_id=chat_id,
+            photo=input_file.as_dict()
         )
+    else:
+        input_file = InputFile(path=path)
+        resp = form.push(
+            func=form.send_photo,
+            chat_id=chat_id,
+            photo=input_file.as_dict()
+        ).wait()
+        rdb.set(f'cache:{path}', resp.photo[-1].file_id)
 
 
-bot.register_command_handler('/help', help_handler)
-bot.register_command_handler('/start', start_handler)
+dispatcher.register_command_handler('/image', send_image)
+dispatcher.register_command_handler('*', start_handler)
 
 
-if __name__ == '__main__':
-    bot.polling(form)
+@app.route(f'/{TOKEN}', methods=['POST'])
+def index():
+    try:
+        req = request.get_json()
+        dispatcher.handle(req)
+    except Exception as exc:
+        import traceback
+        print(traceback.format_exc())
+    return "!", 200
+
 ```
 
 ## Q/A

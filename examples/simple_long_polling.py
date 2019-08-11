@@ -1,8 +1,8 @@
-from botup import Bot, Form
+from botup import Dispatcher, Form
 
 TOKEN = '<TOKEN>'
 
-bot = Bot()
+dispatcher = Dispatcher()
 form = Form(token=TOKEN)
 
 
@@ -24,9 +24,9 @@ def help_handler(chat_id, update):
         )
 
 
-bot.register_command_handler('/help', help_handler)
-bot.register_command_handler('/start', start_handler)
+dispatcher.register_command_handler('/help', help_handler)
+dispatcher.register_command_handler('/start', start_handler)
 
 
 if __name__ == '__main__':
-    bot.polling(form)
+    dispatcher.polling(form)
