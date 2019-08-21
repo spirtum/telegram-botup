@@ -1,5 +1,4 @@
-from .dispatcher import Dispatcher
+from .dispatcher import Dispatcher, StateDispatcher
 from .form import Form
-from .fsm import StateMachine
 
 name = "telegram-botup"

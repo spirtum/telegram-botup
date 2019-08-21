@@ -20,7 +20,7 @@ Library for fast development and simple deployment of Telegram bots. She include
 
 # Installation
 ```
-$ pip install git+https://bitbucket.org/dimashebo/telegram-botup
+$ pip install telegram-botup
 ```
 
 # Example

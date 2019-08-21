@@ -4,3 +4,6 @@ venv
 *.egg-info
 *.pyc
 .vscode
+dist
+build
+.DS_Store

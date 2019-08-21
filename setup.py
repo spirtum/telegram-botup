@@ -1,10 +1,16 @@
 from setuptools import setup, find_packages
 
+with open('README.md', 'r', encoding='utf-8') as fd:
+    long_description = fd.read()
+
 setup(
     name='telegram-botup',
-    version='0.3.0',
+    version='0.3.2',
     author='Dima Shebotinov',
     author_email='groovestreetmagic@gmail.com',
+    description='Library for development Telegram bots',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     py_modules=['botup'],
     python_requires='>=3.6',
     packages=find_packages(),
