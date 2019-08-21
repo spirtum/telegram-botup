@@ -169,8 +169,15 @@ class ReplyKeyboardMarkup:
         return KeyboardButton(text=text, request_contact=request_contact, request_location=request_location)
 
     def as_dict(self):
-        result = {k: v for k, v in vars(self).items() if v is not None}
-        result['keyboard'] = [[b.as_dict() for b in line] for line in self.keyboard]
+        result = dict()
+        for key in self.__slots__:
+            value = getattr(self, key, None)
+            if value is None:
+                continue
+            if key == 'keyboard':
+                result[key] = [[b.as_dict() for b in line] for line in value]
+                continue
+            result[key] = value
         return json.dumps(result)
 
 
@@ -182,7 +189,12 @@ class ReplyKeyboardRemove:
         self.selective = kwargs.get('selective')
 
     def as_dict(self):
-        result = {k: v for k, v in vars(self).items() if v is not None}
+        result = dict()
+        for key in self.__slots__:
+            value = getattr(self, key, None)
+            if value is None:
+                continue
+            result[key] = value
         return json.dumps(result)
 
 
