@@ -1,7 +1,6 @@
 import os.path
 import threading
 import time
-from datetime import datetime
 
 import requests
 
@@ -11,7 +10,10 @@ except ImportError:
     import json
 
 from .mixins import DBMixin
-from .utils import error_response
+from .utils import error_response, get_logger
+
+
+logger = get_logger()
 
 
 class Sender(DBMixin):
@@ -170,7 +172,7 @@ class Sender(DBMixin):
             self._set_form_message_id(kwargs['chat_id'], data['result']['message_id'])
 
     def run(self, fake_mode=False):
-        print('Sender-worker started')
+        logger.info('Sender-worker started')
         subscriber = self.rdb.pubsub()
         subscriber.subscribe([self.queue])
         for message in subscriber.listen():
@@ -179,11 +181,7 @@ class Sender(DBMixin):
             payload = json.loads(message['data'])
             if payload['func'] not in self.functions:
                 continue
-            print("|{}| Run {} with {}".format(
-                datetime.now().strftime('%d.%m.%Y %H:%M:%S'),
-                payload['func'],
-                payload['kwargs']
-            ))
+            logger.info('Run {} with {}'.format(payload['func'], payload['kwargs']))
             if fake_mode:
                 continue
             timer = threading.Timer(self._delay(**payload['kwargs']), self.start_task, kwargs=payload)

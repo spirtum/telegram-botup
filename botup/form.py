@@ -7,7 +7,10 @@ except ImportError:
 
 from .mixins import DBMixin
 from .sender import Sender
-from .utils import ResultGetter
+from .utils import ResultGetter, get_logger
+
+
+logger = get_logger()
 
 
 class Form(DBMixin):
@@ -56,10 +59,10 @@ class Form(DBMixin):
             save_id=save_id
         )
         if self.fake_mode:
-            print(f'Run {func.__name__} with {kwargs}')
+            logger.info(f'Run {func.__name__} with {kwargs}')
             return
         if self.simple_mode:
-            print(f'Run {func.__name__} with {kwargs}')
+            logger.info(f'Run {func.__name__} with {kwargs}')
             self._sender.start_task(**payload)
         else:
             self.rdb.publish(self.queue, json.dumps(payload))

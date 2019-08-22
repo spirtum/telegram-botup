@@ -1,6 +1,7 @@
 import click
 
 from .sender import Sender
+from .utils import setup_logging
 
 
 @click.group()
@@ -19,6 +20,7 @@ def cli():
               show_default=True)
 @click.option('--rate-limit', '-rt', required=True, default=0.5, type=float,
               help='Rate limit. One request per rate-limit', show_default=True)
+@click.option('--quiet', help='Quiet mode', is_flag=True, default=False)
 @click.option('--fake-mode', help='Fake start without requests', is_flag=True, default=False, show_default=True)
 @click.option('--proxy-url', help='Proxy URL for requests')
 @click.option('--basic-auth-string', help='Connection string for basic auth')
@@ -30,12 +32,15 @@ def run_sender(
         socks_proxy_string,
         queue,
         rate_limit,
+        quiet,
         fake_mode,
         proxy_url,
         basic_auth_string):
     """Start the sender"""
     if fake_mode:
         print('Run with --fake-mode')
+    if not quiet:
+        setup_logging()
     Sender.new(
         token=token,
         redis_host=redis_host,

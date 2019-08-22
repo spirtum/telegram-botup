@@ -1,4 +1,5 @@
 import threading
+import logging
 
 try:
     import ujson as json
@@ -20,6 +21,16 @@ from .types import (
     GameHighScore,
     UserProfilePhotos
 )
+
+
+def get_logger():
+    return logging.getLogger('botup')
+
+
+def setup_logging(level=logging.INFO):
+    logger = logging.getLogger('botup')
+    logger.addHandler(logging.StreamHandler())
+    logger.setLevel(level)
 
 
 def parse_response(response):
@@ -73,7 +84,6 @@ class ResultGetter(DBMixin):
     __slots__ = ['rdb', 'correlation_id', '_value']
 
     def __init__(self, connection, correlation_id):
-        assert connection, 'No connect to redis'
         super().__init__(connection)
         self.correlation_id = correlation_id
         self._value = None
