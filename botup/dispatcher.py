@@ -500,9 +500,9 @@ class StateDispatcher(Dispatcher):
         if self._run_middlewares(update):
             self.success = True
             return
-        chat_id = update.message.chat.id or update.callback_query.message.chat.id
-        if chat_id:
-            value = self._connection.get(self._db_key.format(chat_id))
+        message = getattr(update, 'message', None) or getattr(update.callback_query, 'message', None)
+        if message:
+            value = self._connection.get(self._db_key.format(message.chat.id))
             dispatcher = self.states.get(value)
             if dispatcher:
                 dispatcher.handle(update)
