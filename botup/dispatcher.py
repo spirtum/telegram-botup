@@ -13,6 +13,7 @@ class Dispatcher:
 
     def __init__(self):
         self.success = False
+        self.middlewares = list()
         self.statements = set()
         self.commands = dict()
         self.callbacks = dict()
@@ -45,6 +46,10 @@ class Dispatcher:
         self.video_handler = None
         self.video_note_handler = None
         self.voice_handler = None
+
+    def register_middleware(self, middleware):
+        assert callable(middleware), 'middleware is not a function type'
+        self.middlewares.append(middleware)
 
     def register_command_handler(self, command, handler):
         assert isinstance(command, str), 'command is not a str type'
@@ -426,14 +431,23 @@ class Dispatcher:
         if dispatcher.voice_handler:
             self.register_voice_handler(dispatcher.voice_handler)
 
-    def handle(self, update):
-        self.success = False
-        if not isinstance(update, Update):
-            update = Update(**update)
+    def _run_statements(self, update):
         for statement in self.statements:
             if self.success:
                 break
             statement(update)
+
+    def _run_middlewares(self, update):
+        return any([m(update) for m in self.middlewares])
+
+    def handle(self, update):
+        self.success = False
+        if not isinstance(update, Update):
+            update = Update(**update)
+        if self._run_middlewares(update):
+            self.success = True
+            return
+        self._run_statements(update)
 
     def polling(self, form, tick=1.0, limit=None, timeout=None, allowed_updates=None):
         last_update_id = 0
@@ -462,10 +476,18 @@ class StateDispatcher(Dispatcher):
         self._db_key = db_key
         self.states = dict()
 
+    def register_state(self, state, dispatcher):
+        assert isinstance(state, str), 'state is not a str'
+        assert isinstance(dispatcher, (Dispatcher, StateDispatcher))
+        self.states[state] = dispatcher
+
     def handle(self, update):
         self.success = False
         if not isinstance(update, Update):
             update = Update(**update)
+        if self._run_middlewares(update):
+            self.success = True
+            return
         chat_id = update.message.chat.id or update.callback_query.message.chat.id
         if chat_id:
             value = self._connection.get(self._db_key.format(chat_id))
@@ -473,7 +495,4 @@ class StateDispatcher(Dispatcher):
             if dispatcher:
                 dispatcher.handle(update)
                 self.success = bool(dispatcher.success)
-        for statement in self.statements:
-            if self.success:
-                break
-            statement(update)
+        self._run_statements(update)
