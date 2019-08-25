@@ -5,15 +5,13 @@ try:
 except ImportError:
     import json
 
-from .mixins import DBMixin
 from .sender import Sender
 from .utils import ResultGetter, get_logger
-
 
 logger = get_logger()
 
 
-class Form(DBMixin):
+class Form(Sender):
 
     def __init__(
             self,
@@ -27,23 +25,19 @@ class Form(DBMixin):
             basic_auth_string=None,
             socks_proxy_string=None
     ):
-        super().__init__(connection)
-        self.queue = queue
-        self.simple_mode = simple_mode
-        self.fake_mode = fake_mode
-        self.bot_name = bot_name
-        self._sender = Sender(
+        super().__init__(
             token=token,
             connection=connection,
             queue=queue,
             proxy_url=proxy_url,
             basic_auth_string=basic_auth_string,
-            socks_proxy_string=socks_proxy_string)
+            socks_proxy_string=socks_proxy_string
+        )
+        self.simple_mode = simple_mode
+        self.fake_mode = fake_mode
+        self.bot_name = bot_name
         if not connection:
             self.simple_mode = True
-
-    def __getattr__(self, item):
-        return getattr(self._sender, item)
 
     @property
     def start_group_link(self):
@@ -63,7 +57,7 @@ class Form(DBMixin):
             return
         if self.simple_mode:
             logger.info(f'Run {func.__name__} with {kwargs}')
-            self._sender.start_task(**payload)
+            self.start_task(**payload)
         else:
             self.rdb.publish(self.queue, json.dumps(payload))
         return ResultGetter(self.rdb, correlation_id)

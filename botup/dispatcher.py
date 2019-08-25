@@ -1,4 +1,5 @@
 import threading
+import inspect
 
 try:
     import ujson as json
@@ -48,12 +49,12 @@ class Dispatcher:
         self.voice_handler = None
 
     def register_middleware(self, middleware):
-        assert callable(middleware), 'middleware is not a function type'
+        self._check_function_signature(middleware, 1)
         self.middlewares.append(middleware)
 
     def register_command_handler(self, command, handler):
         assert isinstance(command, str), 'command is not a str type'
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_command)
         if not command.startswith('/'):
             command = f'/{command}'
@@ -61,154 +62,154 @@ class Dispatcher:
 
     def register_message_handler(self, message, handler):
         assert isinstance(message, str), 'message is not a str type'
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_message)
         self.messages[message] = handler
 
     def register_callback_handler(self, callback, handler):
         assert isinstance(callback, str), 'callback is not a str type'
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_callback)
         self.callbacks[callback] = handler
 
     def register_inline_handler(self, inline_query, handler):
         assert isinstance(inline_query, str), 'inline_query is not a str type'
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_inline)
         self.inlines[inline_query] = handler
 
     def register_channel_post_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_channel_post)
         self.channel_post_handler = handler
 
     def register_edited_message_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_edited_message)
         self.edited_message_handler = handler
 
     def register_edited_channel_post_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_edited_channel_post)
         self.edited_channel_post_handler = handler
 
     def register_chosen_inline_result_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_chosen_inline_result)
         self.chosen_inline_result_handler = handler
 
     def register_shipping_query_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_shipping_query)
         self.shipping_query_handler = handler
 
     def register_pre_checkout_query_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_pre_checkout_query)
         self.pre_checkout_query_handler = handler
 
     def register_poll_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_poll)
         self.poll_handler = handler
 
     def register_document_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_document)
         self.document_handler = handler
 
     def register_animation_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_animation)
         self.animation_handler = handler
 
     def register_audio_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_audio)
         self.audio_handler = handler
 
     def register_connected_website_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_connected_website)
         self.connected_website_handler = handler
 
     def register_contact_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_contact)
         self.contact_handler = handler
 
     def register_game_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_game)
         self.game_handler = handler
 
     def register_invoice_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_invoice)
         self.invoice_handler = handler
 
     def register_left_chat_member_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_left_chat_member)
         self.left_chat_member_handler = handler
 
     def register_location_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_location)
         self.location_handler = handler
 
     def register_new_chat_members_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_new_chat_members)
         self.new_chat_members_handler = handler
 
     def register_new_chat_photo_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_new_chat_photo)
         self.new_chat_photo_handler = handler
 
     def register_new_chat_title_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_new_chat_title)
         self.new_chat_title_handler = handler
 
     def register_passport_data_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_passport_data)
         self.passport_data_handler = handler
 
     def register_photo_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_photo)
         self.photo_handler = handler
 
     def register_sticker_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_sticker)
         self.sticker_handler = handler
 
     def register_successful_payment_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_successful_payment)
         self.successful_payment_handler = handler
 
     def register_venue_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_venue)
         self.venue_handler = handler
 
     def register_video_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_video)
         self.video_handler = handler
 
     def register_video_note_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_video_note)
         self.video_note_handler = handler
 
     def register_voice_handler(self, handler):
-        assert callable(handler), 'handler is not a function type'
+        self._check_function_signature(handler, 2)
         self.statements.add(self._is_voice)
         self.voice_handler = handler
 
@@ -440,6 +441,14 @@ class Dispatcher:
     def _run_middlewares(self, update):
         return any([m(update) for m in self.middlewares])
 
+    @staticmethod
+    def _check_function_signature(function, args_count):
+        signature = inspect.getfullargspec(function)
+        count = len(signature.args)
+        if count != args_count:
+            function_string = f"{function.__name__}({', '.join(signature.args)})"
+            raise TypeError(f'{function_string} must be take {args_count} positional arguments but {count} defined')
+
     def handle(self, update):
         self.success = False
         if not isinstance(update, Update):
@@ -472,6 +481,9 @@ class StateDispatcher(Dispatcher):
 
     def __init__(self, connection, db_key='botup:{}:state'):
         super().__init__()
+        assert isinstance(db_key, str), 'db_key is not a str type'
+        if '{}' not in db_key:
+            db_key += ':{}'
         self._connection = connection
         self._db_key = db_key
         self.states = dict()

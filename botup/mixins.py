@@ -82,4 +82,4 @@ class HandlerSimpleMixin:
     def handle(self):
         if not self.user_handler:
             return
-        self.user_handler(chat_id=self.update.message.chat.id, update=self.update)
+        self.user_handler(self.update.message.chat.id, self.update)

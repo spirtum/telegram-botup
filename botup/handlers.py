@@ -20,7 +20,7 @@ class CallbackQueryHandler(HandlerPatternMixin):
 
     def handle(self):
         handler = self.get_handler(self.update.callback_query.data)
-        handler(chat_id=self.update.callback_query.message.chat.id, update=self.update) if handler else None
+        handler(self.update.callback_query.message.chat.id, self.update) if handler else None
 
 
 class ChannelPostHandler(HandlerSimpleMixin):
@@ -31,7 +31,7 @@ class ChannelPostHandler(HandlerSimpleMixin):
     def handle(self):
         if not self.user_handler:
             return
-        self.user_handler(chat_id=self.update.channel_post.chat.id, update=self.update)
+        self.user_handler(self.update.channel_post.chat.id, self.update)
 
 
 class ChosenInlineResultHandler(HandlerSimpleMixin):
@@ -42,7 +42,7 @@ class ChosenInlineResultHandler(HandlerSimpleMixin):
     def handle(self):
         if not self.user_handler:
             return
-        self.user_handler(chat_id=self.update.chosen_inline_result.from_.id, update=self.update)
+        self.user_handler(self.update.chosen_inline_result.from_.id, self.update)
 
 
 class CommandHandler(HandlerPatternMixin):
@@ -52,7 +52,7 @@ class CommandHandler(HandlerPatternMixin):
 
     def handle(self):
         handler = self.get_handler(self.update.message.text)
-        handler(chat_id=self.update.message.chat.id, update=self.update) if handler else None
+        handler(self.update.message.chat.id, self.update) if handler else None
 
 
 class ConnectedWebsiteHandler(HandlerSimpleMixin):
@@ -81,7 +81,7 @@ class EditedChannelPostHandler(HandlerSimpleMixin):
     def handle(self):
         if not self.user_handler:
             return
-        self.user_handler(chat_id=self.update.edited_channel_post.chat.id, update=self.update)
+        self.user_handler(self.update.edited_channel_post.chat.id, self.update)
 
 
 class EditedMessageHandler(HandlerSimpleMixin):
@@ -92,7 +92,7 @@ class EditedMessageHandler(HandlerSimpleMixin):
     def handle(self):
         if not self.user_handler:
             return
-        self.user_handler(chat_id=self.update.edited_message.chat.id, update=self.update)
+        self.user_handler(self.update.edited_message.chat.id, self.update)
 
 
 class GameHandler(HandlerSimpleMixin):
@@ -108,7 +108,7 @@ class InlineQueryHandler(HandlerPatternMixin):
 
     def handle(self):
         handler = self.get_handler(self.update.inline_query.query)
-        handler(chat_id=self.update.inline_query.from_.id, update=self.update) if handler else None
+        handler(self.update.inline_query.from_.id, self.update) if handler else None
 
 
 class InvoiceHandler(HandlerSimpleMixin):
@@ -136,7 +136,7 @@ class MessageHandler(HandlerPatternMixin):
 
     def handle(self):
         handler = self.get_handler(self.update.message.text)
-        handler(chat_id=self.update.message.chat.id, update=self.update) if handler else None
+        handler(self.update.message.chat.id, self.update) if handler else None
 
 
 class NewChatMembersHandler(HandlerSimpleMixin):
@@ -177,7 +177,7 @@ class PollHandler(HandlerSimpleMixin):
     def handle(self):
         if not self.user_handler:
             return
-        self.user_handler(chat_id=None, update=self.update)
+        self.user_handler(None, self.update)
 
 
 class PreCheckoutQueryHandler(HandlerSimpleMixin):
@@ -188,7 +188,7 @@ class PreCheckoutQueryHandler(HandlerSimpleMixin):
     def handle(self):
         if not self.user_handler:
             return
-        self.user_handler(chat_id=self.update.pre_checkout_query.from_.id, update=self.update)
+        self.user_handler(self.update.pre_checkout_query.from_.id, self.update)
 
 
 class ShippingQueryHandler(HandlerSimpleMixin):
@@ -199,7 +199,7 @@ class ShippingQueryHandler(HandlerSimpleMixin):
     def handle(self):
         if not self.user_handler:
             return
-        self.user_handler(chat_id=self.update.shipping_query.from_.id, update=self.update)
+        self.user_handler(self.update.shipping_query.from_.id, self.update)
 
 
 class StickerHandler(HandlerSimpleMixin):
