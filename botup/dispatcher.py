@@ -449,7 +449,7 @@ class Dispatcher:
             function_string = f"{function.__name__}({', '.join(signature.args)})"
             raise TypeError(f'{function_string} must be take {args_count} positional arguments but {count} defined')
 
-    def handle(self, update):
+    def handle(self, update, *args, **kwargs):
         self.success = False
         if not isinstance(update, Update):
             update = Update(**update)
@@ -479,13 +479,10 @@ class Dispatcher:
 
 class StateDispatcher(Dispatcher):
 
-    def __init__(self, connection, db_key='botup:{}:state'):
+    def __init__(self, state_manager, key):
         super().__init__()
-        assert isinstance(db_key, str), 'db_key is not a str type'
-        if '{}' not in db_key:
-            db_key += ':{}'
-        self._connection = connection
-        self._db_key = db_key
+        self._sm = state_manager
+        self.key = key
         self.states = dict()
 
     def register_state(self, state, dispatcher):
@@ -493,19 +490,23 @@ class StateDispatcher(Dispatcher):
         assert isinstance(dispatcher, (Dispatcher, StateDispatcher))
         self.states[state] = dispatcher
 
-    def handle(self, update):
+    def handle(self, update, *args, **kwargs):
         self.success = False
         if not isinstance(update, Update):
             update = Update(**update)
         if self._run_middlewares(update):
             self.success = True
             return
-        message = update.message or getattr(update.callback_query, 'message', None)
-        if message:
-            value = self._connection.get(self._db_key.format(message.chat.id))
-            dispatcher = self.states.get(value)
+        states = kwargs.get('states')
+        self._sm.update = update
+        if self._sm.is_valid_update:
+            if not states:
+                states = self._sm.get_all()
+            dispatcher = self.states.get(states.get(self.key))
             if dispatcher:
-                dispatcher.handle(update)
+                dispatcher.handle(update, states=states)
                 self.success = True
+                self._sm.update = None
                 return
         self._run_statements(update)
+        self._sm.update = None
