@@ -1,5 +1,4 @@
-from .dispatcher import Dispatcher, StateDispatcher
+from .dispatcher import Dispatcher, StateDispatcher, StateManager
 from .form import Form
-from .state_manager import StateManager
 
 name = "telegram-botup"
