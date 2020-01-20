@@ -24,24 +24,14 @@ def cli():
 @click.option('--fake-mode', help='Fake start without requests', is_flag=True, default=False, show_default=True)
 @click.option('--proxy-url', help='Proxy URL for requests')
 @click.option('--basic-auth-string', help='Connection string for basic auth')
-def run_sender(
-        token,
-        redis_host,
-        redis_port,
-        redis_db,
-        socks_proxy_string,
-        queue,
-        rate_limit,
-        quiet,
-        fake_mode,
-        proxy_url,
-        basic_auth_string):
+def run_sender(token, redis_host, redis_port, redis_db, socks_proxy_string, queue, rate_limit,
+               quiet, fake_mode, proxy_url, basic_auth_string):
     """Start the sender"""
     if fake_mode:
         print('Run with --fake-mode')
     if not quiet:
         setup_logging()
-    Sender.new(
+    Sender.start_new_worker(
         token=token,
         redis_host=redis_host,
         redis_port=redis_port,
@@ -50,8 +40,9 @@ def run_sender(
         rate_limit=rate_limit,
         proxy_url=proxy_url,
         basic_auth_string=basic_auth_string,
-        socks_proxy_string=socks_proxy_string
-    ).run(fake_mode)
+        socks_proxy_string=socks_proxy_string,
+        fake_mode=fake_mode
+    )
 
 
 @cli.command('set_webhook')
@@ -65,13 +56,17 @@ def set_webhook(token, url, socks_proxy_string, proxy_url, basic_auth_string):
     if not url.endswith('/'):
         url = f'{url}/'
     url += token
-    resp = Sender(
+    sender = Sender(
         token=token,
         proxy_url=proxy_url,
         basic_auth_string=basic_auth_string,
         socks_proxy_string=socks_proxy_string
-    ).set_webhook(url)
-    print(resp)
+    )
+    resp = sender.set_webhook(url)
+    if resp.is_error():
+        print(resp.description)
+    else:
+        resp.pprint()
 
 
 @cli.command('delete_webhook')
@@ -81,13 +76,17 @@ def set_webhook(token, url, socks_proxy_string, proxy_url, basic_auth_string):
 @click.option('--basic-auth-string', help='Connection string for basic auth')
 def delete_webhook(token, socks_proxy_string, proxy_url, basic_auth_string):
     """Delete webhook"""
-    resp = Sender(
+    sender = Sender(
         token=token,
         proxy_url=proxy_url,
         basic_auth_string=basic_auth_string,
         socks_proxy_string=socks_proxy_string
-    ).delete_webhook()
-    print(resp)
+    )
+    resp = sender.delete_webhook()
+    if resp.is_error():
+        print(resp.description)
+    else:
+        resp.pprint()
 
 
 @cli.command('send_message')
@@ -97,14 +96,7 @@ def delete_webhook(token, socks_proxy_string, proxy_url, basic_auth_string):
 @click.option('--socks-proxy-string', '-s', help='Connection string for use socks5 proxy server')
 @click.option('--proxy-url', help='Proxy URL for requests')
 @click.option('--basic-auth-string', help='Connection string for basic auth')
-def send_message(
-        token,
-        chat_id,
-        message,
-        socks_proxy_string,
-        proxy_url,
-        basic_auth_string
-):
+def send_message(token, chat_id, message, socks_proxy_string, proxy_url, basic_auth_string):
     """Send message"""
     sender = Sender(
         token=token,
@@ -112,4 +104,8 @@ def send_message(
         basic_auth_string=basic_auth_string,
         socks_proxy_string=socks_proxy_string
     )
-    print(sender.send_message(chat_id, message))
+    resp = sender.send_message(chat_id, message)
+    if resp.is_error():
+        print(resp.description)
+    else:
+        resp.pprint()

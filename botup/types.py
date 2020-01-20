@@ -3,6 +3,8 @@ try:
 except ImportError:
     import json
 
+import pprint
+
 
 class BaseObject:
     __slots__ = list()
@@ -27,23 +29,32 @@ class BaseObject:
     def is_error(self):
         return isinstance(self, ErrorResponse)
 
+    def pprint(self):
+        pprint.pprint(self.as_dict())
+
+    def pformat(self):
+        return pprint.pformat(self.as_dict())
+
 
 class PhotoSize(BaseObject):
-    __slots__ = ['file_id', 'width', 'height', 'file_size']
+    __slots__ = ['file_id', 'file_unique_id', 'width', 'height', 'file_size']
 
     def __init__(self, **kwargs):
         self.file_id = kwargs.get('file_id')
+        self.file_unique_id = kwargs.get('file_unique_id')
         self.width = kwargs.get('width')
         self.height = kwargs.get('height')
         self.file_size = kwargs.get('file_size')
 
 
 class ChatPhoto(BaseObject):
-    __slots__ = ['small_file_id', 'big_file_id']
+    __slots__ = ['small_file_id', 'small_file_unique_id', 'big_file_id', 'big_file_unique_id']
 
     def __init__(self, **kwargs):
         self.small_file_id = kwargs.get('small_file_id')
+        self.small_file_unique_id = kwargs.get('small_file_unique_id')
         self.big_file_id = kwargs.get('big_file_id')
+        self.big_file_unique_id = kwargs.get('big_file_unique_id')
 
 
 class Contact(BaseObject):
@@ -101,7 +112,7 @@ class InlineKeyboardButton(BaseObject):
         self.pay = kwargs.get('pay')
 
 
-class InlineKeyboardMarkup:
+class InlineKeyboardMarkup(BaseObject):
     __slots__ = ['inline_keyboard']
 
     def __init__(self, **kwargs):
@@ -140,7 +151,10 @@ class InlineKeyboardMarkup:
         self.inline_keyboard.clear()
 
     def as_dict(self):
-        return json.dumps(dict(inline_keyboard=[[b.as_dict() for b in line] for line in self.inline_keyboard]))
+        return [[b.as_dict() for b in line] for line in self.inline_keyboard]
+
+    def as_json(self):
+        return json.dumps(dict(inline_keyboard=self.as_dict()))
 
 
 class KeyboardButton(BaseObject):
@@ -152,7 +166,7 @@ class KeyboardButton(BaseObject):
         self.request_location = kwargs.get('request_location')
 
 
-class ReplyKeyboardMarkup:
+class ReplyKeyboardMarkup(BaseObject):
     __slots__ = ['keyboard', 'resize_keyboard', 'one_time_keyboard', 'selective']
 
     def __init__(self, **kwargs):
@@ -178,10 +192,13 @@ class ReplyKeyboardMarkup:
                 result[key] = [[b.as_dict() for b in line] for line in value]
                 continue
             result[key] = value
-        return json.dumps(result)
+        return result
+
+    def as_json(self):
+        return json.dumps(self.as_dict())
 
 
-class ReplyKeyboardRemove:
+class ReplyKeyboardRemove(BaseObject):
     __slots__ = ['remove_keyboard', 'selective']
 
     def __init__(self, **kwargs):
@@ -195,7 +212,10 @@ class ReplyKeyboardRemove:
             if value is None:
                 continue
             result[key] = value
-        return json.dumps(result)
+        return result
+
+    def as_json(self):
+        return json.dumps(self.as_dict())
 
 
 class Location(BaseObject):
@@ -255,11 +275,12 @@ class Venue(BaseObject):
 
 
 class Video(BaseObject):
-    __slots__ = ['file_id', 'width', 'height', 'duration', 'thumb', 'mime_type', 'file_size']
+    __slots__ = ['file_id', 'file_unique_id', 'width', 'height', 'duration', 'thumb', 'mime_type', 'file_size']
     NESTED = ['thumb', ]
 
     def __init__(self, **kwargs):
         self.file_id = kwargs.get('file_id')
+        self.file_unique_id = kwargs.get('file_unique_id')
         self.width = kwargs.get('width')
         self.height = kwargs.get('height')
         self.duration = kwargs.get('duration')
@@ -269,11 +290,12 @@ class Video(BaseObject):
 
 
 class VideoNote(BaseObject):
-    __slots__ = ['file_id', 'length', 'duration', 'thumb', 'file_size']
+    __slots__ = ['file_id', 'file_unique_id', 'length', 'duration', 'thumb', 'file_size']
     NESTED = ['thumb', ]
 
     def __init__(self, **kwargs):
         self.file_id = kwargs.get('file_id')
+        self.file_unique_id = kwargs.get('file_unique_id')
         self.length = kwargs.get('length')
         self.duration = kwargs.get('duration')
         self.thumb = PhotoSize(**kwargs['thumb']) if 'thumb' in kwargs else None
@@ -281,10 +303,11 @@ class VideoNote(BaseObject):
 
 
 class Voice(BaseObject):
-    __slots__ = ['file_id', 'duration', 'mime_type', 'file_size']
+    __slots__ = ['file_id', 'file_unique_id', 'duration', 'mime_type', 'file_size']
 
     def __init__(self, **kwargs):
         self.file_id = kwargs.get('file_id')
+        self.file_unique_id = kwargs.get('file_unique_id')
         self.duration = kwargs.get('duration')
         self.mime_type = kwargs.get('mime_type')
         self.file_size = kwargs.get('file_size')
@@ -305,11 +328,13 @@ class WebhookInfo(BaseObject):
 
 
 class Animation(BaseObject):
-    __slots__ = ['file_id', 'width', 'height', 'duration', 'thumb', 'file_name', 'mime_type', 'file_size']
+    __slots__ = ['file_id', 'file_unique_id', 'width', 'height', 'duration',
+                 'thumb', 'file_name', 'mime_type', 'file_size']
     NESTED = ['thumb', ]
 
     def __init__(self, **kwargs):
         self.file_id = kwargs.get('file_id')
+        self.file_unique_id = kwargs.get('file_unique_id')
         self.width = kwargs.get('width')
         self.height = kwargs.get('height')
         self.duration = kwargs.get('duration')
@@ -320,11 +345,12 @@ class Animation(BaseObject):
 
 
 class Audio(BaseObject):
-    __slots__ = ['file_id', 'duration', 'performer', 'title', 'mime_type', 'file_size', 'thumb']
+    __slots__ = ['file_id', 'file_unique_id', 'duration', 'performer', 'title', 'mime_type', 'file_size', 'thumb']
     NESTED = ['thumb', ]
 
     def __init__(self, **kwargs):
         self.file_id = kwargs.get('file_id')
+        self.file_unique_id = kwargs.get('file_unique_id')
         self.duration = kwargs.get('duration')
         self.performer = kwargs.get('performer')
         self.title = kwargs.get('title')
@@ -346,15 +372,16 @@ class User(BaseObject):
 
 
 class ChatMember(BaseObject):
-    __slots__ = ['user', 'status', 'until_date', 'can_be_edited', 'can_change_info', 'can_post_messages',
-                 'can_edit_messages', 'can_delete_messages', 'can_invite_users', 'can_restrict_members',
-                 'can_pin_messages', 'can_promote_members', 'is_member', 'can_send_messages', 'can_send_media_messages',
-                 'can_send_polls', 'can_send_other_messages', 'can_add_web_page_previews']
+    __slots__ = ['user', 'status', 'custom_title', 'until_date', 'can_be_edited', 'can_change_info',
+                 'can_post_messages', 'can_edit_messages', 'can_delete_messages', 'can_invite_users',
+                 'can_restrict_members', 'can_pin_messages', 'can_promote_members', 'is_member', 'can_send_messages',
+                 'can_send_media_messages', 'can_send_polls', 'can_send_other_messages', 'can_add_web_page_previews']
     NESTED = ['user', ]
 
     def __init__(self, **kwargs):
         self.user = User(**kwargs['user']) if 'user' in kwargs else None
         self.status = kwargs.get('status')
+        self.custom_title = kwargs.get('custom_title')
         self.until_date = kwargs.get('until_date')
         self.can_be_edited = kwargs.get('can_be_edited')
         self.can_change_info = kwargs.get('can_change_info')
@@ -374,11 +401,12 @@ class ChatMember(BaseObject):
 
 
 class Document(BaseObject):
-    __slots__ = ['file_id', 'thumb', 'file_name', 'mime_type', 'file_size']
+    __slots__ = ['file_id', 'file_unique_id', 'thumb', 'file_name', 'mime_type', 'file_size']
     NESTED = ['thumb', ]
 
     def __init__(self, **kwargs):
         self.file_id = kwargs.get('file_id')
+        self.file_unique_id = kwargs.get('file_unique_id')
         self.thumb = PhotoSize(**kwargs['thumb']) if 'thumb' in kwargs else None
         self.file_name = kwargs.get('file_name')
         self.mime_type = kwargs.get('mime_type')
@@ -398,10 +426,11 @@ class MessageEntity(BaseObject):
 
 
 class File(BaseObject):
-    __slots__ = ['file_id', 'file_size', 'file_path']
+    __slots__ = ['file_id', 'file_unique_id', 'file_size', 'file_path']
 
     def __init__(self, **kwargs):
         self.file_id = kwargs.get('file_id')
+        self.file_unique_id = kwargs.get('file_unique_id')
         self.file_size = kwargs.get('file_size')
         self.file_path = kwargs.get('file_path')
 
@@ -984,10 +1013,11 @@ class EncryptedCredentials(BaseObject):
 
 
 class PassportFile(BaseObject):
-    __slots__ = ['file_id', 'file_size', 'file_date']
+    __slots__ = ['file_id', 'file_unique_id', 'file_size', 'file_date']
 
     def __init__(self, **kwargs):
         self.file_id = kwargs.get('file_id')
+        self.file_unique_id = kwargs.get('file_unique_id')
         self.file_size = kwargs.get('file_size')
         self.file_date = kwargs.get('file_date')
 
@@ -1122,12 +1152,13 @@ class MaskPosition(BaseObject):
 
 
 class Sticker(BaseObject):
-    __slots__ = ['file_id', 'width', 'height', 'is_animated', 'thumb', 'emoji',
+    __slots__ = ['file_id', 'file_unique_id', 'width', 'height', 'is_animated', 'thumb', 'emoji',
                  'set_name', 'mask_position', 'file_size']
     NESTED = ['thumb', 'mask_position']
 
     def __init__(self, **kwargs):
         self.file_id = kwargs.get('file_id')
+        self.file_unique_id = kwargs.get('file_unique_id')
         self.width = kwargs.get('width')
         self.height = kwargs.get('height')
         self.is_animated = kwargs.get('is_animated')
@@ -1167,8 +1198,8 @@ class ChatPermissions(BaseObject):
 
 
 class Chat(BaseObject):
-    __slots__ = ['id', 'type', 'title', 'username', 'first_name', 'last_name', 'photo', 'description',
-                 'invite_link', 'pinned_message', 'permissions', 'sticker_set_name', 'can_set_sticker_set']
+    __slots__ = ['id', 'type', 'title', 'username', 'first_name', 'last_name', 'photo', 'description', 'invite_link',
+                 'pinned_message', 'permissions', 'slow_mode_delay', 'sticker_set_name', 'can_set_sticker_set']
     NESTED = ['photo', 'pinned_message', 'permissions']
 
     def __init__(self, **kwargs):
@@ -1183,6 +1214,7 @@ class Chat(BaseObject):
         self.invite_link = kwargs.get('invite_link')
         self.pinned_message = Message(**kwargs['pinned_message']) if 'pinned_message' in kwargs else None
         self.permissions = ChatPermissions(**kwargs['permissions']) if 'permissions' in kwargs else None
+        self.slow_mode_delay = kwargs.get('slow_mode_delay')
         self.sticker_set_name = kwargs.get('sticker_set_name')
         self.can_set_sticker_set = kwargs.get('can_set_sticker_set')
 
@@ -1280,7 +1312,7 @@ class Update(BaseObject):
         self.edited_message = Message(**kwargs['edited_message']) if 'edited_message' in kwargs else None
         self.channel_post = Message(**kwargs['channel_post']) if 'channel_post' in kwargs else None
         self.edited_channel_post = Message(
-            **kwargs['edited__channel_post']) if 'edited__channel_post' in kwargs else None
+            **kwargs['edited_channel_post']) if 'edited_channel_post' in kwargs else None
         self.inline_query = InlineQuery(**kwargs['inline_query']) if 'inline_query' in kwargs else None
         self.chosen_inline_result = ChosenInlineResult(
             **kwargs['chosen_inline_result']) if 'chosen_inline_result' in kwargs else None

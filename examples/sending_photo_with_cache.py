@@ -1,4 +1,6 @@
-from botup import Dispatcher, Form
+import re
+
+from botup import Dispatcher, Sender
 from botup.types import InputFile
 from flask import Flask, request
 
@@ -8,12 +10,12 @@ from config import redis_connection as rdb
 
 app = Flask(__name__)
 dispatcher = Dispatcher()
-form = Form(token=TOKEN, connection=rdb)
+sender = Sender(token=TOKEN, connection=rdb)
 
 
 def start_handler(chat_id, update):
-    form.push(
-        func=form.send_message,
+    sender.push(
+        func=sender.send_message,
         chat_id=chat_id,
         text='Hi!\nTo get image press to /image'
     )
@@ -24,15 +26,15 @@ def send_image(chat_id, update):
     cache = rdb.get(f'cache:{path}')
     if cache:
         input_file = InputFile(file_id=cache)
-        form.push(
-            func=form.send_photo,
+        sender.push(
+            func=sender.send_photo,
             chat_id=chat_id,
             photo=input_file.as_dict()
         )
     else:
         input_file = InputFile(path=path)
-        resp = form.push(
-            func=form.send_photo,
+        resp = sender.push(
+            func=sender.send_photo,
             chat_id=chat_id,
             photo=input_file.as_dict()
         ).wait()
@@ -40,7 +42,7 @@ def send_image(chat_id, update):
 
 
 dispatcher.register_command_handler('/image', send_image)
-dispatcher.register_command_handler('*', start_handler)
+dispatcher.register_command_handler(re.compile('.*'), start_handler)
 
 
 @app.route(f'/{TOKEN}', methods=['POST'])

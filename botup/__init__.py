@@ -1,4 +1,4 @@
 from .dispatcher import Dispatcher, StateDispatcher, StateManager
-from .form import Form
+from .sender import Sender
 
 name = "telegram-botup"

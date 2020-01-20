@@ -1,6 +1,8 @@
 import os.path
 import threading
 import time
+import uuid
+import traceback
 
 import requests
 
@@ -10,30 +12,25 @@ except ImportError:
     import json
 
 from .mixins import DBMixin
-from .utils import error_response, get_logger
-
+from .types import ErrorResponse
+from .utils import error_response, get_logger, parse_response, ResultGetter
+from .exceptions import NoTransportException
 
 logger = get_logger()
 
 
 class Sender(DBMixin):
+    API_TIMEOUT = 5
 
-    def __init__(
-            self,
-            token,
-            connection=None,
-            queue='botup-sender-queue',
-            rate_limit=0.5,
-            proxy_url=None,
-            basic_auth_string=None,
-            socks_proxy_string=None
-    ):
+    def __init__(self, token, connection=None, queue='botup-sender-queue', rate_limit=0.5,
+                 proxy_url=None, basic_auth_string=None, socks_proxy_string=None):
         super().__init__(connection)
         self.token = token
-        self.queue = queue
+        self.auto_parse_type = True
+        self._queue = queue
         self._rate_limit = rate_limit
         self._url = f'https://api.telegram.org/bot{self.token}/'
-        self._req_kwargs = dict()
+        self._req_kwargs = dict(timeout=self.API_TIMEOUT)
         self._set_proxy_url(proxy_url) if proxy_url else None
         self._set_basic_auth(basic_auth_string) if basic_auth_string else None
         self._set_socks_proxy(socks_proxy_string) if socks_proxy_string else None
@@ -66,6 +63,7 @@ class Sender(DBMixin):
             self.unban_chat_member.__name__: self.unban_chat_member,
             self.restrict_chat_member.__name__: self.restrict_chat_member,
             self.promote_chat_member.__name__: self.promote_chat_member,
+            self.set_chat_administrator_custom_title.__name__: self.set_chat_administrator_custom_title,
             self.set_chat_permissions.__name__: self.set_chat_permissions,
             self.export_chat_invite_link.__name__: self.export_chat_invite_link,
             self.set_chat_photo.__name__: self.set_chat_photo,
@@ -106,21 +104,11 @@ class Sender(DBMixin):
         }
 
     @classmethod
-    def new(
-            cls,
-            token,
-            redis_host,
-            redis_port,
-            redis_db,
-            queue,
-            rate_limit,
-            proxy_url,
-            basic_auth_string,
-            socks_proxy_string
-    ):
+    def start_new_worker(cls, token, redis_host, redis_port, redis_db, queue, rate_limit,
+                         proxy_url, basic_auth_string, socks_proxy_string, fake_mode):
         import redis
         rdb = redis.StrictRedis(host=redis_host, port=redis_port, decode_responses=True, encoding='utf-8', db=redis_db)
-        return cls(
+        instance = cls(
             token=token,
             connection=rdb,
             queue=queue,
@@ -129,6 +117,8 @@ class Sender(DBMixin):
             basic_auth_string=basic_auth_string,
             socks_proxy_string=socks_proxy_string
         )
+        instance.auto_parse_type = False
+        instance._run_worker(fake_mode)
 
     def _set_proxy_url(self, proxy_url):
         if not proxy_url.startswith('https://') and not proxy_url.startswith('http://'):
@@ -158,7 +148,7 @@ class Sender(DBMixin):
         time_diff = time.time() - float(last_time)
         return 0 if time_diff > self._rate_limit else self._rate_limit - time_diff
 
-    def start_task(self, **payload):
+    def _start_task(self, **payload):
         func = payload['func']
         kwargs = payload['kwargs']
         result = self.functions[func](**kwargs)
@@ -171,24 +161,69 @@ class Sender(DBMixin):
                 return
             self._set_form_message_id(kwargs['chat_id'], data['result']['message_id'])
 
-    def run(self, fake_mode=False):
+    def _run_worker(self, fake_mode=False):
         logger.info('Sender-worker started')
-        subscriber = self.rdb.pubsub()
-        subscriber.subscribe([self.queue])
+        subscriber = self.connection.pubsub()
+        subscriber.subscribe([self._queue])
         for message in subscriber.listen():
             if message['type'] == 'subscribe':
                 continue
             payload = json.loads(message['data'])
             if payload['func'] not in self.functions:
                 continue
-            logger.info('Run {} with {}'.format(payload['func'], payload['kwargs']))
+            logger.info('Call {} with {}'.format(payload['func'], payload['kwargs']))
             if fake_mode:
                 continue
-            timer = threading.Timer(self._delay(**payload['kwargs']), self.start_task, kwargs=payload)
+            timer = threading.Timer(self._delay(**payload['kwargs']), self._start_task, kwargs=payload)
             timer.start()
             timer.join()
             chat_id = payload['kwargs'].get('chat_id')
             self._set_last_time(chat_id) if chat_id else None
+
+    def _error_response(self, text):
+        if self.auto_parse_type:
+            return ErrorResponse(ok=False, error_code=502, description=text)
+        return error_response(text)
+
+    def _request(self, *args, **kwargs):
+        try:
+            resp = requests.post(*args, **kwargs)
+        except requests.exceptions.ConnectionError:
+            return self._error_response(f'API connection error. {traceback.format_exc()}')
+        except requests.exceptions.Timeout:
+            return self._error_response(f'API timeout error. {traceback.format_exc()}')
+        return parse_response(resp.text) if self.auto_parse_type else resp.text
+
+    def push(self, func, save_id=False, **kwargs):
+        if not self.connection:
+            raise NoTransportException('Sender is not connected to transport db')
+        correlation_id = str(uuid.uuid4())
+        payload = dict(
+            func=func.__name__,
+            kwargs=kwargs,
+            correlation_id=correlation_id,
+            save_id=save_id
+        )
+        self.connection.publish(self._queue, json.dumps(payload))
+        return ResultGetter(self.connection, correlation_id)
+
+    def clear(self, chat_id):
+        if not self.connection:
+            raise NoTransportException('Sender is not connected to transport db')
+        message_id = self.get_form_message_id(chat_id)
+        if message_id:
+            self.push(self.delete_message, chat_id=chat_id, message_id=message_id)
+            self._delete_form_message_id(chat_id)
+            return True
+
+    def quick_callback_answer(self, update):
+        if not self.connection:
+            raise NoTransportException('Sender is not connected to transport db')
+        assert update.callback_query, 'Update do not have a CallbackQuery'
+        self.push(
+            func=self.answer_callback_query,
+            callback_query_id=update.callback_query.id
+        )
 
     def get_updates(self, offset=None, limit=None, timeout=None, allowed_updates=None):
         kwargs = dict(
@@ -197,8 +232,7 @@ class Sender(DBMixin):
             timeout=timeout,
             allowed_updates=allowed_updates
         )
-        resp = requests.post(self._url + 'getUpdates', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'getUpdates', data=kwargs, **self._req_kwargs)
 
     def set_webhook(self, url, certificate=None, max_connections=None, allowed_updates=None):
         kwargs = dict(
@@ -211,43 +245,37 @@ class Sender(DBMixin):
         if certificate:
             path = certificate.get('path')
             if not path:
-                return error_response('Field path in certificate not found')
+                return self._error_response('Field path in certificate not found')
             if not os.path.isfile(path):
-                return error_response('File not found')
+                return self._error_response('File not found')
             files_kwargs['certificate'] = open(path, 'rb')
-        resp = requests.post(self._url + 'setWebhook', data=kwargs, files=files_kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'setWebhook', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
     def delete_webhook(self):
-        resp = requests.post(self._url + 'deleteWebhook', **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'deleteWebhook', **self._req_kwargs)
 
     def get_webhook_info(self):
-        resp = requests.post(self._url + 'getWebhookInfo', **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'getWebhookInfo', **self._req_kwargs)
 
     def get_me(self):
-        resp = requests.post(self._url + 'getMe', **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'getMe', **self._req_kwargs)
 
     def send_message(self, chat_id, text, parse_mode=None, disable_web_page_preview=None, disable_notification=None,
                      reply_to_message_id=None, reply_markup=None):
-        resp = requests.post(url=self._url + 'sendMessage', data=dict(chat_id=chat_id,
+        return self._request(url=self._url + 'sendMessage', data=dict(chat_id=chat_id,
                                                                       text=text,
                                                                       parse_mode=parse_mode,
                                                                       disable_web_page_preview=disable_web_page_preview,
                                                                       disable_notification=disable_notification,
                                                                       reply_to_message_id=reply_to_message_id,
                                                                       reply_markup=reply_markup), **self._req_kwargs)
-        return resp.text
 
     def forward_message(self, chat_id, from_chat_id, message_id, disable_notification=None):
-        resp = requests.post(self._url + 'forwardMessage', data=dict(chat_id=chat_id,
+        return self._request(self._url + 'forwardMessage', data=dict(chat_id=chat_id,
                                                                      from_chat_id=from_chat_id,
                                                                      message_id=message_id,
                                                                      disable_notification=disable_notification),
                              **self._req_kwargs)
-        return resp.text
 
     def send_photo(self, chat_id, photo, caption=None, parse_mode=None, disable_notification=None,
                    reply_to_message_id=None, reply_markup=None):
@@ -264,12 +292,11 @@ class Sender(DBMixin):
             kwargs['photo'] = url
         elif path:
             if not os.path.isfile(path):
-                return error_response('File not found')
+                return self._error_response('File not found')
             files_kwargs['photo'] = open(path, 'rb')
         else:
-            return error_response('Location not found')
-        resp = requests.post(self._url + 'sendPhoto', data=kwargs, files=files_kwargs, **self._req_kwargs)
-        return resp.text
+            return self._error_response('Location not found')
+        return self._request(self._url + 'sendPhoto', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
     def send_audio(self, chat_id, audio, caption=None, parse_mode=None, duration=None,
                    performer=None, title=None, thumb=None, disable_notification=None, reply_to_message_id=None,
@@ -283,7 +310,7 @@ class Sender(DBMixin):
         path = audio.get('path')
         if thumb:
             if not os.path.isfile(thumb):
-                return error_response('Thumb file not found')
+                return self._error_response('Thumb file not found')
             files_kwargs['thumb'] = open(thumb, 'rb')
         if file_id:
             kwargs['audio'] = file_id
@@ -291,12 +318,11 @@ class Sender(DBMixin):
             kwargs['audio'] = url
         elif path:
             if not os.path.isfile(path):
-                return error_response('File not found')
+                return self._error_response('File not found')
             files_kwargs['audio'] = open(path, 'rb')
         else:
-            return error_response('Location not found')
-        resp = requests.post(self._url + 'sendAudio', data=kwargs, files=files_kwargs, **self._req_kwargs)
-        return resp.text
+            return self._error_response('Location not found')
+        return self._request(self._url + 'sendAudio', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
     def send_document(self, chat_id, document, thumb=None, caption=None, parse_mode=None,
                       disable_notification=None, reply_to_message_id=None, reply_markup=None):
@@ -309,7 +335,7 @@ class Sender(DBMixin):
         path = document.get('path')
         if thumb:
             if not os.path.isfile(thumb):
-                return error_response('Thumb file not found')
+                return self._error_response('Thumb file not found')
             files_kwargs['thumb'] = open(thumb, 'rb')
         if file_id:
             kwargs['document'] = file_id
@@ -317,12 +343,11 @@ class Sender(DBMixin):
             kwargs['document'] = url
         elif path:
             if not os.path.isfile(path):
-                return error_response('File not found')
+                return self._error_response('File not found')
             files_kwargs['document'] = open(path, 'rb')
         else:
-            return error_response('Location not found')
-        resp = requests.post(self._url + 'sendDocument', data=kwargs, files=files_kwargs, **self._req_kwargs)
-        return resp.text
+            return self._error_response('Location not found')
+        return self._request(self._url + 'sendDocument', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
     def send_video(self, chat_id, video, duration=None, width=None, height=None,
                    thumb=None, caption=None, parse_mode=None, supports_streaming=None, disable_notification=None,
@@ -337,7 +362,7 @@ class Sender(DBMixin):
         path = video.get('path')
         if thumb:
             if not os.path.isfile(thumb):
-                return error_response('Thumb file not found')
+                return self._error_response('Thumb file not found')
             files_kwargs['thumb'] = open(thumb, 'rb')
         if file_id:
             kwargs['video'] = file_id
@@ -345,12 +370,11 @@ class Sender(DBMixin):
             kwargs['video'] = url
         elif path:
             if not os.path.isfile(path):
-                return error_response('File not found')
+                return self._error_response('File not found')
             files_kwargs['video'] = open(path, 'rb')
         else:
-            return error_response('Location not found')
-        resp = requests.post(self._url + 'sendVideo', data=kwargs, files=files_kwargs, **self._req_kwargs)
-        return resp.text
+            return self._error_response('Location not found')
+        return self._request(self._url + 'sendVideo', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
     def send_animation(self, chat_id, animation, duration=None, width=None, height=None,
                        thumb=None, caption=None, parse_mode=None, disable_notification=None, reply_to_message_id=None,
@@ -365,7 +389,7 @@ class Sender(DBMixin):
         path = animation.get('path')
         if thumb:
             if not os.path.isfile(thumb):
-                return error_response('Thumb file not found')
+                return self._error_response('Thumb file not found')
             files_kwargs['thumb'] = open(thumb, 'rb')
         if file_id:
             kwargs['animation'] = file_id
@@ -373,12 +397,11 @@ class Sender(DBMixin):
             kwargs['animation'] = url
         elif path:
             if not os.path.isfile(path):
-                return error_response('File not found')
+                return self._error_response('File not found')
             files_kwargs['animation'] = open(path, 'rb')
         else:
-            return error_response('Location not found')
-        resp = requests.post(self._url + 'sendAnimation', data=kwargs, files=files_kwargs, **self._req_kwargs)
-        return resp.text
+            return self._error_response('Location not found')
+        return self._request(self._url + 'sendAnimation', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
     def send_voice(self, chat_id, voice, caption=None, parse_mode=None, duration=None,
                    disable_notification=None, reply_to_message_id=None, reply_markup=None):
@@ -395,12 +418,11 @@ class Sender(DBMixin):
             kwargs['voice'] = url
         elif path:
             if not os.path.isfile(path):
-                return error_response('File not found')
+                return self._error_response('File not found')
             files_kwargs['voice'] = open(path, 'rb')
         else:
-            return error_response('Location not found')
-        resp = requests.post(self._url + 'sendVoice', data=kwargs, files=files_kwargs, **self._req_kwargs)
-        return resp.text
+            return self._error_response('Location not found')
+        return self._request(self._url + 'sendVoice', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
     def send_video_note(self, chat_id, video_note, duration=None, length=None, thumb=None,
                         disable_notification=None, reply_to_message_id=None, reply_markup=None):
@@ -412,7 +434,7 @@ class Sender(DBMixin):
         path = video_note.get('path')
         if thumb:
             if not os.path.isfile(thumb):
-                return error_response('Thumb file not found')
+                return self._error_response('Thumb file not found')
             files_kwargs['thumb'] = open(thumb, 'rb')
         if file_id:
             kwargs['video_note'] = file_id
@@ -420,12 +442,11 @@ class Sender(DBMixin):
             kwargs['video_note'] = url
         elif path:
             if not os.path.isfile(path):
-                return error_response('File not found')
+                return self._error_response('File not found')
             files_kwargs['video_note'] = open(path, 'rb')
         else:
-            return error_response('Location not found')
-        resp = requests.post(self._url + 'sendVideoNote', data=kwargs, files=files_kwargs, **self._req_kwargs)
-        return resp.text
+            return self._error_response('Location not found')
+        return self._request(self._url + 'sendVideoNote', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
     def send_media_group(self, chat_id, media, disable_notification=None, reply_to_message_id=None):
         kwargs = dict(chat_id=chat_id, disable_notification=disable_notification,
@@ -440,29 +461,25 @@ class Sender(DBMixin):
                 files_kwargs[path] = open(path, 'rb')
             kwargs['media'].append(m)
         kwargs['media'] = json.dumps(kwargs['media'])
-        resp = requests.post(self._url + 'sendMediaGroup', data=kwargs, files=files_kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'sendMediaGroup', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
     def send_location(self, chat_id, latitude, longitude, live_period=None, disable_notification=None,
                       reply_to_message_id=None, reply_markup=None):
         kwargs = dict(chat_id=chat_id, latitude=latitude, longitude=longitude, live_period=live_period,
                       disable_notification=disable_notification, reply_to_message_id=reply_to_message_id,
                       reply_markup=reply_markup)
-        resp = requests.post(self._url + 'sendLocation', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'sendLocation', data=kwargs, **self._req_kwargs)
 
     def edit_message_live_location(self, latitude, longitude, chat_id=None, message_id=None, inline_message_id=None,
                                    reply_markup=None):
         kwargs = dict(chat_id=chat_id, latitude=latitude, longitude=longitude, message_id=message_id,
                       inline_message_id=inline_message_id, reply_markup=reply_markup)
-        resp = requests.post(self._url + 'editMessageLiveLocation', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'editMessageLiveLocation', data=kwargs, **self._req_kwargs)
 
     def stop_message_live_location(self, chat_id=None, message_id=None, inline_message_id=None, reply_markup=None):
         kwargs = dict(chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id,
                       reply_markup=reply_markup)
-        resp = requests.post(self._url + 'stopMessageLiveLocation', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'stopMessageLiveLocation', data=kwargs, **self._req_kwargs)
 
     def send_venue(self, chat_id, latitude, longitude, title, address, foursquare_id=None, foursquare_type=None,
                    disable_notification=None, reply_to_message_id=None, reply_markup=None):
@@ -470,8 +487,7 @@ class Sender(DBMixin):
                       foursquare_id=foursquare_id, foursquare_type=foursquare_type,
                       disable_notification=disable_notification,
                       reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
-        resp = requests.post(self._url + 'sendVenue', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'sendVenue', data=kwargs, **self._req_kwargs)
 
     def send_contact(self, chat_id, phone_number, first_name, last_name=None, vcard=None, disable_notification=None,
                      reply_to_message_id=None, reply_markup=None):
@@ -479,38 +495,33 @@ class Sender(DBMixin):
                       vcard=vcard,
                       disable_notification=disable_notification, reply_to_message_id=reply_to_message_id,
                       reply_markup=reply_markup)
-        resp = requests.post(self._url + 'sendContact', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'sendContact', data=kwargs, **self._req_kwargs)
 
     def send_poll(self, chat_id, question, options, disable_notification=None, reply_to_message_id=None,
                   reply_markup=None):
+        if isinstance(options, list):
+            options = json.dumps(options)
         kwargs = dict(chat_id=chat_id, question=question, options=options, disable_notification=disable_notification,
                       reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
-        resp = requests.post(self._url + 'sendPoll', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'sendPoll', data=kwargs, **self._req_kwargs)
 
     def send_chat_action(self, chat_id, action):
-        resp = requests.post(self._url + 'sendChatAction', data=dict(chat_id=chat_id, action=action), auth=self.auth)
-        return resp.text
+        return self._request(self._url + 'sendChatAction', data=dict(chat_id=chat_id, action=action), **self._req_kwargs)
 
     def get_user_profile_photos(self, user_id, offset=None, limit=None):
-        resp = requests.post(self._url + 'getUserProfilePhotos', data=dict(
+        return self._request(self._url + 'getUserProfilePhotos', data=dict(
             user_id=user_id, offset=offset, limit=limit), **self._req_kwargs)
-        return resp.text
 
     def get_file(self, file_id):
-        resp = requests.post(self._url + 'getFile', data=dict(file_id=file_id), **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'getFile', data=dict(file_id=file_id), **self._req_kwargs)
 
     def kick_chat_member(self, chat_id, user_id, until_date=None):
-        resp = requests.post(self._url + 'kickChatMember', data=dict(
+        return self._request(self._url + 'kickChatMember', data=dict(
             chat_id=chat_id, user_id=user_id, until_date=until_date), **self._req_kwargs)
-        return resp.text
 
     def unban_chat_member(self, chat_id, user_id):
-        resp = requests.post(self._url + 'unbanChatMember', data=dict(chat_id=chat_id, user_id=user_id),
+        return self._request(self._url + 'unbanChatMember', data=dict(chat_id=chat_id, user_id=user_id),
                              **self._req_kwargs)
-        return resp.text
 
     def restrict_chat_member(self, chat_id, user_id, permissions, until_date=None):
         kwargs = dict(
@@ -519,8 +530,7 @@ class Sender(DBMixin):
             permissions=permissions,
             until_date=until_date
         )
-        resp = requests.post(self._url + 'restrictChatMember', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'restrictChatMember', data=kwargs, **self._req_kwargs)
 
     def promote_chat_member(self, chat_id, user_id, can_change_info=None, can_post_messages=None,
                             can_edit_messages=None,
@@ -532,20 +542,21 @@ class Sender(DBMixin):
                       can_invite_users=can_invite_users,
                       can_restrict_members=can_restrict_members, can_pin_messages=can_pin_messages,
                       can_promote_members=can_promote_members)
-        resp = requests.post(self._url + 'promoteChatMember', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'promoteChatMember', data=kwargs, **self._req_kwargs)
+
+    def set_chat_administrator_custom_title(self, chat_id, user_id, custom_title):
+        kwargs = dict(chat_id=chat_id, user_id=user_id, custom_title=custom_title)
+        return self._request(self._url + 'setChatAdministratorCustomTitle', data=kwargs, **self._req_kwargs)
 
     def set_chat_permissions(self, chat_id, permissions):
         kwargs = dict(
             chat_id=chat_id,
             permissions=permissions
         )
-        resp = requests.post(self._url + 'setChatPermissions', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'setChatPermissions', data=kwargs, **self._req_kwargs)
 
     def export_chat_invite_link(self, chat_id):
-        resp = requests.post(self._url + 'exportChatInviteLink', data=dict(chat_id=chat_id), **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'exportChatInviteLink', data=dict(chat_id=chat_id), **self._req_kwargs)
 
     def set_chat_photo(self, chat_id, photo):
         kwargs = dict(chat_id=chat_id)
@@ -559,110 +570,90 @@ class Sender(DBMixin):
             kwargs['photo'] = url
         elif path:
             if not os.path.isfile(path):
-                return error_response('File not found')
+                return self._error_response('File not found')
             files_kwargs['photo'] = open(path, 'rb')
         else:
-            return error_response('Location not found')
-        resp = requests.post(self._url + 'setChatPhoto', data=kwargs, files=files_kwargs, **self._req_kwargs)
-        return resp.text
+            return self._error_response('Location not found')
+        return self._request(self._url + 'setChatPhoto', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
     def delete_chat_photo(self, chat_id):
-        resp = requests.post(self._url + 'deleteChatPhoto', data=dict(chat_id=chat_id), **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'deleteChatPhoto', data=dict(chat_id=chat_id), **self._req_kwargs)
 
     def set_chat_title(self, chat_id, title):
-        resp = requests.post(self._url + 'setChatTitle', data=dict(chat_id=chat_id, title=title), **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'setChatTitle', data=dict(chat_id=chat_id, title=title), **self._req_kwargs)
 
     def set_chat_description(self, chat_id, description=''):
-        resp = requests.post(self._url + 'setChatDescription', data=dict(chat_id=chat_id, description=description),
+        return self._request(self._url + 'setChatDescription', data=dict(chat_id=chat_id, description=description),
                              **self._req_kwargs)
-        return resp.text
 
     def pin_chat_message(self, chat_id, message_id, disable_notification=None):
-        resp = requests.post(self._url + 'pinChatMessage', data=dict(
+        return self._request(self._url + 'pinChatMessage', data=dict(
             chat_id=chat_id, message_id=message_id, disable_notification=disable_notification
         ), **self._req_kwargs)
-        return resp.text
 
     def unpin_chat_message(self, chat_id):
-        resp = requests.post(self._url + 'unpinChatMessage', data=dict(chat_id=chat_id), **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'unpinChatMessage', data=dict(chat_id=chat_id), **self._req_kwargs)
 
     def leave_chat(self, chat_id):
-        resp = requests.post(self._url + 'leaveChat', data=dict(chat_id=chat_id), **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'leaveChat', data=dict(chat_id=chat_id), **self._req_kwargs)
 
     def get_chat(self, chat_id):
-        resp = requests.post(self._url + 'getChat', data=dict(chat_id=chat_id), **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'getChat', data=dict(chat_id=chat_id), **self._req_kwargs)
 
     def get_chat_administrators(self, chat_id):
-        resp = requests.post(self._url + 'getChatAdministrators', data=dict(chat_id=chat_id), **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'getChatAdministrators', data=dict(chat_id=chat_id), **self._req_kwargs)
 
     def get_chat_members_count(self, chat_id):
-        resp = requests.post(self._url + 'getChatMembersCount', data=dict(chat_id=chat_id), **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'getChatMembersCount', data=dict(chat_id=chat_id), **self._req_kwargs)
 
     def get_chat_member(self, chat_id, user_id):
-        resp = requests.post(self._url + 'getChatMember', data=dict(chat_id=chat_id, user_id=user_id),
+        return self._request(self._url + 'getChatMember', data=dict(chat_id=chat_id, user_id=user_id),
                              **self._req_kwargs)
-        return resp.text
 
     def set_chat_sticker_set(self, chat_id, sticker_set_name):
-        resp = requests.post(self._url + 'setChatStickerSet',
+        return self._request(self._url + 'setChatStickerSet',
                              data=dict(chat_id=chat_id, sticker_set_name=sticker_set_name), **self._req_kwargs)
-        return resp.text
 
     def delete_chat_sticker_set(self, chat_id):
-        resp = requests.post(self._url + 'deleteChatStickerSet', data=dict(chat_id=chat_id), **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'deleteChatStickerSet', data=dict(chat_id=chat_id), **self._req_kwargs)
 
     def answer_callback_query(self, callback_query_id, text=None, show_alert=None, url=None, cache_time=None):
         kwargs = dict(callback_query_id=callback_query_id, text=text, show_alert=show_alert, url=url,
                       cache_time=cache_time)
-        resp = requests.post(self._url + 'answerCallbackQuery', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'answerCallbackQuery', data=kwargs, **self._req_kwargs)
 
     def edit_message_text(self, text, chat_id=None, message_id=None, inline_message_id=None,
                           parse_mode=None, disable_web_page_preview=None, reply_markup=None):
         kwargs = dict(text=text, chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id,
                       parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview,
                       reply_markup=reply_markup)
-        resp = requests.post(self._url + 'editMessageText', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'editMessageText', data=kwargs, **self._req_kwargs)
 
     def edit_message_caption(self, chat_id=None, message_id=None, inline_message_id=None, caption=None,
                              parse_mode=None, reply_markup=None):
         kwargs = dict(chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id, caption=caption,
                       parse_mode=parse_mode, reply_markup=reply_markup)
-        resp = requests.post(self._url + 'editMessageCaption', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'editMessageCaption', data=kwargs, **self._req_kwargs)
 
     def edit_message_media(self, media, chat_id=None, message_id=None, inline_message_id=None, reply_markup=None):
         kwargs = dict(chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id,
                       reply_markup=reply_markup)
         kwargs['media'] = json.dumps(media)
-        resp = requests.post(self._url + 'editMessageMedia', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'editMessageMedia', data=kwargs, **self._req_kwargs)
 
     def edit_message_reply_markup(self, chat_id=None, message_id=None, inline_message_id=None, reply_markup=None):
         kwargs = dict(chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id,
                       reply_markup=reply_markup)
-        resp = requests.post(self._url + 'editMessageReplyMarkup', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'editMessageReplyMarkup', data=kwargs, **self._req_kwargs)
 
     def stop_poll(self, chat_id, message_id, reply_markup=None):
-        resp = requests.post(self._url + 'stopPoll', data=dict(
+        return self._request(self._url + 'stopPoll', data=dict(
             chat_id=chat_id, message_id=message_id, reply_markup=reply_markup
         ), **self._req_kwargs)
-        return resp.text
 
     def delete_message(self, chat_id, message_id):
-        resp = requests.post(self._url + 'deleteMessage', data=dict(chat_id=chat_id, message_id=message_id),
+        return self._request(self._url + 'deleteMessage', data=dict(chat_id=chat_id, message_id=message_id),
                              **self._req_kwargs)
-        return resp.text
 
     def send_sticker(self, chat_id, sticker, disable_notification=None,
                      reply_to_message_id=None, reply_markup=None):
@@ -679,16 +670,14 @@ class Sender(DBMixin):
             kwargs['sticker'] = url
         elif path:
             if not os.path.isfile(path):
-                return error_response('File not found')
+                return self._error_response('File not found')
             files_kwargs['sticker'] = open(path, 'rb')
         else:
-            return error_response('Location not found')
-        resp = requests.post(self._url + 'sendSticker', data=kwargs, files=files_kwargs, **self._req_kwargs)
-        return resp.text
+            return self._error_response('Location not found')
+        return self._request(self._url + 'sendSticker', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
     def get_sticker_set(self, name):
-        resp = requests.post(self._url + 'getStickerSet', data=dict(name=name), **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'getStickerSet', data=dict(name=name), **self._req_kwargs)
 
     def upload_sticker_file(self, user_id, png_sticker):
         kwargs = dict(user_id=user_id)
@@ -702,12 +691,11 @@ class Sender(DBMixin):
             kwargs['png_sticker'] = url
         elif path:
             if not os.path.isfile(path):
-                return error_response('File not found')
+                return self._error_response('File not found')
             files_kwargs['png_sticker'] = open(path, 'rb')
         else:
-            return error_response('Location not found')
-        resp = requests.post(self._url + 'uploadStickerFile', data=kwargs, files=files_kwargs, **self._req_kwargs)
-        return resp.text
+            return self._error_response('Location not found')
+        return self._request(self._url + 'uploadStickerFile', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
     def create_new_sticker_set(self, user_id, name, title, png_sticker, emojis,
                                contains_masks=None, mask_position=None):
@@ -722,15 +710,14 @@ class Sender(DBMixin):
             kwargs['png_sticker'] = url
         elif path:
             if not os.path.isfile(path):
-                return error_response('File not found')
+                return self._error_response('File not found')
             files_kwargs['png_sticker'] = open(path, 'rb')
         else:
-            return error_response('Location not found')
+            return self._error_response('Location not found')
         if contains_masks:
             kwargs['mask_position'] = json.dumps(mask_position)
-        resp = requests.post(self._url + 'createNewStickerSet', data=kwargs, files_kwargs=files_kwargs,
+        return self._request(self._url + 'createNewStickerSet', data=kwargs, files_kwargs=files_kwargs,
                              **self._req_kwargs)
-        return resp.text
 
     def add_sticker_to_set(self, user_id, name, png_sticker, emojis, mask_position=None):
         kwargs = dict(user_id=user_id, name=name, emojis=emojis)
@@ -744,31 +731,27 @@ class Sender(DBMixin):
             kwargs['png_sticker'] = url
         elif path:
             if not os.path.isfile(path):
-                return error_response('File not found')
+                return self._error_response('File not found')
             files_kwargs['png_sticker'] = open(path, 'rb')
         else:
-            return error_response('Location not found')
+            return self._error_response('Location not found')
         if mask_position:
             kwargs['mask_position'] = json.dumps(mask_position)
-        resp = requests.post(self._url + 'addStickerToSet', data=kwargs, files_kwargs=files_kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'addStickerToSet', data=kwargs, files_kwargs=files_kwargs, **self._req_kwargs)
 
     def set_sticker_position_in_set(self, sticker, position):
-        resp = requests.post(self._url + 'setStickerPositionInSet', data=dict(sticker=sticker, position=position),
+        return self._request(self._url + 'setStickerPositionInSet', data=dict(sticker=sticker, position=position),
                              **self._req_kwargs)
-        return resp.text
 
     def delete_sticker_from_set(self, sticker):
-        resp = requests.post(self._url + 'deleteStickerFromSet', data=dict(sticker=sticker), **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'deleteStickerFromSet', data=dict(sticker=sticker), **self._req_kwargs)
 
     def answer_inline_query(self, inline_query_id, results, cache_time=None, is_personal=None,
                             next_offset=None, switch_pm_text=None, switch_pm_parameter=None):
         kwargs = dict(inline_query_id=inline_query_id, cache_time=cache_time, is_personal=is_personal,
                       next_offset=next_offset, switch_pm_text=switch_pm_text, switch_pm_parameter=switch_pm_parameter)
         kwargs['results'] = json.dumps(results)
-        resp = requests.post(self._url + 'answerInlineQuery', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'answerInlineQuery', data=kwargs, **self._req_kwargs)
 
     def send_invoice(self, chat_id, title, description, payload, provider_token, start_parameter, currency, prices,
                      provider_data=None, photo_url=None, photo_size=None, photo_width=None, photo_height=None,
@@ -785,40 +768,33 @@ class Sender(DBMixin):
                       send_email_to_provider=send_email_to_provider, is_flexible=is_flexible,
                       disable_notification=disable_notification, reply_to_message_id=reply_to_message_id,
                       reply_markup=reply_markup)
-        resp = requests.post(self._url + 'sendInvoice', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'sendInvoice', data=kwargs, **self._req_kwargs)
 
     def answer_shipping_query(self, shipping_query_id, ok, shipping_options=None, error_message=None):
         kwargs = dict(shipping_query_id=shipping_query_id, ok=ok, shipping_options=shipping_options,
                       error_message=error_message)
-        resp = requests.post(self._url + 'answerShippingQuery', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'answerShippingQuery', data=kwargs, **self._req_kwargs)
 
     def answer_pre_checkout_query(self, pre_checkout_query_id, ok, error_message=None):
         kwargs = dict(pre_checkout_query_id=pre_checkout_query_id, ok=ok, error_message=error_message)
-        resp = requests.post(self._url + 'answerPreCheckoutQuery', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'answerPreCheckoutQuery', data=kwargs, **self._req_kwargs)
 
     def set_passport_data_errors(self, user_id, errors):
-        resp = requests.post(self._url + 'setPassportDataErrors', data=dict(user_id=user_id, errors=errors),
+        return self._request(self._url + 'setPassportDataErrors', data=dict(user_id=user_id, errors=errors),
                              **self._req_kwargs)
-        return resp.text
 
     def send_game(self, chat_id, game_short_name, disable_notification=None, reply_to_message_id=None,
                   reply_markup=None):
         kwargs = dict(chat_id=chat_id, game_short_name=game_short_name, disable_notification=disable_notification,
                       reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
-        resp = requests.post(self._url + 'sendGame', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'sendGame', data=kwargs, **self._req_kwargs)
 
     def set_game_score(self, user_id, score, force=None, disable_edit_message=None, chat_id=None,
                        message_id=None, inline_message_id=None):
         kwargs = dict(user_id=user_id, score=score, force=force, disable_edit_message=disable_edit_message,
                       chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id)
-        resp = requests.post(self._url + 'setGameScore', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'setGameScore', data=kwargs, **self._req_kwargs)
 
     def get_game_high_scores(self, user_id, chat_id=None, message_id=None, inline_message_id=None):
         kwargs = dict(user_id=user_id, chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id)
-        resp = requests.post(self._url + 'getGameHighScores', data=kwargs, **self._req_kwargs)
-        return resp.text
+        return self._request(self._url + 'getGameHighScores', data=kwargs, **self._req_kwargs)

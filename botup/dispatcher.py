@@ -8,365 +8,362 @@ except ImportError:
 
 from . import handlers
 from .types import Update
+from .exceptions import StateManagerException
 
 
 class Dispatcher:
 
     def __init__(self):
-        self.success = False
-        self.middlewares = list()
-        self.statements = set()
-        self.commands = dict()
-        self.callbacks = dict()
-        self.messages = dict()
-        self.inlines = dict()
-        self.channel_post_handler = None
-        self.chosen_inline_result_handler = None
-        self.edited_channel_post_handler = None
-        self.edited_message_handler = None
-        self.poll_handler = None
-        self.pre_checkout_query_handler = None
-        self.shipping_query_handler = None
-        self.document_handler = None
-        self.animation_handler = None
-        self.audio_handler = None
-        self.connected_website_handler = None
-        self.contact_handler = None
-        self.game_handler = None
-        self.invoice_handler = None
-        self.left_chat_member_handler = None
-        self.location_handler = None
-        self.new_chat_members_handler = None
-        self.new_chat_photo_handler = None
-        self.new_chat_title_handler = None
-        self.passport_data_handler = None
-        self.photo_handler = None
-        self.sticker_handler = None
-        self.successful_payment_handler = None
-        self.venue_handler = None
-        self.video_handler = None
-        self.video_note_handler = None
-        self.voice_handler = None
+        self._success = False
+        self._middlewares = list()
+        self._statements = set()
+        self._commands = dict()
+        self._callbacks = dict()
+        self._messages = dict()
+        self._inlines = dict()
+        self._channel_post_handler = None
+        self._chosen_inline_result_handler = None
+        self._edited_channel_post_handler = None
+        self._edited_message_handler = None
+        self._poll_handler = None
+        self._pre_checkout_query_handler = None
+        self._shipping_query_handler = None
+        self._document_handler = None
+        self._animation_handler = None
+        self._audio_handler = None
+        self._connected_website_handler = None
+        self._contact_handler = None
+        self._game_handler = None
+        self._invoice_handler = None
+        self._left_chat_member_handler = None
+        self._location_handler = None
+        self._new_chat_members_handler = None
+        self._new_chat_photo_handler = None
+        self._new_chat_title_handler = None
+        self._passport_data_handler = None
+        self._photo_handler = None
+        self._sticker_handler = None
+        self._successful_payment_handler = None
+        self._venue_handler = None
+        self._video_handler = None
+        self._video_note_handler = None
+        self._voice_handler = None
 
     def register_middleware(self, middleware):
         self._check_function_signature(middleware, 1)
-        self.middlewares.append(middleware)
+        self._middlewares.append(middleware)
 
     def register_command_handler(self, command, handler):
-        assert isinstance(command, str), 'command is not a str type'
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_command)
-        if not command.startswith('/'):
+        self._statements.add(self._is_command)
+        if isinstance(command, str) and not command.startswith('/'):
             command = f'/{command}'
-        self.commands[command] = handler
+        self._commands[command] = handler
 
     def register_message_handler(self, message, handler):
-        assert isinstance(message, str), 'message is not a str type'
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_message)
-        self.messages[message] = handler
+        self._statements.add(self._is_message)
+        self._messages[message] = handler
 
     def register_callback_handler(self, callback, handler):
-        assert isinstance(callback, str), 'callback is not a str type'
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_callback)
-        self.callbacks[callback] = handler
+        self._statements.add(self._is_callback)
+        self._callbacks[callback] = handler
 
     def register_inline_handler(self, inline_query, handler):
-        assert isinstance(inline_query, str), 'inline_query is not a str type'
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_inline)
-        self.inlines[inline_query] = handler
+        self._statements.add(self._is_inline)
+        self._inlines[inline_query] = handler
 
     def register_channel_post_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_channel_post)
-        self.channel_post_handler = handler
+        self._statements.add(self._is_channel_post)
+        self._channel_post_handler = handler
 
     def register_edited_message_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_edited_message)
-        self.edited_message_handler = handler
+        self._statements.add(self._is_edited_message)
+        self._edited_message_handler = handler
 
     def register_edited_channel_post_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_edited_channel_post)
-        self.edited_channel_post_handler = handler
+        self._statements.add(self._is_edited_channel_post)
+        self._edited_channel_post_handler = handler
 
     def register_chosen_inline_result_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_chosen_inline_result)
-        self.chosen_inline_result_handler = handler
+        self._statements.add(self._is_chosen_inline_result)
+        self._chosen_inline_result_handler = handler
 
     def register_shipping_query_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_shipping_query)
-        self.shipping_query_handler = handler
+        self._statements.add(self._is_shipping_query)
+        self._shipping_query_handler = handler
 
     def register_pre_checkout_query_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_pre_checkout_query)
-        self.pre_checkout_query_handler = handler
+        self._statements.add(self._is_pre_checkout_query)
+        self._pre_checkout_query_handler = handler
 
     def register_poll_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_poll)
-        self.poll_handler = handler
+        self._statements.add(self._is_poll)
+        self._poll_handler = handler
 
     def register_document_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_document)
-        self.document_handler = handler
+        self._statements.add(self._is_document)
+        self._document_handler = handler
 
     def register_animation_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_animation)
-        self.animation_handler = handler
+        self._statements.add(self._is_animation)
+        self._animation_handler = handler
 
     def register_audio_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_audio)
-        self.audio_handler = handler
+        self._statements.add(self._is_audio)
+        self._audio_handler = handler
 
     def register_connected_website_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_connected_website)
-        self.connected_website_handler = handler
+        self._statements.add(self._is_connected_website)
+        self._connected_website_handler = handler
 
     def register_contact_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_contact)
-        self.contact_handler = handler
+        self._statements.add(self._is_contact)
+        self._contact_handler = handler
 
     def register_game_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_game)
-        self.game_handler = handler
+        self._statements.add(self._is_game)
+        self._game_handler = handler
 
     def register_invoice_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_invoice)
-        self.invoice_handler = handler
+        self._statements.add(self._is_invoice)
+        self._invoice_handler = handler
 
     def register_left_chat_member_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_left_chat_member)
-        self.left_chat_member_handler = handler
+        self._statements.add(self._is_left_chat_member)
+        self._left_chat_member_handler = handler
 
     def register_location_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_location)
-        self.location_handler = handler
+        self._statements.add(self._is_location)
+        self._location_handler = handler
 
     def register_new_chat_members_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_new_chat_members)
-        self.new_chat_members_handler = handler
+        self._statements.add(self._is_new_chat_members)
+        self._new_chat_members_handler = handler
 
     def register_new_chat_photo_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_new_chat_photo)
-        self.new_chat_photo_handler = handler
+        self._statements.add(self._is_new_chat_photo)
+        self._new_chat_photo_handler = handler
 
     def register_new_chat_title_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_new_chat_title)
-        self.new_chat_title_handler = handler
+        self._statements.add(self._is_new_chat_title)
+        self._new_chat_title_handler = handler
 
     def register_passport_data_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_passport_data)
-        self.passport_data_handler = handler
+        self._statements.add(self._is_passport_data)
+        self._passport_data_handler = handler
 
     def register_photo_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_photo)
-        self.photo_handler = handler
+        self._statements.add(self._is_photo)
+        self._photo_handler = handler
 
     def register_sticker_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_sticker)
-        self.sticker_handler = handler
+        self._statements.add(self._is_sticker)
+        self._sticker_handler = handler
 
     def register_successful_payment_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_successful_payment)
-        self.successful_payment_handler = handler
+        self._statements.add(self._is_successful_payment)
+        self._successful_payment_handler = handler
 
     def register_venue_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_venue)
-        self.venue_handler = handler
+        self._statements.add(self._is_venue)
+        self._venue_handler = handler
 
     def register_video_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_video)
-        self.video_handler = handler
+        self._statements.add(self._is_video)
+        self._video_handler = handler
 
     def register_video_note_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_video_note)
-        self.video_note_handler = handler
+        self._statements.add(self._is_video_note)
+        self._video_note_handler = handler
 
     def register_voice_handler(self, handler):
         self._check_function_signature(handler, 2)
-        self.statements.add(self._is_voice)
-        self.voice_handler = handler
+        self._statements.add(self._is_voice)
+        self._voice_handler = handler
 
     def _is_command(self, update):
         if update.message and update.message.text and update.message.text.startswith('/'):
-            self.success = True
-            handlers.CommandHandler(update, self.commands).handle()
+            self._success = True
+            handlers.CommandHandler(update, self._commands).handle()
 
     def _is_message(self, update):
         if update.message and update.message.text and not update.message.text.startswith('/'):
-            self.success = True
-            handlers.MessageHandler(update, self.messages).handle()
+            self._success = True
+            handlers.MessageHandler(update, self._messages).handle()
 
     def _is_callback(self, update):
         if update.callback_query:
-            self.success = True
-            handlers.CallbackQueryHandler(update, self.callbacks).handle()
+            self._success = True
+            handlers.CallbackQueryHandler(update, self._callbacks).handle()
 
     def _is_inline(self, update):
         if update.inline_query:
-            self.success = True
-            handlers.InlineQueryHandler(update, self.inlines).handle()
+            self._success = True
+            handlers.InlineQueryHandler(update, self._inlines).handle()
 
     def _is_channel_post(self, update):
         if update.channel_post:
-            self.success = True
-            handlers.ChannelPostHandler(update, self.channel_post_handler).handle()
+            self._success = True
+            handlers.ChannelPostHandler(update, self._channel_post_handler).handle()
 
     def _is_edited_message(self, update):
         if update.edited_message:
-            self.success = True
-            handlers.EditedMessageHandler(update, self.edited_message_handler).handle()
+            self._success = True
+            handlers.EditedMessageHandler(update, self._edited_message_handler).handle()
 
     def _is_edited_channel_post(self, update):
         if update.edited_channel_post:
-            self.success = True
-            handlers.EditedChannelPostHandler(update, self.edited_channel_post_handler).handle()
+            self._success = True
+            handlers.EditedChannelPostHandler(update, self._edited_channel_post_handler).handle()
 
     def _is_chosen_inline_result(self, update):
         if update.chosen_inline_result:
-            self.success = True
-            handlers.ChosenInlineResultHandler(update, self.chosen_inline_result_handler).handle()
+            self._success = True
+            handlers.ChosenInlineResultHandler(update, self._chosen_inline_result_handler).handle()
 
     def _is_shipping_query(self, update):
         if update.shipping_query:
-            self.success = True
-            handlers.ShippingQueryHandler(update, self.shipping_query_handler).handle()
+            self._success = True
+            handlers.ShippingQueryHandler(update, self._shipping_query_handler).handle()
 
     def _is_pre_checkout_query(self, update):
         if update.pre_checkout_query:
-            self.success = True
-            handlers.PreCheckoutQueryHandler(update, self.pre_checkout_query_handler).handle()
+            self._success = True
+            handlers.PreCheckoutQueryHandler(update, self._pre_checkout_query_handler).handle()
 
     def _is_poll(self, update):
         if update.poll:
-            self.success = True
-            handlers.PollHandler(update, self.poll_handler).handle()
+            self._success = True
+            handlers.PollHandler(update, self._poll_handler).handle()
 
     def _is_document(self, update):
-        if update.message and update.message.document:
-            self.success = True
-            handlers.DocumentHandler(update, self.document_handler).handle()
+        if update.message and update.message.document and not update.message.animation:
+            self._success = True
+            handlers.DocumentHandler(update, self._document_handler).handle()
 
     def _is_animation(self, update):
         if update.message and update.message.animation:
-            self.success = True
-            handlers.AnimationHandler(update, self.animation_handler).handle()
+            self._success = True
+            handlers.AnimationHandler(update, self._animation_handler).handle()
 
     def _is_audio(self, update):
         if update.message and update.message.audio:
-            self.success = True
-            handlers.AudioHandler(update, self.audio_handler).handle()
+            self._success = True
+            handlers.AudioHandler(update, self._audio_handler).handle()
 
     def _is_connected_website(self, update):
         if update.message and update.message.connected_website:
-            self.success = True
-            handlers.ConnectedWebsiteHandler(update, self.connected_website_handler).handle()
+            self._success = True
+            handlers.ConnectedWebsiteHandler(update, self._connected_website_handler).handle()
 
     def _is_contact(self, update):
         if update.message and update.message.contact:
-            self.success = True
-            handlers.ContactHandler(update, self.contact_handler).handle()
+            self._success = True
+            handlers.ContactHandler(update, self._contact_handler).handle()
 
     def _is_game(self, update):
         if update.message and update.message.game:
-            self.success = True
-            handlers.GameHandler(update, self.game_handler).handle()
+            self._success = True
+            handlers.GameHandler(update, self._game_handler).handle()
 
     def _is_invoice(self, update):
         if update.message and update.message.invoice:
-            self.success = True
-            handlers.InvoiceHandler(update, self.invoice_handler).handle()
+            self._success = True
+            handlers.InvoiceHandler(update, self._invoice_handler).handle()
 
     def _is_left_chat_member(self, update):
         if update.message and update.message.left_chat_member:
-            self.success = True
-            handlers.LeftChatMemberHandler(update, self.left_chat_member_handler).handle()
+            self._success = True
+            handlers.LeftChatMemberHandler(update, self._left_chat_member_handler).handle()
 
     def _is_location(self, update):
         if update.message and update.message.location:
-            self.success = True
-            handlers.LocationHandler(update, self.location_handler).handle()
+            self._success = True
+            handlers.LocationHandler(update, self._location_handler).handle()
 
     def _is_new_chat_members(self, update):
         if update.message and update.message.new_chat_members:
-            self.success = True
-            handlers.NewChatMembersHandler(update, self.new_chat_members_handler).handle()
+            self._success = True
+            handlers.NewChatMembersHandler(update, self._new_chat_members_handler).handle()
 
     def _is_new_chat_photo(self, update):
         if update.message and update.message.new_chat_photo:
-            self.success = True
-            handlers.NewChatPhotoHandler(update, self.new_chat_photo_handler).handle()
+            self._success = True
+            handlers.NewChatPhotoHandler(update, self._new_chat_photo_handler).handle()
 
     def _is_new_chat_title(self, update):
         if update.message and update.message.new_chat_title:
-            self.success = True
-            handlers.NewChatTitleHandler(update, self.new_chat_title_handler).handle()
+            self._success = True
+            handlers.NewChatTitleHandler(update, self._new_chat_title_handler).handle()
 
     def _is_passport_data(self, update):
         if update.message and update.message.passport_data:
-            self.success = True
-            handlers.PassportDataHandler(update, self.passport_data_handler).handle()
+            self._success = True
+            handlers.PassportDataHandler(update, self._passport_data_handler).handle()
 
     def _is_photo(self, update):
         if update.message and update.message.photo:
-            self.success = True
-            handlers.PhotoHandler(update, self.photo_handler).handle()
+            self._success = True
+            handlers.PhotoHandler(update, self._photo_handler).handle()
 
     def _is_sticker(self, update):
         if update.message and update.message.sticker:
-            self.success = True
-            handlers.StickerHandler(update, self.sticker_handler).handle()
+            self._success = True
+            handlers.StickerHandler(update, self._sticker_handler).handle()
 
     def _is_successful_payment(self, update):
         if update.message and update.message.successful_payment:
-            self.success = True
-            handlers.SuccessfulPaymentHandler(update, self.successful_payment_handler).handle()
+            self._success = True
+            handlers.SuccessfulPaymentHandler(update, self._successful_payment_handler).handle()
 
     def _is_venue(self, update):
         if update.message and update.message.venue:
-            self.success = True
-            handlers.VenueHandler(update, self.venue_handler).handle()
+            self._success = True
+            handlers.VenueHandler(update, self._venue_handler).handle()
 
     def _is_video(self, update):
         if update.message and update.message.video:
-            self.success = True
-            handlers.VideoHandler(update, self.video_handler).handle()
+            self._success = True
+            handlers.VideoHandler(update, self._video_handler).handle()
 
     def _is_video_note(self, update):
         if update.message and update.message.video_note:
-            self.success = True
-            handlers.VideoNoteHandler(update, self.video_note_handler).handle()
+            self._success = True
+            handlers.VideoNoteHandler(update, self._video_note_handler).handle()
 
     def _is_voice(self, update):
         if update.message and update.message.voice:
-            self.success = True
-            handlers.VoiceHandler(update, self.voice_handler).handle()
+            self._success = True
+            handlers.VoiceHandler(update, self._voice_handler).handle()
 
     def include(self, dispatcher):
         for key, handler in dispatcher.messages.items():
@@ -433,13 +430,13 @@ class Dispatcher:
             self.register_voice_handler(dispatcher.voice_handler)
 
     def _run_statements(self, update):
-        for statement in self.statements:
-            if self.success:
+        for statement in self._statements:
+            if self._success:
                 break
             statement(update)
 
     def _run_middlewares(self, update):
-        return any([m(update) for m in self.middlewares])
+        return any([m(update) for m in self._middlewares])
 
     @staticmethod
     def _check_function_signature(function, args_count):
@@ -450,17 +447,17 @@ class Dispatcher:
             raise TypeError(f'{function_string} must be take {args_count} positional arguments but {count} defined')
 
     def handle(self, update, *args, **kwargs):
-        self.success = False
+        self._success = False
         if not isinstance(update, Update):
             update = Update(**update)
         if self._run_middlewares(update):
-            self.success = True
+            self._success = True
             return
         self._run_statements(update)
 
-    def polling(self, form, tick=1.0, limit=None, timeout=None, allowed_updates=None):
+    def polling(self, sender, tick=1.0, limit=None, timeout=None, allowed_updates=None):
         last_update_id = 0
-        response = form.get_updates(limit=limit, timeout=timeout, allowed_updates=allowed_updates)
+        response = sender.get_updates(limit=limit, timeout=timeout, allowed_updates=allowed_updates)
         while True:
             response = json.loads(response)
             for update in response['result']:
@@ -469,7 +466,7 @@ class Dispatcher:
             timer = threading.Timer(tick, lambda *args: None)
             timer.start()
             timer.join()
-            response = form.get_updates(
+            response = sender.get_updates(
                 offset=last_update_id + 1,
                 limit=limit,
                 timeout=timeout,
@@ -483,29 +480,29 @@ class StateDispatcher(Dispatcher):
         super().__init__()
         self._sm = state_manager
         self.key = key
-        self.states = dict()
+        self._states = dict()
 
     def register_state(self, state, dispatcher):
         assert isinstance(state, str), 'state is not a str'
         assert isinstance(dispatcher, (Dispatcher, StateDispatcher))
-        self.states[state] = dispatcher
+        self._states[state] = dispatcher
 
     def handle(self, update, *args, **kwargs):
-        self.success = False
+        self._success = False
         if not isinstance(update, Update):
             update = Update(**update)
         if self._run_middlewares(update):
-            self.success = True
+            self._success = True
             return
         states = kwargs.get('states')
         self._sm.update = update
         if self._sm.is_valid_update:
             if not states:
                 states = self._sm.get_all()
-            dispatcher = self.states.get(states.get(self.key))
+            dispatcher = self._states.get(states.get(self.key))
             if dispatcher:
                 dispatcher.handle(update, states=states)
-                self.success = True
+                self._success = True
                 self._sm.update = None
                 return
         self._run_statements(update)
@@ -522,25 +519,25 @@ class StateManager:
     def set(self, key, value):
         message = self.update.message or getattr(self.update.callback_query, 'message', None)
         if not message:
-            raise('Cannot set state with', self.update)
+            raise StateManagerException(f'Cannot set state with {self.update.pformat()}')
         return self.connection.hset(self.name.format(message.chat.id), key, value)
 
     def get_all(self):
         message = self.update.message or getattr(self.update.callback_query, 'message', None)
         if not message:
-            raise ('Cannot get state with', self.update)
+            raise StateManagerException(f'Cannot get state with {self.update.pformat()}')
         return self.connection.hgetall(self.name.format(message.chat.id))
 
     def get(self, key):
         message = self.update.message or getattr(self.update.callback_query, 'message', None)
         if not message:
-            raise ('Cannot get state with', self.update)
+            raise StateManagerException(f'Cannot get state with {self.update.pformat()}')
         return self.connection.hgetall(self.name.format(message.chat.id), key)
 
     def reset(self, *keys):
         message = self.update.message or getattr(self.update.callback_query, 'message', None)
         if not message:
-            raise ('Cannot delete state with', self.update)
+            raise StateManagerException(f'Cannot delete state with {self.update.pformat()}')
         return self.connection.hdel(self.name.format(message.chat.id), *keys)
 
     @property

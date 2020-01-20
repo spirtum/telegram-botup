@@ -2,15 +2,11 @@ from .mixins import HandlerPatternMixin, HandlerSimpleMixin
 
 
 class AnimationHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class AudioHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class CallbackQueryHandler(HandlerPatternMixin):
@@ -56,21 +52,15 @@ class CommandHandler(HandlerPatternMixin):
 
 
 class ConnectedWebsiteHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class ContactHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class DocumentHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class EditedChannelPostHandler(HandlerSimpleMixin):
@@ -96,9 +86,7 @@ class EditedMessageHandler(HandlerSimpleMixin):
 
 
 class GameHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class InlineQueryHandler(HandlerPatternMixin):
@@ -112,9 +100,7 @@ class InlineQueryHandler(HandlerPatternMixin):
 
 
 class InvoiceHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class LeftChatMemberHandler(HandlerSimpleMixin):
@@ -124,9 +110,7 @@ class LeftChatMemberHandler(HandlerSimpleMixin):
 
 
 class LocationHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class MessageHandler(HandlerPatternMixin):
@@ -140,33 +124,23 @@ class MessageHandler(HandlerPatternMixin):
 
 
 class NewChatMembersHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class NewChatPhotoHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class NewChatTitleHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class PassportDataHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class PhotoHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class PollHandler(HandlerSimpleMixin):
@@ -203,36 +177,24 @@ class ShippingQueryHandler(HandlerSimpleMixin):
 
 
 class StickerHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class SuccessfulPaymentHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class VenueHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class VideoHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class VideoNoteHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class VoiceHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
