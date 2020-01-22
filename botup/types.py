@@ -36,6 +36,16 @@ class BaseObject:
         return pprint.pformat(self.as_dict())
 
 
+class RawResponse(BaseObject):
+    __slots__ = ['raw_data', 'ok', 'result', 'description']
+
+    def __init__(self, **kwargs):
+        self.raw_data = kwargs
+        self.ok = kwargs.get('ok')
+        self.result = kwargs.get('result')
+        self.description = kwargs.get('description')
+
+
 class PhotoSize(BaseObject):
     __slots__ = ['file_id', 'file_unique_id', 'width', 'height', 'file_size']
 

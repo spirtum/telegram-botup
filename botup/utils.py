@@ -17,6 +17,7 @@ from .types import (
     ChatMember,
     StickerSet,
     WebhookInfo,
+    RawResponse,
     ErrorResponse,
     GameHighScore,
     UserProfilePhotos
@@ -41,7 +42,7 @@ def parse_response(response):
     if not status:
         return ErrorResponse(**response)
     elif isinstance(result, bool) or isinstance(result, str):
-        return result
+        return RawResponse(**response)
     elif isinstance(result, list):
         parsed_result = []
         for item in result:
