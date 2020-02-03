@@ -843,6 +843,26 @@ def test_venue(dispatcher):
     assert updates[-1] is venue_update
 
 
+def test_match_sequence(dispatcher):
+    abc_message_update = utils.message_update_by_text('abc')
+
+    updates = list()
+    calls = list()
+
+    def universal_handler(c, u):
+        updates.append(u)
+        calls.append(universal_handler)
+
+    def abc_handler(c, u):
+        updates.append(u)
+        calls.append(abc_handler)
+
+    dispatcher.register_message_handler(re.compile('.*'), universal_handler)
+    dispatcher.register_message_handler('abc', abc_handler)
+    dispatcher.handle(abc_message_update)
+    assert calls[-1] is abc_handler
+    assert updates[-1] is abc_message_update
+
 # TODO test_pre_checkout_query
 # TODO test_shipping_query
 # TODO test_connected_website

@@ -13,14 +13,7 @@ dispatcher = Dispatcher()
 sender = Sender(token=TOKEN, connection=rdb)
 
 
-def start_handler(chat_id, update):
-    sender.push(
-        func=sender.send_message,
-        chat_id=chat_id,
-        text='Hi!\nTo get image press to /image'
-    )
-
-
+@dispatcher.command_handler('/image')
 def send_image(chat_id, update):
     path = get_random_image()
     cache = rdb.get(f'cache:{path}')
@@ -41,8 +34,13 @@ def send_image(chat_id, update):
         rdb.set(f'cache:{path}', resp.photo[-1].file_id)
 
 
-dispatcher.register_command_handler('/image', send_image)
-dispatcher.register_command_handler(re.compile('.*'), start_handler)
+@dispatcher.command_handler(re.compile('.*'))
+def start_handler(chat_id, update):
+    sender.push(
+        func=sender.send_message,
+        chat_id=chat_id,
+        text='Hi!\nTo get image press to /image'
+    )
 
 
 @app.route(f'/{TOKEN}', methods=['POST'])

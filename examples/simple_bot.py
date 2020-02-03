@@ -1,19 +1,3 @@
-# Telegram-botup
-
-The library has several utilities for creating telegram bots:
-
-- **Dispatcher** handles incoming updates
-- **Sender** implements Telegram API methods
-- Other utils, types and etc
-
-
-## Installation
-```
-$ pip install telegram-botup
-```
-
-## Example
-```
 from flask import Flask, request
 from botup import Dispatcher, Sender
 
@@ -33,5 +17,3 @@ def hello_handler(chat_id, update):
 def index():
     dispatcher.handle(request.get_json())
     return "!", 200
-
-```

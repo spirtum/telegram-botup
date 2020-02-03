@@ -56,27 +56,28 @@ class DBMixin:
 
 class HandlerPatternMixin:
 
-    def __init__(self, update, user_handlers):
-        self.update = update
-        self.handlers = user_handlers
+    def __init__(self, pattern, function):
+        self.pattern = pattern
+        self.function = function
 
-    def get_handler(self, command):
-        handler = self.handlers.get(command)
+    @classmethod
+    def get_handler(cls, command, handlers):
+        handler = handlers.get(command)
         if not handler:
-            for pattern in (c for c in self.handlers.keys() if hasattr(c, 'match')):
+            for pattern in (c for c in handlers.keys() if hasattr(c, 'match')):
                 if pattern.match(command):
-                    handler = self.handlers[pattern]
+                    handler = handlers[pattern]
                     break
         return handler
 
 
 class HandlerSimpleMixin:
 
-    def __init__(self, update, user_handler):
-        self.update = update
-        self.user_handler = user_handler
+    def __init__(self, function):
+        self.function = function
 
-    def handle(self):
-        if not self.user_handler:
+    @classmethod
+    def handle(cls, update, handler):
+        if not handler:
             return
-        self.user_handler(self.update.message.chat.id, self.update)
+        handler(update.message.chat.id, update)

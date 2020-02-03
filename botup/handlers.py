@@ -11,44 +11,36 @@ class AudioHandler(HandlerSimpleMixin):
 
 class CallbackQueryHandler(HandlerPatternMixin):
 
-    def __init__(self, update, user_handlers):
-        super().__init__(update, user_handlers)
-
-    def handle(self):
-        handler = self.get_handler(self.update.callback_query.data)
-        handler(self.update.callback_query.message.chat.id, self.update) if handler else None
+    @classmethod
+    def handle(cls, update, handlers):
+        handler = cls.get_handler(update.callback_query.data, handlers)
+        handler(update.callback_query.message.chat.id, update) if handler else None
 
 
 class ChannelPostHandler(HandlerSimpleMixin):
 
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
-
-    def handle(self):
-        if not self.user_handler:
+    @classmethod
+    def handle(cls, update, handler):
+        if not handler:
             return
-        self.user_handler(self.update.channel_post.chat.id, self.update)
+        handler(update.channel_post.chat.id, update)
 
 
 class ChosenInlineResultHandler(HandlerSimpleMixin):
 
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
-
-    def handle(self):
-        if not self.user_handler:
+    @classmethod
+    def handle(cls, update, handler):
+        if not handler:
             return
-        self.user_handler(self.update.chosen_inline_result.from_.id, self.update)
+        handler(update.chosen_inline_result.from_.id, update)
 
 
 class CommandHandler(HandlerPatternMixin):
 
-    def __init__(self, update, user_handlers):
-        super().__init__(update, user_handlers)
-
-    def handle(self):
-        handler = self.get_handler(self.update.message.text)
-        handler(self.update.message.chat.id, self.update) if handler else None
+    @classmethod
+    def handle(cls, update, handlers):
+        handler = cls.get_handler(update.message.text, handlers)
+        handler(update.message.chat.id, update) if handler else None
 
 
 class ConnectedWebsiteHandler(HandlerSimpleMixin):
@@ -65,24 +57,20 @@ class DocumentHandler(HandlerSimpleMixin):
 
 class EditedChannelPostHandler(HandlerSimpleMixin):
 
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
-
-    def handle(self):
-        if not self.user_handler:
+    @classmethod
+    def handle(cls, update, handler):
+        if not handler:
             return
-        self.user_handler(self.update.edited_channel_post.chat.id, self.update)
+        handler(update.edited_channel_post.chat.id, update)
 
 
 class EditedMessageHandler(HandlerSimpleMixin):
 
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
-
-    def handle(self):
-        if not self.user_handler:
+    @classmethod
+    def handle(cls, update, handler):
+        if not handler:
             return
-        self.user_handler(self.update.edited_message.chat.id, self.update)
+        handler(update.edited_message.chat.id, update)
 
 
 class GameHandler(HandlerSimpleMixin):
@@ -91,12 +79,10 @@ class GameHandler(HandlerSimpleMixin):
 
 class InlineQueryHandler(HandlerPatternMixin):
 
-    def __init__(self, update, user_handlers):
-        super().__init__(update, user_handlers)
-
-    def handle(self):
-        handler = self.get_handler(self.update.inline_query.query)
-        handler(self.update.inline_query.from_.id, self.update) if handler else None
+    @classmethod
+    def handle(cls, update, handlers):
+        handler = cls.get_handler(update.inline_query.query, handlers)
+        handler(update.inline_query.from_.id, update) if handler else None
 
 
 class InvoiceHandler(HandlerSimpleMixin):
@@ -104,9 +90,7 @@ class InvoiceHandler(HandlerSimpleMixin):
 
 
 class LeftChatMemberHandler(HandlerSimpleMixin):
-
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
+    pass
 
 
 class LocationHandler(HandlerSimpleMixin):
@@ -115,12 +99,10 @@ class LocationHandler(HandlerSimpleMixin):
 
 class MessageHandler(HandlerPatternMixin):
 
-    def __init__(self, update, user_handlers):
-        super().__init__(update, user_handlers)
-
-    def handle(self):
-        handler = self.get_handler(self.update.message.text)
-        handler(self.update.message.chat.id, self.update) if handler else None
+    @classmethod
+    def handle(cls, update, handlers):
+        handler = cls.get_handler(update.message.text, handlers)
+        handler(update.message.chat.id, update) if handler else None
 
 
 class NewChatMembersHandler(HandlerSimpleMixin):
@@ -145,35 +127,29 @@ class PhotoHandler(HandlerSimpleMixin):
 
 class PollHandler(HandlerSimpleMixin):
 
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
-
-    def handle(self):
-        if not self.user_handler:
+    @classmethod
+    def handle(cls, update, handler):
+        if not handler:
             return
-        self.user_handler(None, self.update)
+        handler(None, update)
 
 
 class PreCheckoutQueryHandler(HandlerSimpleMixin):
 
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
-
-    def handle(self):
-        if not self.user_handler:
+    @classmethod
+    def handle(cls, update, handler):
+        if not handler:
             return
-        self.user_handler(self.update.pre_checkout_query.from_.id, self.update)
+        handler(update.pre_checkout_query.from_.id, update)
 
 
 class ShippingQueryHandler(HandlerSimpleMixin):
 
-    def __init__(self, update, user_handler):
-        super().__init__(update, user_handler)
-
-    def handle(self):
-        if not self.user_handler:
+    @classmethod
+    def handle(cls, update, handler):
+        if not handler:
             return
-        self.user_handler(self.update.shipping_query.from_.id, self.update)
+        handler(update.shipping_query.from_.id, update)
 
 
 class StickerHandler(HandlerSimpleMixin):
