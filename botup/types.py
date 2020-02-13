@@ -168,12 +168,23 @@ class InlineKeyboardMarkup(BaseObject):
 
 
 class KeyboardButton(BaseObject):
-    __slots__ = ['text', 'request_contact', 'request_location']
+    __slots__ = ['text', 'request_contact', 'request_location', 'request_poll']
+    NESTED = ['request_poll']
 
     def __init__(self, **kwargs):
         self.text = kwargs.get('text')
         self.request_contact = kwargs.get('request_contact')
         self.request_location = kwargs.get('request_location')
+        self.request_poll = KeyboardButtonPollType(**kwargs['request_poll']) if 'request_poll' in kwargs else None
+
+
+class KeyboardButtonPollType(BaseObject):
+    __slots__ = ['type']
+    REGULAR = {'type': 'regular'}
+    QUIZ = {'type': 'quiz'}
+
+    def __init__(self, **kwargs):
+        self.type = kwargs.get('type')
 
 
 class ReplyKeyboardMarkup(BaseObject):
@@ -189,8 +200,11 @@ class ReplyKeyboardMarkup(BaseObject):
         self.keyboard.append(args)
 
     @staticmethod
-    def button(text, request_contact=False, request_location=False):
-        return KeyboardButton(text=text, request_contact=request_contact, request_location=request_location)
+    def button(text, request_contact=False, request_location=False, request_poll=None):
+        kwargs = dict(text=text, request_contact=request_contact, request_location=request_location)
+        if request_poll:
+            kwargs['request_poll'] = request_poll
+        return KeyboardButton(**kwargs)
 
     def as_dict(self):
         result = dict()
@@ -244,15 +258,31 @@ class PollOption(BaseObject):
         self.voter_count = kwargs.get('voter_count')
 
 
+class PollAnswer(BaseObject):
+    __slots__ = ['poll_id', 'user', 'option_ids']
+    NESTED = ['user']
+
+    def __init__(self, **kwargs):
+        self.poll_id = kwargs.get('poll_id')
+        self.user = User(**kwargs['user']) if 'user' in kwargs else None
+        self.option_ids = kwargs.get('option_ids')
+
+
 class Poll(BaseObject):
-    __slots__ = ['id', 'question', 'options', 'is_closed']
+    __slots__ = ['id', 'question', 'options', 'total_voter_count', 'is_closed', 'is_anonymous', 'type',
+                 'allows_multiple_answers', 'correct_option_id']
     NESTED = ['options', ]
 
     def __init__(self, **kwargs):
         self.id = kwargs.get('id')
         self.question = kwargs.get('question')
         self.options = [PollOption(**v) for v in kwargs['options']] if 'options' in kwargs else list()
+        self.total_voter_count = kwargs.get('total_voter_count')
         self.is_closed = kwargs.get('is_closed')
+        self.is_anonymous = kwargs.get('is_anonymous')
+        self.type = kwargs.get('type')
+        self.allows_multiple_answers = kwargs.get('allows_multiple_answers')
+        self.correct_option_id = kwargs.get('correct_option_id')
 
 
 class ResponseParameters(BaseObject):
@@ -370,7 +400,8 @@ class Audio(BaseObject):
 
 
 class User(BaseObject):
-    __slots__ = ['id', 'is_bot', 'first_name', 'last_name', 'username', 'language_code']
+    __slots__ = ['id', 'is_bot', 'first_name', 'last_name', 'username', 'language_code', 'can_join_groups',
+                 'can_read_all_group_messages', 'supports_inline_queries']
 
     def __init__(self, **kwargs):
         self.id = kwargs.get('id')
@@ -379,6 +410,9 @@ class User(BaseObject):
         self.last_name = kwargs.get('last_name')
         self.username = kwargs.get('username')
         self.language_code = kwargs.get('language_code')
+        self.can_join_groups = kwargs.get('can_join_groups')
+        self.can_read_all_group_messages = kwargs.get('can_read_all_group_messages')
+        self.supports_inline_queries = kwargs.get('supports_inline_queries')
 
 
 class ChatMember(BaseObject):
@@ -424,7 +458,7 @@ class Document(BaseObject):
 
 
 class MessageEntity(BaseObject):
-    __slots__ = ['type', 'offset', 'length', 'url', 'user']
+    __slots__ = ['type', 'offset', 'length', 'url', 'user', 'language']
     NESTED = ['user', ]
 
     def __init__(self, **kwargs):
@@ -433,6 +467,7 @@ class MessageEntity(BaseObject):
         self.length = kwargs.get('length')
         self.url = kwargs.get('url')
         self.user = User(**kwargs['user']) if 'user' in kwargs else None
+        self.language = kwargs.get('language')
 
 
 class File(BaseObject):
@@ -1312,9 +1347,10 @@ class CallbackQuery(BaseObject):
 
 class Update(BaseObject):
     __slots__ = ['update_id', 'message', 'edited_message', 'channel_post', 'edited_channel_post', 'inline_query',
-                 'chosen_inline_result', 'callback_query', 'shipping_query', 'pre_checkout_query', 'poll']
+                 'chosen_inline_result', 'callback_query', 'shipping_query', 'pre_checkout_query', 'poll',
+                 'poll_answer']
     NESTED = ['message', 'edited_message', 'channel_post', 'edited_channel_post', 'inline_query',
-              'chosen_inline_result', 'callback_query', 'shipping_query', 'pre_checkout_query', 'poll']
+              'chosen_inline_result', 'callback_query', 'shipping_query', 'pre_checkout_query', 'poll', 'poll_answer']
 
     def __init__(self, **kwargs):
         self.update_id = kwargs.get('update_id')
@@ -1331,3 +1367,4 @@ class Update(BaseObject):
         self.pre_checkout_query = PreCheckoutQuery(
             **kwargs['pre_checkout_query']) if 'pre_checkout_query' in kwargs else None
         self.poll = Poll(**kwargs['poll']) if 'poll' in kwargs else None
+        self.poll_answer = PollAnswer(**kwargs['poll_answer']) if 'poll_answer' in kwargs else None

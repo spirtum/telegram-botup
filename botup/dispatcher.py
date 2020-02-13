@@ -39,6 +39,7 @@ class Dispatcher:
             handlers.PassportDataHandler: self.register_passport_data_handler,
             handlers.PhotoHandler: self.register_photo_handler,
             handlers.PollHandler: self.register_poll_handler,
+            handlers.PollAnswerHandler: self.register_poll_answer_handler,
             handlers.PreCheckoutQueryHandler: self.register_pre_checkout_query_handler,
             handlers.ShippingQueryHandler: self.register_shipping_query_handler,
             handlers.StickerHandler: self.register_sticker_handler,
@@ -59,6 +60,7 @@ class Dispatcher:
         self._edited_channel_post_handler = None
         self._edited_message_handler = None
         self._poll_handler = None
+        self._poll_answer_handler = None
         self._pre_checkout_query_handler = None
         self._shipping_query_handler = None
         self._document_handler = None
@@ -132,6 +134,10 @@ class Dispatcher:
 
     def poll_handler(self, handler):
         self.register_poll_handler(handler)
+        return handler
+
+    def poll_answer_handler(self, handler):
+        self.register_poll_answer_handler(handler)
         return handler
 
     def pre_checkout_query_handler(self, handler):
@@ -282,6 +288,11 @@ class Dispatcher:
         self._check_function_signature(handler, 2)
         self._statements.add(self._is_poll)
         self._poll_handler = handler
+
+    def register_poll_answer_handler(self, handler):
+        self._check_function_signature(handler, 2)
+        self._statements.add(self._is_poll_answer)
+        self._poll_answer_handler = handler
 
     def register_document_handler(self, handler):
         self._check_function_signature(handler, 2)
@@ -437,6 +448,11 @@ class Dispatcher:
         if update.poll:
             self._success = True
             handlers.PollHandler.handle(update, self._poll_handler)
+
+    def _is_poll_answer(self, update):
+        if update.poll_answer:
+            self._success = True
+            handlers.PollAnswerHandler.handle(update, self._poll_answer_handler)
 
     def _is_document(self, update):
         if update.message and update.message.document and not update.message.animation:

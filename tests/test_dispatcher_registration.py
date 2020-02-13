@@ -61,6 +61,12 @@ def test_poll_handler(dispatcher):
     assert dispatcher._poll_handler
 
 
+def test_poll_answer_handler(dispatcher):
+    assert not dispatcher._poll_answer_handler
+    dispatcher.register(handlers.PollAnswerHandler(function))
+    assert dispatcher._poll_answer_handler
+
+
 def test_pre_checkout_query_handler(dispatcher):
     assert not dispatcher._pre_checkout_query_handler
     dispatcher.register(handlers.PreCheckoutQueryHandler(function))

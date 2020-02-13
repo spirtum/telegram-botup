@@ -134,6 +134,15 @@ class PollHandler(HandlerSimpleMixin):
         handler(None, update)
 
 
+class PollAnswerHandler(HandlerSimpleMixin):
+
+    @classmethod
+    def handle(cls, update, handler):
+        if not handler:
+            return
+        handler(update.poll_answer.user.id, update)
+
+
 class PreCheckoutQueryHandler(HandlerSimpleMixin):
 
     @classmethod

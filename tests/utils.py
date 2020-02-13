@@ -369,6 +369,18 @@ def poll_update():
                      'update_id': 123})
 
 
+def poll_answer_update():
+    return Update(**{'poll_answer': {'option_ids': [0],
+                                     'poll_id': '123',
+                                     'user': {'first_name': USER_FIRST_NAME,
+                                              'id': USER_ID,
+                                              'is_bot': False,
+                                              'language_code': 'en',
+                                              'last_name': USER_LAST_NAME,
+                                              'username': USER_USERNAME}},
+                     'update_id': 123})
+
+
 def photo_update():
     return Update(**{'message': {'chat': {'first_name': USER_FIRST_NAME,
                                           'id': USER_ID,

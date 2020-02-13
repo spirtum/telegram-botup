@@ -687,6 +687,25 @@ def test_poll(dispatcher):
     assert updates[-1] is poll_update
 
 
+def test_poll_answer(dispatcher):
+    poll_answer_update = utils.poll_answer_update()
+
+    calls = list()
+    updates = list()
+
+    def poll_answer_handler(c, u):
+        updates.append(u)
+        calls.append(poll_answer_handler)
+
+    before_calls_counter = len(calls)
+    dispatcher.handle(poll_answer_update)
+    assert before_calls_counter == len(calls)
+    dispatcher.register_poll_answer_handler(poll_answer_handler)
+    dispatcher.handle(poll_answer_update)
+    assert calls[-1] is poll_answer_handler
+    assert updates[-1] is poll_answer_update
+
+
 def test_photo(dispatcher):
     photo_update = utils.photo_update()
     message_update = utils.message_update_by_text('message')

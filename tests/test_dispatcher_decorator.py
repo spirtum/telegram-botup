@@ -157,6 +157,22 @@ def test_poll_handler(dispatcher):
     assert updates[-1] is update
 
 
+def test_poll_answer_handler(dispatcher):
+    update = utils.poll_answer_update()
+
+    updates = list()
+    calls = list()
+
+    @dispatcher.poll_answer_handler
+    def handler(c, u):
+        updates.append(u)
+        calls.append(handler)
+
+    dispatcher.handle(update)
+    assert calls[-1] is handler
+    assert updates[-1] is update
+
+
 def test_document_handler(dispatcher):
     update = utils.document_update()
 
