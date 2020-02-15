@@ -121,6 +121,39 @@ def test_patterns_regexp(dispatcher):
     assert updates[-1] is foobar_inline_query_update
 
 
+def test_middleware(dispatcher):
+    update = utils.message_update_by_text('test')
+    calls = list()
+
+    def mw_true(u):
+        calls.append(mw_true)
+        return True
+
+    def mw_false(u):
+        calls.append(mw_false)
+        return False
+
+    def message_handler(c, u):
+        calls.append(message_handler)
+
+    dispatcher.handle(update)
+    assert not calls
+    dispatcher.register_message_handler('test', message_handler)
+    dispatcher.handle(update)
+    assert len(calls) == 1
+    assert calls[-1] is message_handler
+    dispatcher.register_middleware(mw_false)
+    dispatcher.handle(update)
+    assert len(calls) == 3
+    assert calls[-2] is mw_false
+    assert calls[-1] is message_handler
+    dispatcher.register_middleware(mw_true)
+    dispatcher.handle(update)
+    assert len(calls) == 5
+    assert calls[-2] is mw_false
+    assert calls[-1] is mw_true
+
+
 def test_messages(dispatcher):
     a_messsage_update = utils.message_update_by_text('a')
     b_message_update = utils.message_update_by_text('b')

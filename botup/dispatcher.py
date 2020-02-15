@@ -92,6 +92,10 @@ class Dispatcher:
         registration_method = self._registration_map[handler_type]
         registration_method(*args)
 
+    def middleware(self, function):
+        self.register_middleware(function)
+        return function
+
     def command_handler(self, command):
         def inner(handler):
             self.register_command_handler(command, handler)
@@ -553,70 +557,6 @@ class Dispatcher:
         if update.message and update.message.voice:
             self._success = True
             handlers.VoiceHandler.handle(update, self._voice_handler)
-
-    def include(self, dispatcher):
-        for key, handler in dispatcher.messages.items():
-            self.register_message_handler(key, handler)
-        for key, handler in dispatcher.commands.items():
-            self.register_command_handler(key, handler)
-        for key, handler in dispatcher.callbacks.items():
-            self.register_callback_handler(key, handler)
-        for key, handler in dispatcher.inlines.items():
-            self.register_inline_handler(key, handler)
-        if dispatcher.channel_post_handler:
-            self.register_channel_post_handler(dispatcher.channel_post_handler)
-        if dispatcher.edited_message_handler:
-            self.register_edited_message_handler(dispatcher.edited_message_handler)
-        if dispatcher.edited_channel_post_handler:
-            self.register_edited_channel_post_handler(dispatcher.edited_channel_post_handler)
-        if dispatcher.chosen_inline_result_handler:
-            self.register_chosen_inline_result_handler(dispatcher.chosen_inline_result_handler)
-        if dispatcher.shipping_query_handler:
-            self.register_shipping_query_handler(dispatcher.shipping_query_handler)
-        if dispatcher.pre_checkout_query_handler:
-            self.register_pre_checkout_query_handler(dispatcher.pre_checkout_query_handler)
-        if dispatcher.poll_handler:
-            self.register_poll_handler(dispatcher.poll_handler)
-        if dispatcher.document_handler:
-            self.register_document_handler(dispatcher.document_handler)
-        if dispatcher.animation_handler:
-            self.register_animation_handler(dispatcher.animation_handler)
-        if dispatcher.audio_handler:
-            self.register_audio_handler(dispatcher.audio_handler)
-        if dispatcher.connected_website_handler:
-            self.register_connected_website_handler(dispatcher.connected_website_handler)
-        if dispatcher.contact_handler:
-            self.register_contact_handler(dispatcher.contact_handler)
-        if dispatcher.game_handler:
-            self.register_game_handler(dispatcher.game_handler)
-        if dispatcher.invoice_handler:
-            self.register_invoice_handler(dispatcher.invoice_handler)
-        if dispatcher.left_chat_member_handler:
-            self.register_left_chat_member_handler(dispatcher.left_chat_member_handler)
-        if dispatcher.location_handler:
-            self.register_location_handler(dispatcher.location_handler)
-        if dispatcher.new_chat_members_handler:
-            self.register_new_chat_members_handler(dispatcher.new_chat_members_handler)
-        if dispatcher.new_chat_photo_handler:
-            self.register_new_chat_photo_handler(dispatcher.new_chat_photo_handler)
-        if dispatcher.new_chat_title_handler:
-            self.register_new_chat_title_handler(dispatcher.new_chat_title_handler)
-        if dispatcher.passport_data_handler:
-            self.register_passport_data_handler(dispatcher.passport_data_handler)
-        if dispatcher.photo_handler:
-            self.register_photo_handler(dispatcher.photo_handler)
-        if dispatcher.sticker_handler:
-            self.register_sticker_handler(dispatcher.sticker_handler)
-        if dispatcher.successful_payment_handler:
-            self.register_successful_payment_handler(dispatcher.successful_payment_handler)
-        if dispatcher.venue_handler:
-            self.register_venue_handler(dispatcher.venue_handler)
-        if dispatcher.video_handler:
-            self.register_video_handler(dispatcher.video_handler)
-        if dispatcher.video_note_handler:
-            self.register_video_note_handler(dispatcher.video_note_handler)
-        if dispatcher.voice_handler:
-            self.register_voice_handler(dispatcher.voice_handler)
 
     def _run_statements(self, update):
         for statement in self._statements:

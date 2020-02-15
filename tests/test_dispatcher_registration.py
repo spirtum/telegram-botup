@@ -3,8 +3,18 @@ import re
 from botup import handlers
 
 
+def middleware(u):
+    pass
+
+
 def function(c, u):
     pass
+
+
+def test_middleware(dispatcher):
+    assert not dispatcher._middlewares
+    dispatcher.register_middleware(middleware)
+    assert len(dispatcher._middlewares) == 1
 
 
 def test_command_handler(dispatcher):

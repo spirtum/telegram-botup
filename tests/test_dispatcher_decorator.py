@@ -1,6 +1,18 @@
 from tests import utils
 
 
+def test_middleware(dispatcher):
+    update = utils.message_update_by_text('test')
+    calls = list()
+
+    @dispatcher.middleware
+    def mw_first(u):
+        calls.append(mw_first)
+
+    dispatcher.handle(update)
+    assert calls[-1] is mw_first
+
+
 def test_command_handler(dispatcher):
     a_command_update = utils.command_update_by_text('/a')
     b_command_update = utils.command_update_by_text('/b')
