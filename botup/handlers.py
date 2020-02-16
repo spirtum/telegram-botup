@@ -1,15 +1,41 @@
-from .mixins import HandlerPatternMixin, HandlerSimpleMixin
+class PatternHandler:
+
+    def __init__(self, pattern, function):
+        self.pattern = pattern
+        self.function = function
+
+    @classmethod
+    def get_handler(cls, command, handlers):
+        handler = handlers.get(command)
+        if not handler:
+            for pattern in (c for c in handlers.keys() if hasattr(c, 'match')):
+                if pattern.match(command):
+                    handler = handlers[pattern]
+                    break
+        return handler
 
 
-class AnimationHandler(HandlerSimpleMixin):
+class SimpleHandler:
+
+    def __init__(self, function):
+        self.function = function
+
+    @classmethod
+    def handle(cls, update, handler):
+        if not handler:
+            return
+        handler(update.message.chat.id, update)
+
+
+class AnimationHandler(SimpleHandler):
     pass
 
 
-class AudioHandler(HandlerSimpleMixin):
+class AudioHandler(SimpleHandler):
     pass
 
 
-class CallbackQueryHandler(HandlerPatternMixin):
+class CallbackQueryHandler(PatternHandler):
 
     @classmethod
     def handle(cls, update, handlers):
@@ -17,7 +43,7 @@ class CallbackQueryHandler(HandlerPatternMixin):
         handler(update.callback_query.message.chat.id, update) if handler else None
 
 
-class ChannelPostHandler(HandlerSimpleMixin):
+class ChannelPostHandler(SimpleHandler):
 
     @classmethod
     def handle(cls, update, handler):
@@ -26,7 +52,7 @@ class ChannelPostHandler(HandlerSimpleMixin):
         handler(update.channel_post.chat.id, update)
 
 
-class ChosenInlineResultHandler(HandlerSimpleMixin):
+class ChosenInlineResultHandler(SimpleHandler):
 
     @classmethod
     def handle(cls, update, handler):
@@ -35,7 +61,7 @@ class ChosenInlineResultHandler(HandlerSimpleMixin):
         handler(update.chosen_inline_result.from_.id, update)
 
 
-class CommandHandler(HandlerPatternMixin):
+class CommandHandler(PatternHandler):
 
     @classmethod
     def handle(cls, update, handlers):
@@ -43,19 +69,19 @@ class CommandHandler(HandlerPatternMixin):
         handler(update.message.chat.id, update) if handler else None
 
 
-class ConnectedWebsiteHandler(HandlerSimpleMixin):
+class ConnectedWebsiteHandler(SimpleHandler):
     pass
 
 
-class ContactHandler(HandlerSimpleMixin):
+class ContactHandler(SimpleHandler):
     pass
 
 
-class DocumentHandler(HandlerSimpleMixin):
+class DocumentHandler(SimpleHandler):
     pass
 
 
-class EditedChannelPostHandler(HandlerSimpleMixin):
+class EditedChannelPostHandler(SimpleHandler):
 
     @classmethod
     def handle(cls, update, handler):
@@ -64,7 +90,7 @@ class EditedChannelPostHandler(HandlerSimpleMixin):
         handler(update.edited_channel_post.chat.id, update)
 
 
-class EditedMessageHandler(HandlerSimpleMixin):
+class EditedMessageHandler(SimpleHandler):
 
     @classmethod
     def handle(cls, update, handler):
@@ -73,11 +99,11 @@ class EditedMessageHandler(HandlerSimpleMixin):
         handler(update.edited_message.chat.id, update)
 
 
-class GameHandler(HandlerSimpleMixin):
+class GameHandler(SimpleHandler):
     pass
 
 
-class InlineQueryHandler(HandlerPatternMixin):
+class InlineQueryHandler(PatternHandler):
 
     @classmethod
     def handle(cls, update, handlers):
@@ -85,19 +111,19 @@ class InlineQueryHandler(HandlerPatternMixin):
         handler(update.inline_query.from_.id, update) if handler else None
 
 
-class InvoiceHandler(HandlerSimpleMixin):
+class InvoiceHandler(SimpleHandler):
     pass
 
 
-class LeftChatMemberHandler(HandlerSimpleMixin):
+class LeftChatMemberHandler(SimpleHandler):
     pass
 
 
-class LocationHandler(HandlerSimpleMixin):
+class LocationHandler(SimpleHandler):
     pass
 
 
-class MessageHandler(HandlerPatternMixin):
+class MessageHandler(PatternHandler):
 
     @classmethod
     def handle(cls, update, handlers):
@@ -105,27 +131,27 @@ class MessageHandler(HandlerPatternMixin):
         handler(update.message.chat.id, update) if handler else None
 
 
-class NewChatMembersHandler(HandlerSimpleMixin):
+class NewChatMembersHandler(SimpleHandler):
     pass
 
 
-class NewChatPhotoHandler(HandlerSimpleMixin):
+class NewChatPhotoHandler(SimpleHandler):
     pass
 
 
-class NewChatTitleHandler(HandlerSimpleMixin):
+class NewChatTitleHandler(SimpleHandler):
     pass
 
 
-class PassportDataHandler(HandlerSimpleMixin):
+class PassportDataHandler(SimpleHandler):
     pass
 
 
-class PhotoHandler(HandlerSimpleMixin):
+class PhotoHandler(SimpleHandler):
     pass
 
 
-class PollHandler(HandlerSimpleMixin):
+class PollHandler(SimpleHandler):
 
     @classmethod
     def handle(cls, update, handler):
@@ -134,7 +160,7 @@ class PollHandler(HandlerSimpleMixin):
         handler(None, update)
 
 
-class PollAnswerHandler(HandlerSimpleMixin):
+class PollAnswerHandler(SimpleHandler):
 
     @classmethod
     def handle(cls, update, handler):
@@ -143,7 +169,7 @@ class PollAnswerHandler(HandlerSimpleMixin):
         handler(update.poll_answer.user.id, update)
 
 
-class PreCheckoutQueryHandler(HandlerSimpleMixin):
+class PreCheckoutQueryHandler(SimpleHandler):
 
     @classmethod
     def handle(cls, update, handler):
@@ -152,7 +178,7 @@ class PreCheckoutQueryHandler(HandlerSimpleMixin):
         handler(update.pre_checkout_query.from_.id, update)
 
 
-class ShippingQueryHandler(HandlerSimpleMixin):
+class ShippingQueryHandler(SimpleHandler):
 
     @classmethod
     def handle(cls, update, handler):
@@ -161,25 +187,25 @@ class ShippingQueryHandler(HandlerSimpleMixin):
         handler(update.shipping_query.from_.id, update)
 
 
-class StickerHandler(HandlerSimpleMixin):
+class StickerHandler(SimpleHandler):
     pass
 
 
-class SuccessfulPaymentHandler(HandlerSimpleMixin):
+class SuccessfulPaymentHandler(SimpleHandler):
     pass
 
 
-class VenueHandler(HandlerSimpleMixin):
+class VenueHandler(SimpleHandler):
     pass
 
 
-class VideoHandler(HandlerSimpleMixin):
+class VideoHandler(SimpleHandler):
     pass
 
 
-class VideoNoteHandler(HandlerSimpleMixin):
+class VideoNoteHandler(SimpleHandler):
     pass
 
 
-class VoiceHandler(HandlerSimpleMixin):
+class VoiceHandler(SimpleHandler):
     pass

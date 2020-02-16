@@ -11,15 +11,81 @@ try:
 except ImportError:
     import json
 
-from .mixins import DBMixin
 from .types import ErrorResponse
-from .utils import error_response, get_logger, parse_response, ResultGetter
+from .utils import error_response, get_logger, parse_response
 from .exceptions import NoTransportException
 
 logger = get_logger()
 
 
-class Sender(DBMixin):
+class TransportMixin:
+    FORM_MESSAGE_ID = 'botup:user:{}:form_message_id'
+    LAST_TIME = 'botup:user:{}:last_time'
+    RESULT = 'botup:result:{}'
+
+    def __init__(self, connection):
+        self.connection = connection
+        if not self.connection:
+            self._patch_methods()
+
+    def _patch_methods(self):
+        def dummy(*args, **kwargs):
+            pass
+
+        self._get_form_message_id = dummy
+        self._set_form_message_id = dummy
+        self._delete_form_message_id = dummy
+        self._set_last_time = dummy
+        self._get_last_time = dummy
+        self._save_result = dummy
+        self._get_result = dummy
+
+    def get_form_message_id(self, chat_id):
+        return self.connection.get(self.FORM_MESSAGE_ID.format(chat_id))
+
+    def _set_form_message_id(self, chat_id, value):
+        self.connection.set(self.FORM_MESSAGE_ID.format(chat_id), value)
+
+    def _delete_form_message_id(self, chat_id):
+        return self.connection.delete(self.FORM_MESSAGE_ID.format(chat_id))
+
+    def _set_last_time(self, chat_id):
+        self.connection.set(self.LAST_TIME.format(chat_id), str(time.time()), 10)
+
+    def _get_last_time(self, chat_id):
+        return self.connection.get(self.LAST_TIME.format(chat_id))
+
+    def _save_result(self, correlation_id, value):
+        self.connection.set(self.RESULT.format(correlation_id), value, 10)
+
+    def _get_result(self, correlation_id):
+        value = self.connection.get(self.RESULT.format(correlation_id))
+        if not value:
+            return
+        self.connection.delete(self.RESULT.format(correlation_id))
+        return json.loads(value)
+
+
+class ResultGetter(TransportMixin):
+    __slots__ = ['connection', 'correlation_id', '_value']
+
+    def __init__(self, connection, correlation_id):
+        super().__init__(connection)
+        self.correlation_id = correlation_id
+        self._value = None
+
+    def wait(self, timeout=5, parse=True, tick=0.05):
+        attempts = timeout // tick
+        while not self._value and attempts != 0:
+            self._value = self._get_result(self.correlation_id)
+            attempts -= 1
+            time.sleep(tick)
+        if not self._value:
+            self._value = {'ok': False, 'error_code': 502, 'description': 'No result'}
+        return parse_response(self._value) if parse else self._value
+
+
+class Sender(TransportMixin):
     API_TIMEOUT = 5
 
     def __init__(self, token, connection=None, queue='botup-sender-queue', rate_limit=0.5,

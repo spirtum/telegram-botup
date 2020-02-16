@@ -1,12 +1,10 @@
 import logging
-import time
 
 try:
     import ujson as json
 except ImportError:
     import json
 
-from .mixins import DBMixin
 from .types import (
     User,
     Chat,
@@ -106,26 +104,3 @@ def get_chat_id(update):
         return update.shipping_query.from_.id
     if update.pre_checkout_query:
         return update.pre_checkout_query.from_.id
-
-
-class ResultGetter(DBMixin):
-    __slots__ = ['connection', 'correlation_id', '_value']
-
-    def __init__(self, connection, correlation_id):
-        super().__init__(connection)
-        self.correlation_id = correlation_id
-        self._value = None
-
-    def _get_value(self):
-        self._value = self._get_result(self.correlation_id)
-
-    def wait(self, timeout=5, parse=True, tick=0.05):
-        attempts = timeout // tick
-        self._get_value()
-        while not self._value and attempts != 0:
-            attempts -= 1
-            time.sleep(tick)
-            self._get_value()
-        if not self._value:
-            self._value = {'ok': False, 'error_code': 502, 'description': 'No result'}
-        return parse_response(self._value) if parse else self._value

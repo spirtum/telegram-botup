@@ -1,4 +1,4 @@
 from .dispatcher import Dispatcher, StateDispatcher, StateManager
 from .sender import Sender
 
-name = "telegram-botup"
+__version__ = "0.5.4"
