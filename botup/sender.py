@@ -66,7 +66,7 @@ class TransportMixin:
         return json.loads(value)
 
 
-class ResultGetter(TransportMixin):
+class AsyncResult(TransportMixin):
     __slots__ = ['connection', 'correlation_id', '_value']
 
     def __init__(self, connection, correlation_id):
@@ -88,8 +88,7 @@ class ResultGetter(TransportMixin):
 class Sender(TransportMixin):
     API_TIMEOUT = 5
 
-    def __init__(self, token, connection=None, queue='botup-sender-queue', rate_limit=0.5,
-                 proxy_url=None, basic_auth_string=None, socks_proxy_string=None):
+    def __init__(self, token, connection=None, queue='botup-sender-queue', rate_limit=0.5, proxy_string=None):
         super().__init__(connection)
         self.token = token
         self.auto_parse_type = True
@@ -97,9 +96,7 @@ class Sender(TransportMixin):
         self._rate_limit = rate_limit
         self._url = f'https://api.telegram.org/bot{self.token}/'
         self._req_kwargs = dict(timeout=self.API_TIMEOUT)
-        self._set_proxy_url(proxy_url) if proxy_url else None
-        self._set_basic_auth(basic_auth_string) if basic_auth_string else None
-        self._set_socks_proxy(socks_proxy_string) if socks_proxy_string else None
+        self._set_proxy(proxy_string) if proxy_string else None
         self.functions = {
             self.get_updates.__name__: self.get_updates,
             self.set_webhook.__name__: self.set_webhook,
@@ -170,39 +167,22 @@ class Sender(TransportMixin):
         }
 
     @classmethod
-    def start_new_worker(cls, token, redis_host, redis_port, redis_db, queue, rate_limit,
-                         proxy_url, basic_auth_string, socks_proxy_string, fake_mode):
+    def start_new_worker(cls, token, redis_cfg, queue, rate_limit, proxy_string, fake_mode):
         import redis
-        rdb = redis.StrictRedis(host=redis_host, port=redis_port, decode_responses=True, encoding='utf-8', db=redis_db)
         instance = cls(
             token=token,
-            connection=rdb,
+            connection=redis.StrictRedis(**redis_cfg),
             queue=queue,
             rate_limit=rate_limit,
-            proxy_url=proxy_url,
-            basic_auth_string=basic_auth_string,
-            socks_proxy_string=socks_proxy_string
+            proxy_string=proxy_string
         )
         instance.auto_parse_type = False
         instance._run_worker(fake_mode)
 
-    def _set_proxy_url(self, proxy_url):
-        if not proxy_url.startswith('https://') and not proxy_url.startswith('http://'):
-            proxy_url = f'http://{proxy_url}'
-        if not proxy_url.endswith('/'):
-            proxy_url = f'{proxy_url}/'
-        self._url = f'{proxy_url}bot{self.token}/'
-
-    def _set_basic_auth(self, basic_auth_string):
-        self._req_kwargs['auth'] = requests.auth.HTTPBasicAuth(*basic_auth_string.split(':'))
-
-    def _set_socks_proxy(self, socks_proxy_string):
-        if '://' in socks_proxy_string:
-            _, creds = socks_proxy_string.split('://')
-        else:
-            creds = socks_proxy_string
-        proxy = 'socks5h://' + creds
-        self._req_kwargs['proxies'] = dict(http=proxy, https=proxy)
+    def _set_proxy(self, proxy_string):
+        if '://' not in proxy_string:
+            proxy_string = f'socks5h://{proxy_string}'
+        self._req_kwargs['proxies'] = dict(http=proxy_string, https=proxy_string)
 
     def _delay(self, **kwargs):
         chat_id = kwargs.get('chat_id')
@@ -228,7 +208,7 @@ class Sender(TransportMixin):
             self._set_form_message_id(kwargs['chat_id'], data['result']['message_id'])
 
     def _run_worker(self, fake_mode=False):
-        logger.info('Sender-worker started')
+        logger.info('Worker started')
         subscriber = self.connection.pubsub()
         subscriber.subscribe([self._queue])
         for message in subscriber.listen():
@@ -271,7 +251,7 @@ class Sender(TransportMixin):
             save_id=save_id
         )
         self.connection.publish(self._queue, json.dumps(payload))
-        return ResultGetter(self.connection, correlation_id)
+        return AsyncResult(self.connection, correlation_id)
 
     def clear(self, chat_id):
         if not self.connection:

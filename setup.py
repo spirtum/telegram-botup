@@ -5,7 +5,7 @@ with open('README.md', 'r', encoding='utf-8') as fd:
 
 setup(
     name='telegram-botup',
-    version='0.5.4',
+    version='0.5.5',
     author='Dima Shebotinov',
     author_email='groovestreetmagic@gmail.com',
     description='Library for development Telegram bots',
@@ -17,7 +17,8 @@ setup(
     install_requires=[
         'Click',
         'requests',
-        'redis'
+        'redis',
+        'pysocks'
     ],
     entry_points={
         'console_scripts': ['botup=botup.cli:cli'],
