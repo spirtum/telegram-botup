@@ -8,3 +8,7 @@ class StateManagerException(Exception):
 
 class BadHandlerException(Exception):
     pass
+
+
+class ConfigException(Exception):
+    pass

@@ -87,8 +87,10 @@ class AsyncResult(TransportMixin):
 
 class Sender(TransportMixin):
     API_TIMEOUT = 5
+    DEFAULT_QUEUE = 'botup-sender-queue'
+    DEFAULT_RATE_LIMIT = 0.5
 
-    def __init__(self, token, connection=None, queue='botup-sender-queue', rate_limit=0.5, proxy_string=None):
+    def __init__(self, token, connection=None, queue=DEFAULT_QUEUE, rate_limit=DEFAULT_RATE_LIMIT, proxy_string=None):
         super().__init__(connection)
         self.token = token
         self.auto_parse_type = True
