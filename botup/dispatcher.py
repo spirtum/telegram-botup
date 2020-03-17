@@ -662,7 +662,7 @@ class StateManager:
         message = self.update.message or getattr(self.update.callback_query, 'message', None)
         if not message:
             raise StateManagerException(f'Cannot get state with {self.update.pformat()}')
-        return self.connection.hgetall(self.name.format(message.chat.id), key)
+        return self.connection.hget(self.name.format(message.chat.id), key)
 
     def reset(self, *keys):
         message = self.update.message or getattr(self.update.callback_query, 'message', None)
