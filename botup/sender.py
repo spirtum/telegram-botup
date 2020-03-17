@@ -19,9 +19,9 @@ logger = get_logger()
 
 
 class TransportMixin:
-    FORM_MESSAGE_ID = 'botup:user:{}:form_message_id'
-    LAST_TIME = 'botup:user:{}:last_time'
-    RESULT = 'botup:result:{}'
+    FORM_MESSAGE_ID = 'botup:{}:form_message_id'
+    LAST_TIME = 'botup:{}:last_time'
+    RESULT = 'botup:{}:result'
 
     def __init__(self, connection):
         self.connection = connection
