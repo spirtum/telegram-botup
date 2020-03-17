@@ -9,7 +9,7 @@ The library has several utilities for creating telegram bots:
 
 ## Installation
 ```
-$ pip install 'telegram-botup[full]'
+$ pip install telegram-botup flask
 ```
 
 ## Example
