@@ -9,15 +9,19 @@ The library has several utilities for creating telegram bots:
 
 ## Installation
 ```
-$ pip install telegram-botup flask
+$ pip install telegram-botup
 ```
 
 ## Example
 ```
+$ pip install telegram-botup flask
+```
+
+```
 # app.py
 
 from botup import Dispatcher, Sender
-from botup.wsgi import WSGIApp
+from botup.wsgi import WSGIApp  # using Flask
 
 TOKEN = "token"
 
