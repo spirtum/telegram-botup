@@ -89,6 +89,12 @@ def test_shipping_query_handler(dispatcher):
     assert dispatcher._shipping_query_handler
 
 
+def test_dice_handler(dispatcher):
+    assert not dispatcher._dice_handler
+    dispatcher.register(handlers.DiceHandler(function))
+    assert dispatcher._dice_handler
+
+
 def test_document_handler(dispatcher):
     assert not dispatcher._document_handler
     dispatcher.register(handlers.DocumentHandler(function))

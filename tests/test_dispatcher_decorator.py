@@ -185,6 +185,22 @@ def test_poll_answer_handler(dispatcher):
     assert updates[-1] is update
 
 
+def test_dice_handler(dispatcher):
+    update = utils.dice_update()
+
+    updates = list()
+    calls = list()
+
+    @dispatcher.dice_handler
+    def handler(c, u):
+        updates.append(u)
+        calls.append(handler)
+
+    dispatcher.handle(update)
+    assert calls[-1] is handler
+    assert updates[-1] is update
+
+
 def test_document_handler(dispatcher):
     update = utils.document_update()
 

@@ -24,6 +24,7 @@ class Dispatcher:
             handlers.CommandHandler: self.register_command_handler,
             handlers.ConnectedWebsiteHandler: self.register_connected_website_handler,
             handlers.ContactHandler: self.register_contact_handler,
+            handlers.DiceHandler: self.register_dice_handler,
             handlers.DocumentHandler: self.register_document_handler,
             handlers.EditedChannelPostHandler: self.register_edited_channel_post_handler,
             handlers.EditedMessageHandler: self.register_edited_message_handler,
@@ -63,6 +64,7 @@ class Dispatcher:
         self._poll_answer_handler = None
         self._pre_checkout_query_handler = None
         self._shipping_query_handler = None
+        self._dice_handler = None
         self._document_handler = None
         self._animation_handler = None
         self._audio_handler = None
@@ -150,6 +152,10 @@ class Dispatcher:
 
     def shipping_query_handler(self, handler):
         self.register_shipping_query_handler(handler)
+        return handler
+
+    def dice_handler(self, handler):
+        self.register_dice_handler(handler)
         return handler
 
     def document_handler(self, handler):
@@ -297,6 +303,11 @@ class Dispatcher:
         self._check_function_signature(handler, 2)
         self._statements.add(self._is_poll_answer)
         self._poll_answer_handler = handler
+
+    def register_dice_handler(self, handler):
+        self._check_function_signature(handler, 2)
+        self._statements.add(self._is_dice)
+        self._dice_handler = handler
 
     def register_document_handler(self, handler):
         self._check_function_signature(handler, 2)
@@ -457,6 +468,11 @@ class Dispatcher:
         if update.poll_answer:
             self._success = True
             handlers.PollAnswerHandler.handle(update, self._poll_answer_handler)
+
+    def _is_dice(self, update):
+        if update.message and update.message.dice:
+            self._success = True
+            handlers.DiceHandler.handle(update, self._dice_handler)
 
     def _is_document(self, update):
         if update.message and update.message.document and not update.message.animation:

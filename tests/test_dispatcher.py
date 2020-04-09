@@ -438,6 +438,32 @@ def test_edited_channel_post(dispatcher):
     assert updates[-1] is edited_channel_post_update
 
 
+def test_dice(dispatcher):
+    dice_update = utils.dice_update()
+    message_update = utils.message_update_by_text('message')
+
+    calls = list()
+    updates = list()
+
+    def dice_handler(c, u):
+        updates.append(u)
+        calls.append(dice_handler)
+
+    def message_handler(c, u):
+        updates.append(u)
+        calls.append(message_handler)
+
+    dispatcher.register_message_handler(re.compile('.*'), message_handler)
+    dispatcher.handle(message_update)
+    dispatcher.handle(dice_update)
+    assert calls[-1] is message_handler
+    assert updates[-1] is message_update
+    dispatcher.register_dice_handler(dice_handler)
+    dispatcher.handle(dice_update)
+    assert calls[-1] is dice_handler
+    assert updates[-1] is dice_update
+
+
 def test_document(dispatcher):
     document_update = utils.document_update()
     message_update = utils.message_update_by_text('message')

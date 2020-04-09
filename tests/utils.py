@@ -140,6 +140,24 @@ def edited_channel_post_update():
                      'update_id': 123})
 
 
+def dice_update():
+    return Update(**{'message': {'chat': {'first_name': USER_FIRST_NAME,
+                                          'id': USER_ID,
+                                          'last_name': USER_LAST_NAME,
+                                          'type': 'private',
+                                          'username': USER_USERNAME},
+                                 'date': 123,
+                                 'dice': {'value': 6},
+                                 'from': {'first_name': USER_FIRST_NAME,
+                                          'id': USER_ID,
+                                          'is_bot': False,
+                                          'language_code': 'en',
+                                          'last_name': USER_LAST_NAME,
+                                          'username': USER_USERNAME},
+                                 'message_id': 2},
+                     'update_id': 123})
+
+
 def document_update():
     return Update(**{'message': {'chat': {'first_name': USER_FIRST_NAME,
                                           'id': USER_ID,

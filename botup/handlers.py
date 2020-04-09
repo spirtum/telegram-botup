@@ -77,6 +77,10 @@ class ContactHandler(SimpleHandler):
     pass
 
 
+class DiceHandler(SimpleHandler):
+    pass
+
+
 class DocumentHandler(SimpleHandler):
     pass
 

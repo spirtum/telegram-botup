@@ -121,6 +121,7 @@ class Sender(TransportMixin):
             self.send_venue.__name__: self.send_venue,
             self.send_contact.__name__: self.send_contact,
             self.send_poll.__name__: self.send_poll,
+            self.send_dice.__name__: self.send_dice,
             self.send_chat_action.__name__: self.send_chat_action,
             self.get_user_profile_photos.__name__: self.get_user_profile_photos,
             self.get_file.__name__: self.get_file,
@@ -145,6 +146,8 @@ class Sender(TransportMixin):
             self.set_chat_sticker_set.__name__: self.set_chat_sticker_set,
             self.delete_chat_sticker_set.__name__: self.delete_chat_sticker_set,
             self.answer_callback_query.__name__: self.answer_callback_query,
+            self.set_my_commands.__name__: self.set_my_commands,
+            self.get_my_commands.__name__: self.get_my_commands,
             self.edit_message_text.__name__: self.edit_message_text,
             self.edit_message_caption.__name__: self.edit_message_caption,
             self.edit_message_media.__name__: self.edit_message_media,
@@ -158,6 +161,7 @@ class Sender(TransportMixin):
             self.add_sticker_to_set.__name__: self.add_sticker_to_set,
             self.set_sticker_position_in_set.__name__: self.set_sticker_position_in_set,
             self.delete_sticker_from_set.__name__: self.delete_sticker_from_set,
+            self.set_sticker_set_thumb.__name__: self.set_sticker_set_thumb,
             self.answer_inline_query.__name__: self.answer_inline_query,
             self.send_invoice.__name__: self.send_invoice,
             self.answer_shipping_query.__name__: self.answer_shipping_query,
@@ -556,6 +560,11 @@ class Sender(TransportMixin):
                       reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
         return self._request(self._url + 'sendPoll', data=kwargs, **self._req_kwargs)
 
+    def send_dice(self, chat_id, disable_notification=None, reply_to_message_id=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, disable_notification=disable_notification,
+                      reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
+        return self._request(self._url + 'sendDice', data=kwargs, **self._req_kwargs)
+
     def send_chat_action(self, chat_id, action):
         return self._request(self._url + 'sendChatAction', data=dict(chat_id=chat_id, action=action), **self._req_kwargs)
 
@@ -673,6 +682,13 @@ class Sender(TransportMixin):
                       cache_time=cache_time)
         return self._request(self._url + 'answerCallbackQuery', data=kwargs, **self._req_kwargs)
 
+    def set_my_commands(self, commands):
+        kwargs = dict(commands=json.dumps(commands))
+        return self._request(self._url + 'setMyCommands', data=kwargs, **self._req_kwargs)
+
+    def get_my_commands(self):
+        return self._request(self._url + 'getMyCommands', **self._req_kwargs)
+
     def edit_message_text(self, text, chat_id=None, message_id=None, inline_message_id=None,
                           parse_mode=None, disable_web_page_preview=None, reply_markup=None):
         kwargs = dict(text=text, chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id,
@@ -748,21 +764,24 @@ class Sender(TransportMixin):
             return self._error_response('Location not found')
         return self._request(self._url + 'uploadStickerFile', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
-    def create_new_sticker_set(self, user_id, name, title, png_sticker, emojis,
+    def create_new_sticker_set(self, user_id, name, title, emojis, png_sticker=None, tgs_sticker=None,
                                contains_masks=None, mask_position=None):
+        if png_sticker and tgs_sticker:
+            return self._error_response('You must use exactly one of the fields png_sticker or tgs_sticker')
         kwargs = dict(user_id=user_id, name=name, title=title, emojis=emojis, contains_masks=contains_masks)
         files_kwargs = dict()
-        file_id = png_sticker.get('file_id')
-        url = png_sticker.get('url')
-        path = png_sticker.get('path')
+        sticker, sticker_key = (png_sticker, 'png_sticker') if png_sticker else (tgs_sticker, 'tgs_sticker')
+        file_id = sticker.get('file_id')
+        url = sticker.get('url')
+        path = sticker.get('path')
         if file_id:
-            kwargs['png_sticker'] = file_id
+            kwargs[sticker_key] = file_id
         elif url:
-            kwargs['png_sticker'] = url
+            kwargs[sticker_key] = url
         elif path:
             if not os.path.isfile(path):
                 return self._error_response('File not found')
-            files_kwargs['png_sticker'] = open(path, 'rb')
+            files_kwargs[sticker_key] = open(path, 'rb')
         else:
             return self._error_response('Location not found')
         if contains_masks:
@@ -770,20 +789,23 @@ class Sender(TransportMixin):
         return self._request(self._url + 'createNewStickerSet', data=kwargs, files_kwargs=files_kwargs,
                              **self._req_kwargs)
 
-    def add_sticker_to_set(self, user_id, name, png_sticker, emojis, mask_position=None):
+    def add_sticker_to_set(self, user_id, name, emojis, png_sticker=None, tgs_sticker=None, mask_position=None):
+        if png_sticker and tgs_sticker:
+            return self._error_response('You must use exactly one of the fields png_sticker or tgs_sticker')
         kwargs = dict(user_id=user_id, name=name, emojis=emojis)
         files_kwargs = dict()
-        file_id = png_sticker.get('file_id')
-        url = png_sticker.get('url')
-        path = png_sticker.get('path')
+        sticker, sticker_key = (png_sticker, 'png_sticker') if png_sticker else (tgs_sticker, 'tgs_sticker')
+        file_id = sticker.get('file_id')
+        url = sticker.get('url')
+        path = sticker.get('path')
         if file_id:
-            kwargs['png_sticker'] = file_id
+            kwargs[sticker_key] = file_id
         elif url:
-            kwargs['png_sticker'] = url
+            kwargs[sticker_key] = url
         elif path:
             if not os.path.isfile(path):
                 return self._error_response('File not found')
-            files_kwargs['png_sticker'] = open(path, 'rb')
+            files_kwargs[sticker_key] = open(path, 'rb')
         else:
             return self._error_response('Location not found')
         if mask_position:
@@ -796,6 +818,25 @@ class Sender(TransportMixin):
 
     def delete_sticker_from_set(self, sticker):
         return self._request(self._url + 'deleteStickerFromSet', data=dict(sticker=sticker), **self._req_kwargs)
+
+    def set_sticker_set_thumb(self, name, user_id, thumb):
+        kwargs = dict(name=name, user_id=user_id)
+        files_kwargs = dict()
+        file_id = thumb.get('file_id')
+        url = thumb.get('url')
+        path = thumb.get('path')
+        if file_id:
+            kwargs['thumb'] = file_id
+        elif url:
+            kwargs['thumb'] = url
+        elif path:
+            if not os.path.isfile(path):
+                return self._error_response('File not found')
+            files_kwargs['thumb'] = open(path, 'rb')
+        else:
+            return self._error_response('Location not found')
+        return self._request(self._url + 'setStickerSetThumb', data=kwargs, files_kwargs=files_kwargs,
+                             **self._req_kwargs)
 
     def answer_inline_query(self, inline_query_id, results, cache_time=None, is_personal=None,
                             next_offset=None, switch_pm_text=None, switch_pm_parameter=None):

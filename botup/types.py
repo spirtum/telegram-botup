@@ -285,6 +285,13 @@ class Poll(BaseObject):
         self.correct_option_id = kwargs.get('correct_option_id')
 
 
+class Dice(BaseObject):
+    __slots__ = ['value']
+
+    def __init__(self, **kwargs):
+        self.value = kwargs.get('value')
+
+
 class ResponseParameters(BaseObject):
     __slots__ = ['migrate_to_chat_id', 'retry_after']
 
@@ -1215,8 +1222,8 @@ class Sticker(BaseObject):
 
 
 class StickerSet(BaseObject):
-    __slots__ = ['name', 'title', 'is_animated', 'contains_masks', 'stickers']
-    NESTED = ['stickers', ]
+    __slots__ = ['name', 'title', 'is_animated', 'contains_masks', 'stickers', 'thumb']
+    NESTED = ['stickers', 'thumb']
 
     def __init__(self, **kwargs):
         self.name = kwargs.get('name')
@@ -1224,6 +1231,7 @@ class StickerSet(BaseObject):
         self.is_animated = kwargs.get('is_animated')
         self.contains_masks = kwargs.get('contains_masks')
         self.stickers = [Sticker(**v) for v in kwargs['stickers']] if 'stickers' in kwargs else list()
+        self.thumb = PhotoSize(**kwargs['thumb']) if 'thumb' in kwargs else None
 
 
 class ChatPermissions(BaseObject):
@@ -1240,6 +1248,14 @@ class ChatPermissions(BaseObject):
         self.can_change_info = kwargs.get('can_change_info')
         self.can_invite_users = kwargs.get('can_invite_users')
         self.can_pin_messages = kwargs.get('can_pin_messages')
+
+
+class BotCommand(BaseObject):
+    __slots__ = ['command', 'description']
+
+    def __init__(self, **kwargs):
+        self.command = kwargs.get('command')
+        self.description = kwargs.get('description')
 
 
 class Chat(BaseObject):
@@ -1269,14 +1285,14 @@ class Message(BaseObject):
                  'forward_sender_name', 'forward_date', 'reply_to_message', 'edit_date', 'media_group_id',
                  'author_signature', 'text', 'entities', 'caption_entities', 'audio', 'document', 'animation',
                  'game', 'photo', 'sticker', 'video', 'voice', 'video_note', 'caption', 'contact', 'location',
-                 'venue', 'poll', 'new_chat_members', 'left_chat_member', 'new_chat_title', 'new_chat_photo',
+                 'venue', 'poll', 'dice', 'new_chat_members', 'left_chat_member', 'new_chat_title', 'new_chat_photo',
                  'delete_chat_photo', 'group_chat_created', 'supergroup_chat_created', 'channel_chat_created',
                  'migrate_to_chat_id', 'migrate_from_chat_id', 'pinned_message', 'invoice',
                  'successful_payment', 'connected_website', 'passport_data', 'reply_markup']
     NESTED = ['from_', 'chat', 'forward_from_chat', 'forward_from', 'reply_to_message', 'entities', 'caption_entities',
               'audio', 'document', 'animation', 'game', 'photo', 'sticker', 'video', 'voice', 'video_note', 'contact',
-              'location', 'venue', 'poll', 'new_chat_members', 'left_chat_member', 'new_chat_photo', 'pinned_message',
-              'invoice', 'successful_payment', 'passport_data', 'reply_markup']
+              'location', 'venue', 'poll', 'dice', 'new_chat_members', 'left_chat_member', 'new_chat_photo',
+              'pinned_message', 'invoice', 'successful_payment', 'passport_data', 'reply_markup']
 
     def __init__(self, **kwargs):
         self.message_id = kwargs.get('message_id')
@@ -1310,6 +1326,7 @@ class Message(BaseObject):
         self.location = Location(**kwargs['location']) if 'location' in kwargs else None
         self.venue = Venue(**kwargs['venue']) if 'venue' in kwargs else None
         self.poll = Poll(**kwargs['poll']) if 'poll' in kwargs else None
+        self.dice = Dice(**kwargs['dice']) if 'dice' in kwargs else None
         self.new_chat_members = [User(**v) for v in
                                  kwargs['new_chat_members']] if 'new_chat_members' in kwargs else list()
         self.left_chat_member = User(**kwargs['left_chat_member']) if 'left_chat_member' in kwargs else None

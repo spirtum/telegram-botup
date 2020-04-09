@@ -14,6 +14,7 @@ from .types import (
     Message,
     ChatMember,
     StickerSet,
+    BotCommand,
     WebhookInfo,
     RawResponse,
     ErrorResponse,
@@ -46,7 +47,9 @@ def parse_response(response):
         for item in result:
             if 'update_id' in item:
                 parsed_result.append(Update(**item))
-            if 'user' in item and 'status' in item:
+            elif 'command' in item:
+                parsed_result.append(BotCommand(**item))
+            elif 'user' in item and 'status' in item:
                 parsed_result.append(ChatMember(**item))
             elif 'user' in item and 'score' in item:
                 parsed_result.append(GameHighScore(**item))
