@@ -5,7 +5,7 @@ with open('README.md', 'r', encoding='utf-8') as fd:
 
 setup(
     name='telegram-botup',
-    version='0.6.7',
+    version='0.7.0',
     author='Dima Shebotinov',
     author_email='groovestreetmagic@gmail.com',
     description='Telegram bot API',
@@ -26,7 +26,7 @@ setup(
         'console_scripts': ['botup=botup.cli:cli'],
     },
     project_urls={
-        'Source Code': 'https://github.com/dimashebo/telegram-botup'
+        'Source Code': 'https://github.com/spirtum/telegram-botup'
     },
     classifiers=[
         'License :: OSI Approved :: Python Software Foundation License'

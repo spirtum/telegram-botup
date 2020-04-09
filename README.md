@@ -40,7 +40,7 @@ $ flask run
 
 ## Tests
 ```
-pytest -v
+$ pytest -v
 ```
 
 
