@@ -1,6 +1,6 @@
 # Telegram-botup
 
-The library has several utilities for creating telegram bots:
+The library has several utilities:
 
 - **Dispatcher** handles incoming updates
 - **Sender** implements Telegram API methods
@@ -38,7 +38,16 @@ def hello_handler(chat_id, update):
 $ flask run
 ```
 
-## AutoStart Example
+## Tests
+```
+pytest -v
+```
+
+
+## AutoStart (experimental)
+
+Bot generating from yaml file
+
 ```
 # botup.yml
 
