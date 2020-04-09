@@ -5,10 +5,10 @@ with open('README.md', 'r', encoding='utf-8') as fd:
 
 setup(
     name='telegram-botup',
-    version='0.6.5',
+    version='0.6.6',
     author='Dima Shebotinov',
     author_email='groovestreetmagic@gmail.com',
-    description='Library for development Telegram bots',
+    description='Telegram bot API',
     long_description=long_description,
     long_description_content_type="text/markdown",
     py_modules=['botup'],
@@ -26,7 +26,7 @@ setup(
         'console_scripts': ['botup=botup.cli:cli'],
     },
     project_urls={
-        'Source Code': 'https://bitbucket.org/dimashebo/telegram-botup'
+        'Source Code': 'https://github.com/dimashebo/telegram-botup'
     },
     classifiers=[
         'License :: OSI Approved :: Python Software Foundation License'
