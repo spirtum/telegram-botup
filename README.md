@@ -17,7 +17,7 @@ $ pip install telegram-botup
 $ pip install telegram-botup flask
 ```
 
-```
+```python
 # app.py
 
 from botup import Dispatcher, Sender
