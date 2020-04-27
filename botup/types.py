@@ -283,12 +283,18 @@ class Poll(BaseObject):
         self.type = kwargs.get('type')
         self.allows_multiple_answers = kwargs.get('allows_multiple_answers')
         self.correct_option_id = kwargs.get('correct_option_id')
+        self.explanation = kwargs.get('explanation')
+        self.explanation_entities = [
+            MessageEntity(**v) for v in kwargs['explanation_entities']] if 'explanation_entities' in kwargs else list()
+        self.open_period = kwargs.get('open_period')
+        self.close_date = kwargs.get('close_date')
 
 
 class Dice(BaseObject):
     __slots__ = ['value']
 
     def __init__(self, **kwargs):
+        self.emoji = kwargs.get('emoji')
         self.value = kwargs.get('value')
 
 

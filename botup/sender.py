@@ -550,18 +550,20 @@ class Sender(TransportMixin):
         return self._request(self._url + 'sendContact', data=kwargs, **self._req_kwargs)
 
     def send_poll(self, chat_id, question, options, is_anonymous=None, type=None, allows_multiple_answers=None,
-                  correct_option_id=None, is_closed=None, disable_notification=None, reply_to_message_id=None,
+                  correct_option_id=None, explanation=None, explanation_parse_mode=None, open_period=None,
+                  close_date=None, is_closed=None, disable_notification=None, reply_to_message_id=None,
                   reply_markup=None):
         if isinstance(options, list):
             options = json.dumps(options)
         kwargs = dict(chat_id=chat_id, question=question, options=options, is_anonymous=is_anonymous, type=type,
                       allows_multiple_answers=allows_multiple_answers, correct_option_id=correct_option_id,
-                      is_closed=is_closed, disable_notification=disable_notification,
+                      explanation=explanation, explanation_parse_mode=explanation_parse_mode, open_period=open_period,
+                      close_date=close_date, is_closed=is_closed, disable_notification=disable_notification,
                       reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
         return self._request(self._url + 'sendPoll', data=kwargs, **self._req_kwargs)
 
-    def send_dice(self, chat_id, disable_notification=None, reply_to_message_id=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, disable_notification=disable_notification,
+    def send_dice(self, chat_id, emoji=None, disable_notification=None, reply_to_message_id=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, emoji=emoji, disable_notification=disable_notification,
                       reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
         return self._request(self._url + 'sendDice', data=kwargs, **self._req_kwargs)
 
