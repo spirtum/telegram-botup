@@ -863,7 +863,7 @@ class InlineQueryResultGame(InlineQueryResult):
 
 class InlineQueryResultGif(InlineQueryResult):
     __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'gif_url', 'gif_width', 'gif_height',
-                 'gif_duration', 'thumb_url', 'title', 'caption', 'parse_mode']
+                 'gif_duration', 'thumb_url', 'thumb_mime_type', 'title', 'caption', 'parse_mode']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -873,6 +873,7 @@ class InlineQueryResultGif(InlineQueryResult):
         self.gif_height = kwargs.get('gif_height')
         self.gif_duration = kwargs.get('gif_duration')
         self.thumb_url = kwargs.get('thumb_url')
+        self.thumb_mime_type = kwargs.get('thumb_mime_type')
         self.title = kwargs.get('title')
         self.caption = kwargs.get('caption')
         self.parse_mode = kwargs.get('parse_mode')
@@ -895,8 +896,8 @@ class InlineQueryResultLocation(InlineQueryResult):
 
 
 class InlineQueryResultMpeg4Gif(InlineQueryResult):
-    __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'mpeg4_url', 'mpeg4_width',
-                 'mpeg4_height', 'mpeg4_duration', 'thumb_url', 'title', 'caption', 'parse_mode']
+    __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'mpeg4_url', 'mpeg4_width', 'mpeg4_height',
+                 'mpeg4_duration', 'thumb_url', 'thumb_mime_type', 'title', 'caption', 'parse_mode']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -906,6 +907,7 @@ class InlineQueryResultMpeg4Gif(InlineQueryResult):
         self.mpeg4_height = kwargs.get('mpeg4_height')
         self.mpeg4_duration = kwargs.get('mpeg4_duration')
         self.thumb_url = kwargs.get('thumb_url')
+        self.thumb_mime_type = kwargs.get('thumb_mime_type')
         self.title = kwargs.get('title')
         self.caption = kwargs.get('caption')
         self.parse_mode = kwargs.get('parse_mode')
@@ -1288,17 +1290,17 @@ class Chat(BaseObject):
 
 class Message(BaseObject):
     __slots__ = ['message_id', 'from_', 'date', 'chat', 'forward_from_chat', 'forward_from', 'forward_signature',
-                 'forward_sender_name', 'forward_date', 'reply_to_message', 'edit_date', 'media_group_id',
+                 'forward_sender_name', 'forward_date', 'reply_to_message', 'via_bot', 'edit_date', 'media_group_id',
                  'author_signature', 'text', 'entities', 'caption_entities', 'audio', 'document', 'animation',
                  'game', 'photo', 'sticker', 'video', 'voice', 'video_note', 'caption', 'contact', 'location',
                  'venue', 'poll', 'dice', 'new_chat_members', 'left_chat_member', 'new_chat_title', 'new_chat_photo',
                  'delete_chat_photo', 'group_chat_created', 'supergroup_chat_created', 'channel_chat_created',
                  'migrate_to_chat_id', 'migrate_from_chat_id', 'pinned_message', 'invoice',
                  'successful_payment', 'connected_website', 'passport_data', 'reply_markup']
-    NESTED = ['from_', 'chat', 'forward_from_chat', 'forward_from', 'reply_to_message', 'entities', 'caption_entities',
-              'audio', 'document', 'animation', 'game', 'photo', 'sticker', 'video', 'voice', 'video_note', 'contact',
-              'location', 'venue', 'poll', 'dice', 'new_chat_members', 'left_chat_member', 'new_chat_photo',
-              'pinned_message', 'invoice', 'successful_payment', 'passport_data', 'reply_markup']
+    NESTED = ['from_', 'chat', 'forward_from_chat', 'forward_from', 'reply_to_message', 'via_bot', 'entities',
+              'caption_entities', 'audio', 'document', 'animation', 'game', 'photo', 'sticker', 'video', 'voice',
+              'video_note', 'contact', 'location', 'venue', 'poll', 'dice', 'new_chat_members', 'left_chat_member',
+              'new_chat_photo', 'pinned_message', 'invoice', 'successful_payment', 'passport_data', 'reply_markup']
 
     def __init__(self, **kwargs):
         self.message_id = kwargs.get('message_id')
@@ -1311,6 +1313,7 @@ class Message(BaseObject):
         self.forward_sender_name = kwargs.get('forward_sender_name')
         self.forward_date = kwargs.get('forward_date')
         self.reply_to_message = Message(**kwargs['reply_to_message']) if 'reply_to_message' in kwargs else None
+        self.via_bot = User(**kwargs['via_bot']) if 'via_bot' in kwargs else None
         self.edit_date = kwargs.get('edit_date')
         self.media_group_id = kwargs.get('media_group_id')
         self.author_signature = kwargs.get('author_signature')
