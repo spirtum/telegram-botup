@@ -270,8 +270,9 @@ class PollAnswer(BaseObject):
 
 class Poll(BaseObject):
     __slots__ = ['id', 'question', 'options', 'total_voter_count', 'is_closed', 'is_anonymous', 'type',
-                 'allows_multiple_answers', 'correct_option_id']
-    NESTED = ['options', ]
+                 'allows_multiple_answers', 'correct_option_id', 'explanation', 'explanation_entities', 'open_period',
+                 'close_date']
+    NESTED = ['options', 'explanation_entities']
 
     def __init__(self, **kwargs):
         self.id = kwargs.get('id')
@@ -291,7 +292,7 @@ class Poll(BaseObject):
 
 
 class Dice(BaseObject):
-    __slots__ = ['value']
+    __slots__ = ['emoji', 'value']
 
     def __init__(self, **kwargs):
         self.emoji = kwargs.get('emoji')
