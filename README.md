@@ -48,7 +48,7 @@ $ pytest -v
 
 Bot generating from yaml file
 
-```
+```yaml
 # botup.yml
 
 config:
@@ -72,7 +72,7 @@ $ botup start
 ```
 
 ### send_photo
-```
+```yaml
 - pattern: /photo
     function: send_photo
     kwargs:
@@ -83,7 +83,7 @@ $ botup start
 ```
 
 ### keyboard
-```
+```yaml
 - pattern: /kb
     function: send_message
     kwargs:
@@ -108,7 +108,7 @@ $ botup start
 ```
 
 ### states
-```
+```yaml
 config:
   token: "token"
   webhook_url: "https://webhook.example.com"
