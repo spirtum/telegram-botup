@@ -5,7 +5,7 @@ with open('README.md', 'r', encoding='utf-8') as fd:
 
 setup(
     name='telegram-botup',
-    version='0.7.3',
+    version='0.7.4',
     author='Dima Shebotinov',
     author_email='groovestreetmagic@gmail.com',
     description='Telegram bot API',

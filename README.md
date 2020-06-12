@@ -79,7 +79,7 @@ $ botup start
       photo:
         type: InputFile
         kwargs:
-          path: /home/dshebo/Downloads/cat.jpeg
+          path: /home/user/Pictures/example.jpeg
 ```
 
 ### keyboard

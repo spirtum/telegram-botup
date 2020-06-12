@@ -81,7 +81,7 @@ class WSGIApp(Flask):
         )
 
 
-def HandlerFactory(sn, sm, function, async, kwargs, states):
+def HandlerFactory(sn, sm, function, async_mode, kwargs, states):
     for k, v in kwargs.items():
         if isinstance(v, str):
             continue
@@ -89,7 +89,7 @@ def HandlerFactory(sn, sm, function, async, kwargs, states):
         v_new = v_type(**v.get('kwargs', {}))
         kwargs[k] = v_new.as_json() if v_type in keyboard_types else v_new.as_dict()
     api_method = getattr(sn, function)
-    if async:
+    if async_mode:
         kwargs['func'] = api_method
         method = getattr(sn, 'push')
     else:
@@ -120,7 +120,7 @@ def DispatcherFactory(sn, sm, data, config):
                 sn=sn,
                 sm=sm,
                 function=hd['function'],
-                async=config.get('async'),
+                async_mode=config.get('async'),
                 kwargs=hd['kwargs'],
                 states=hd.get('states')
             )
