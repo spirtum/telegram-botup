@@ -250,6 +250,15 @@ class Location(BaseObject):
         self.latitude = kwargs.get('latitude')
 
 
+class ChatLocation(BaseObject):
+    __slots__ = ['location', 'address']
+    NESTED = ['location']
+
+    def __init__(self, **kwargs):
+        self.location = Location(**kwargs['location']) if 'location' in kwargs else None
+        self.address = kwargs.get('address')
+
+
 class PollOption(BaseObject):
     __slots__ = ['text', 'voter_count']
 
@@ -1270,8 +1279,9 @@ class BotCommand(BaseObject):
 
 class Chat(BaseObject):
     __slots__ = ['id', 'type', 'title', 'username', 'first_name', 'last_name', 'photo', 'description', 'invite_link',
-                 'pinned_message', 'permissions', 'slow_mode_delay', 'sticker_set_name', 'can_set_sticker_set']
-    NESTED = ['photo', 'pinned_message', 'permissions']
+                 'pinned_message', 'permissions', 'slow_mode_delay', 'sticker_set_name', 'can_set_sticker_set',
+                 'location']
+    NESTED = ['photo', 'pinned_message', 'permissions', 'location']
 
     def __init__(self, **kwargs):
         self.id = kwargs.get('id')
@@ -1288,6 +1298,7 @@ class Chat(BaseObject):
         self.slow_mode_delay = kwargs.get('slow_mode_delay')
         self.sticker_set_name = kwargs.get('sticker_set_name')
         self.can_set_sticker_set = kwargs.get('can_set_sticker_set')
+        self.location = ChatLocation(**kwargs['location']) if 'location' in kwargs else None
 
 
 class Message(BaseObject):

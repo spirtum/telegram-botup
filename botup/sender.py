@@ -585,9 +585,9 @@ class Sender(TransportMixin):
         return self._request(self._url + 'kickChatMember', data=dict(
             chat_id=chat_id, user_id=user_id, until_date=until_date), **self._req_kwargs)
 
-    def unban_chat_member(self, chat_id, user_id):
-        return self._request(self._url + 'unbanChatMember', data=dict(chat_id=chat_id, user_id=user_id),
-                             **self._req_kwargs)
+    def unban_chat_member(self, chat_id, user_id, only_if_banned=None):
+        kwargs = dict(chat_id=chat_id, user_id=user_id, only_if_banned=only_if_banned)
+        return self._request(self._url + 'unbanChatMember', data=kwargs, **self._req_kwargs)
 
     def restrict_chat_member(self, chat_id, user_id, permissions, until_date=None):
         kwargs = dict(
