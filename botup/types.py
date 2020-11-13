@@ -368,13 +368,14 @@ class Voice(BaseObject):
 
 
 class WebhookInfo(BaseObject):
-    __slots__ = ['url', 'has_custom_certificate', 'pending_update_count', 'last_error_date',
+    __slots__ = ['url', 'has_custom_certificate', 'pending_update_count', 'ip_address', 'last_error_date',
                  'last_error_message', 'max_connections', 'allowed_updates']
 
     def __init__(self, **kwargs):
         self.url = kwargs.get('url')
         self.has_custom_certificate = kwargs.get('has_custom_certificate')
         self.pending_update_count = kwargs.get('pending_update_count')
+        self.ip_address = kwargs.get('ip_address')
         self.last_error_date = kwargs.get('last_error_date')
         self.last_error_message = kwargs.get('last_error_message')
         self.max_connections = kwargs.get('max_connections')

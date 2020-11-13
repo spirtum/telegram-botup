@@ -286,12 +286,15 @@ class Sender(TransportMixin):
         )
         return self._request(self._url + 'getUpdates', data=kwargs, **self._req_kwargs)
 
-    def set_webhook(self, url, certificate=None, max_connections=None, allowed_updates=None):
+    def set_webhook(self, url, certificate=None, ip_address=None, max_connections=None, allowed_updates=None,
+                    drop_pending_updates=None):
         kwargs = dict(
             url=url,
             certificate=certificate,
+            ip_address=ip_address,
             max_connections=max_connections,
-            allowed_updates=allowed_updates
+            allowed_updates=allowed_updates,
+            drop_pending_updates=drop_pending_updates
         )
         files_kwargs = dict()
         if certificate:
@@ -303,8 +306,9 @@ class Sender(TransportMixin):
             files_kwargs['certificate'] = open(path, 'rb')
         return self._request(self._url + 'setWebhook', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
-    def delete_webhook(self):
-        return self._request(self._url + 'deleteWebhook', **self._req_kwargs)
+    def delete_webhook(self, drop_pending_updates=None):
+        kwargs = dict(drop_pending_updates=drop_pending_updates)
+        return self._request(self._url + 'deleteWebhook', data=kwargs, **self._req_kwargs)
 
     def get_webhook_info(self):
         return self._request(self._url + 'getWebhookInfo', **self._req_kwargs)
