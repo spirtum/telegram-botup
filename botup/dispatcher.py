@@ -647,6 +647,12 @@ class StateManager:
             raise StateManagerException(f'Cannot reset state with {self.update.pformat()}')
         return self.connection.hdel(self.name.format(chat_id), *keys)
 
+    def reset_all(self):
+        chat_id = get_chat_id(self.update)
+        if not chat_id:
+            raise StateManagerException(f'Cannot reset state with {self.update.pformat()}')
+        return self.connection.delete(self.name.format(chat_id))
+
 
 class DictStateManager:
     def __init__(self, connection=None, name='botup:{}:state'):
@@ -687,3 +693,10 @@ class DictStateManager:
             except KeyError:
                 pass
         return True
+
+    def reset_all(self):
+        chat_id = get_chat_id(self.update)
+        if not chat_id:
+            raise StateManagerException(f'Cannot reset state with {self.update.pformat()}')
+        self.data.setdefault(str(chat_id), {})
+        del self.data[str(chat_id)]
