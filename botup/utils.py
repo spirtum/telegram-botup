@@ -86,6 +86,10 @@ def start_group_link(bot_name):
     return f'https://telegram.me/{bot_name}?startgroup='
 
 
+def start_link(bot_name):
+    return f'https://telegram.me/{bot_name}?start='
+
+
 def get_chat_id(update):
     if update.message:
         return update.message.chat.id
