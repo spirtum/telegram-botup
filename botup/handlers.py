@@ -25,6 +25,7 @@ class SimpleHandler:
         if not handler:
             return
         handler(update.message.chat.id, update)
+        return True
 
 
 class AnimationHandler(SimpleHandler):
@@ -40,7 +41,9 @@ class CallbackQueryHandler(PatternHandler):
     @classmethod
     def handle(cls, update, handlers):
         handler = cls.get_handler(update.callback_query.data, handlers)
-        handler(update.callback_query.message.chat.id, update) if handler else None
+        if handler:
+            handler(update.callback_query.message.chat.id, update)
+            return True
 
 
 class ChannelPostHandler(SimpleHandler):
@@ -50,6 +53,7 @@ class ChannelPostHandler(SimpleHandler):
         if not handler:
             return
         handler(update.channel_post.chat.id, update)
+        return True
 
 
 class ChosenInlineResultHandler(SimpleHandler):
@@ -59,6 +63,7 @@ class ChosenInlineResultHandler(SimpleHandler):
         if not handler:
             return
         handler(update.chosen_inline_result.from_.id, update)
+        return True
 
 
 class CommandHandler(PatternHandler):
@@ -66,7 +71,9 @@ class CommandHandler(PatternHandler):
     @classmethod
     def handle(cls, update, handlers):
         handler = cls.get_handler(update.message.text, handlers)
-        handler(update.message.chat.id, update) if handler else None
+        if handler:
+            handler(update.message.chat.id, update)
+            return True
 
 
 class ConnectedWebsiteHandler(SimpleHandler):
@@ -92,6 +99,7 @@ class EditedChannelPostHandler(SimpleHandler):
         if not handler:
             return
         handler(update.edited_channel_post.chat.id, update)
+        return True
 
 
 class EditedMessageHandler(SimpleHandler):
@@ -101,6 +109,7 @@ class EditedMessageHandler(SimpleHandler):
         if not handler:
             return
         handler(update.edited_message.chat.id, update)
+        return True
 
 
 class GameHandler(SimpleHandler):
@@ -112,7 +121,9 @@ class InlineQueryHandler(PatternHandler):
     @classmethod
     def handle(cls, update, handlers):
         handler = cls.get_handler(update.inline_query.query, handlers)
-        handler(update.inline_query.from_.id, update) if handler else None
+        if handler:
+            handler(update.inline_query.from_.id, update)
+            return True
 
 
 class InvoiceHandler(SimpleHandler):
@@ -132,7 +143,9 @@ class MessageHandler(PatternHandler):
     @classmethod
     def handle(cls, update, handlers):
         handler = cls.get_handler(update.message.text, handlers)
-        handler(update.message.chat.id, update) if handler else None
+        if handler:
+            handler(update.message.chat.id, update)
+            return True
 
 
 class NewChatMembersHandler(SimpleHandler):
@@ -162,6 +175,7 @@ class PollHandler(SimpleHandler):
         if not handler:
             return
         handler(None, update)
+        return True
 
 
 class PollAnswerHandler(SimpleHandler):
@@ -171,6 +185,7 @@ class PollAnswerHandler(SimpleHandler):
         if not handler:
             return
         handler(update.poll_answer.user.id, update)
+        return True
 
 
 class PreCheckoutQueryHandler(SimpleHandler):
@@ -180,6 +195,7 @@ class PreCheckoutQueryHandler(SimpleHandler):
         if not handler:
             return
         handler(update.pre_checkout_query.from_.id, update)
+        return True
 
 
 class ShippingQueryHandler(SimpleHandler):
@@ -189,6 +205,7 @@ class ShippingQueryHandler(SimpleHandler):
         if not handler:
             return
         handler(update.shipping_query.from_.id, update)
+        return True
 
 
 class StickerHandler(SimpleHandler):
