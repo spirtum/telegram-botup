@@ -161,10 +161,10 @@ class InlineKeyboardMarkup(BaseObject):
         self.inline_keyboard.clear()
 
     def as_dict(self):
-        return [[b.as_dict() for b in line] for line in self.inline_keyboard]
+        return {'inline_keyboard': [[b.as_dict() for b in line] for line in self.inline_keyboard]}
 
     def as_json(self):
-        return json.dumps(dict(inline_keyboard=self.as_dict()))
+        return json.dumps(self.as_dict())
 
 
 class KeyboardButton(BaseObject):
