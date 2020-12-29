@@ -7,6 +7,7 @@ except ImportError:
     import json
 
 from . import handlers
+from .utils import get_chat_id
 from .types import Update
 from .exceptions import StateManagerException, BadHandlerException
 
@@ -640,17 +641,14 @@ class StateDispatcher(Dispatcher):
         if self._run_middlewares(update):
             self._success = True
             return
-        states = kwargs.get('states')
         self._sm.update = update
-        if self._sm.is_valid_update:
-            if not states:
-                states = self._sm.get_all()
-            dispatcher = self._states.get(states.get(self.key))
-            if dispatcher:
-                dispatcher.handle(update, states=states)
-                self._success = True
-                self._sm.update = None
-                return
+        states = kwargs.get('states') or self._sm.get_all()
+        dispatcher = self._states.get(states.get(self.key))
+        if dispatcher:
+            dispatcher.handle(update, states=states)
+            self._success = True
+            self._sm.update = None
+            return
         self._run_statements(update)
         self._sm.update = None
 
@@ -663,29 +661,25 @@ class StateManager:
         self.update = None
 
     def set(self, key, value):
-        message = self.update.message or getattr(self.update.callback_query, 'message', None)
-        if not message:
+        chat_id = get_chat_id(self.update)
+        if not chat_id:
             raise StateManagerException(f'Cannot set state with {self.update.pformat()}')
-        return self.connection.hset(self.name.format(message.chat.id), key, value)
+        return self.connection.hset(self.name.format(chat_id), key, value)
 
     def get_all(self):
-        message = self.update.message or getattr(self.update.callback_query, 'message', None)
-        if not message:
+        chat_id = get_chat_id(self.update)
+        if not chat_id:
             raise StateManagerException(f'Cannot get state with {self.update.pformat()}')
-        return self.connection.hgetall(self.name.format(message.chat.id))
+        return self.connection.hgetall(self.name.format(chat_id))
 
     def get(self, key):
-        message = self.update.message or getattr(self.update.callback_query, 'message', None)
-        if not message:
+        chat_id = get_chat_id(self.update)
+        if not chat_id:
             raise StateManagerException(f'Cannot get state with {self.update.pformat()}')
-        return self.connection.hget(self.name.format(message.chat.id), key)
+        return self.connection.hget(self.name.format(chat_id), key)
 
     def reset(self, *keys):
-        message = self.update.message or getattr(self.update.callback_query, 'message', None)
-        if not message:
-            raise StateManagerException(f'Cannot delete state with {self.update.pformat()}')
-        return self.connection.hdel(self.name.format(message.chat.id), *keys)
-
-    @property
-    def is_valid_update(self):
-        return self.update.message or getattr(self.update.callback_query, 'message', None) is not None
+        chat_id = get_chat_id(self.update)
+        if not chat_id:
+            raise StateManagerException(f'Cannot reset state with {self.update.pformat()}')
+        return self.connection.hdel(self.name.format(chat_id), *keys)
