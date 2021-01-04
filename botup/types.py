@@ -458,7 +458,7 @@ class User(BaseObject):
 
 
 class ChatMember(BaseObject):
-    __slots__ = ['user', 'status', 'custom_title', 'until_date', 'can_be_edited', 'can_change_info',
+    __slots__ = ['user', 'status', 'custom_title', 'is_anonymous' 'until_date', 'can_be_edited', 'can_change_info',
                  'can_post_messages', 'can_edit_messages', 'can_delete_messages', 'can_invite_users',
                  'can_restrict_members', 'can_pin_messages', 'can_promote_members', 'is_member', 'can_send_messages',
                  'can_send_media_messages', 'can_send_polls', 'can_send_other_messages', 'can_add_web_page_previews']
@@ -468,6 +468,7 @@ class ChatMember(BaseObject):
         self.user = User(**kwargs['user']) if 'user' in kwargs else None
         self.status = kwargs.get('status')
         self.custom_title = kwargs.get('custom_title')
+        self.is_anonymous = kwargs.get('is_anonymous')
         self.until_date = kwargs.get('until_date')
         self.can_be_edited = kwargs.get('can_be_edited')
         self.can_change_info = kwargs.get('can_change_info')
@@ -1335,23 +1336,25 @@ class Chat(BaseObject):
 
 
 class Message(BaseObject):
-    __slots__ = ['message_id', 'from_', 'date', 'chat', 'forward_from_chat', 'forward_from', 'forward_signature',
-                 'forward_sender_name', 'forward_date', 'reply_to_message', 'via_bot', 'edit_date', 'media_group_id',
-                 'author_signature', 'text', 'entities', 'caption_entities', 'audio', 'document', 'animation',
-                 'game', 'photo', 'sticker', 'video', 'voice', 'video_note', 'caption', 'contact', 'location',
-                 'venue', 'poll', 'dice', 'new_chat_members', 'left_chat_member', 'new_chat_title', 'new_chat_photo',
-                 'delete_chat_photo', 'group_chat_created', 'supergroup_chat_created', 'channel_chat_created',
-                 'migrate_to_chat_id', 'migrate_from_chat_id', 'pinned_message', 'invoice', 'successful_payment',
-                 'connected_website', 'passport_data', 'proximity_alert_triggered', 'reply_markup']
-    NESTED = ['from_', 'chat', 'forward_from_chat', 'forward_from', 'reply_to_message', 'via_bot', 'entities',
-              'caption_entities', 'audio', 'document', 'animation', 'game', 'photo', 'sticker', 'video', 'voice',
-              'video_note', 'contact', 'location', 'venue', 'poll', 'dice', 'new_chat_members', 'left_chat_member',
-              'new_chat_photo', 'pinned_message', 'invoice', 'successful_payment', 'passport_data',
+    __slots__ = ['message_id', 'from_', 'sender_chat', 'date', 'chat', 'forward_from_chat', 'forward_from',
+                 'forward_signature', 'forward_sender_name', 'forward_date', 'reply_to_message', 'via_bot',
+                 'edit_date', 'media_group_id', 'author_signature', 'text', 'entities', 'caption_entities',
+                 'audio', 'document', 'animation', 'game', 'photo', 'sticker', 'video', 'voice', 'video_note',
+                 'caption', 'contact', 'location', 'venue', 'poll', 'dice', 'new_chat_members', 'left_chat_member',
+                 'new_chat_title', 'new_chat_photo', 'delete_chat_photo', 'group_chat_created',
+                 'supergroup_chat_created', 'channel_chat_created', 'migrate_to_chat_id', 'migrate_from_chat_id',
+                 'pinned_message', 'invoice', 'successful_payment', 'connected_website', 'passport_data',
+                 'proximity_alert_triggered', 'reply_markup']
+    NESTED = ['from_', 'sender_chat', 'chat', 'forward_from_chat', 'forward_from', 'reply_to_message', 'via_bot',
+              'entities', 'caption_entities', 'audio', 'document', 'animation', 'game', 'photo', 'sticker', 'video',
+              'voice', 'video_note', 'contact', 'location', 'venue', 'poll', 'dice', 'new_chat_members',
+              'left_chat_member', 'new_chat_photo', 'pinned_message', 'invoice', 'successful_payment', 'passport_data',
               'proximity_alert_triggered', 'reply_markup']
 
     def __init__(self, **kwargs):
         self.message_id = kwargs.get('message_id')
         self.from_ = User(**kwargs['from']) if 'from' in kwargs else None
+        self.sender_chat = Chat(**kwargs['sender_chat']) if 'sender_chat' in kwargs else None
         self.date = kwargs.get('date')
         self.chat = Chat(**kwargs['chat']) if 'chat' in kwargs else None
         self.forward_from_chat = Chat(**kwargs['forward_from_chat']) if 'forward_from_chat' in kwargs else None
