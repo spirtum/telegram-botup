@@ -243,11 +243,15 @@ class ReplyKeyboardRemove(BaseObject):
 
 
 class Location(BaseObject):
-    __slots__ = ['longitude', 'latitude']
+    __slots__ = ['longitude', 'latitude', 'horizontal_accuracy', 'live_period', 'heading', 'proximity_alert_radius']
 
     def __init__(self, **kwargs):
         self.longitude = kwargs.get('longitude')
         self.latitude = kwargs.get('latitude')
+        self.horizontal_accuracy = kwargs.get('horizontal_accuracy')
+        self.live_period = kwargs.get('live_period')
+        self.heading = kwargs.get('heading')
+        self.proximity_alert_radius = kwargs.get('proximity_alert_radius')
 
 
 class ChatLocation(BaseObject):
@@ -314,6 +318,16 @@ class ResponseParameters(BaseObject):
     def __init__(self, **kwargs):
         self.migrate_to_chat_id = kwargs.get('migrate_to_chat_id')
         self.retry_after = kwargs.get('retry_after')
+
+
+class ProximityAlertTriggered(BaseObject):
+    __slots__ = ['traveler', 'watcher', 'distance']
+    NESTED = ['traveler', 'watcher']
+
+    def __init__(self, **kwargs):
+        self.traveler = User(**kwargs['traveler']) if 'traveler' in kwargs else None
+        self.watcher = User(**kwargs['watcher']) if 'watcher' in kwargs else None
+        self.distance = kwargs.get('distance')
 
 
 class UserProfilePhotos(BaseObject):
@@ -634,12 +648,15 @@ class InputContactMessageContent(InputMessageContent):
 
 
 class InputLocationMessageContent(InputMessageContent):
-    __slots__ = ['latitude', 'longitude', 'live_period']
+    __slots__ = ['latitude', 'longitude', 'live_period', 'horizontal_accuracy', 'heading', 'proximity_alert_radius']
 
     def __init__(self, **kwargs):
         self.latitude = kwargs.get('latitude')
         self.longitude = kwargs.get('longitude')
+        self.horizontal_accuracy = kwargs.get('horizontal_accuracy')
         self.live_period = kwargs.get('live_period')
+        self.heading = kwargs.get('heading')
+        self.proximity_alert_radius = kwargs.get('proximity_alert_radius')
 
 
 class InputTextMessageContent(InputMessageContent):
@@ -904,7 +921,8 @@ class InlineQueryResultGif(InlineQueryResult):
 
 class InlineQueryResultLocation(InlineQueryResult):
     __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'latitude', 'longitude', 'title',
-                 'live_period', 'thumb_url', 'thumb_width', 'thumb_height']
+                 'live_period', 'thumb_url', 'thumb_width', 'thumb_height', 'horizontal_accuracy', 'heading',
+                 'proximity_alert_radius']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -912,7 +930,10 @@ class InlineQueryResultLocation(InlineQueryResult):
         self.latitude = kwargs.get('latitude')
         self.longitude = kwargs.get('longitude')
         self.title = kwargs.get('title')
+        self.horizontal_accuracy = kwargs.get('horizontal_accuracy')
         self.live_period = kwargs.get('live_period')
+        self.heading = kwargs.get('heading')
+        self.proximity_alert_radius = kwargs.get('proximity_alert_radius')
         self.thumb_url = kwargs.get('thumb_url')
         self.thumb_width = kwargs.get('thumb_width')
         self.thumb_height = kwargs.get('thumb_height')
@@ -1320,12 +1341,13 @@ class Message(BaseObject):
                  'game', 'photo', 'sticker', 'video', 'voice', 'video_note', 'caption', 'contact', 'location',
                  'venue', 'poll', 'dice', 'new_chat_members', 'left_chat_member', 'new_chat_title', 'new_chat_photo',
                  'delete_chat_photo', 'group_chat_created', 'supergroup_chat_created', 'channel_chat_created',
-                 'migrate_to_chat_id', 'migrate_from_chat_id', 'pinned_message', 'invoice',
-                 'successful_payment', 'connected_website', 'passport_data', 'reply_markup']
+                 'migrate_to_chat_id', 'migrate_from_chat_id', 'pinned_message', 'invoice', 'successful_payment',
+                 'connected_website', 'passport_data', 'proximity_alert_triggered', 'reply_markup']
     NESTED = ['from_', 'chat', 'forward_from_chat', 'forward_from', 'reply_to_message', 'via_bot', 'entities',
               'caption_entities', 'audio', 'document', 'animation', 'game', 'photo', 'sticker', 'video', 'voice',
               'video_note', 'contact', 'location', 'venue', 'poll', 'dice', 'new_chat_members', 'left_chat_member',
-              'new_chat_photo', 'pinned_message', 'invoice', 'successful_payment', 'passport_data', 'reply_markup']
+              'new_chat_photo', 'pinned_message', 'invoice', 'successful_payment', 'passport_data',
+              'proximity_alert_triggered', 'reply_markup']
 
     def __init__(self, **kwargs):
         self.message_id = kwargs.get('message_id')
@@ -1379,6 +1401,8 @@ class Message(BaseObject):
             **kwargs['successful_payment']) if 'successful_payment' in kwargs else None
         self.connected_website = kwargs.get('connected_website')
         self.passport_data = PassportData(**kwargs['passport_data']) if 'passport_data' in kwargs else None
+        self.proximity_alert_triggered = ProximityAlertTriggered(
+            **kwargs['proximity_alert_triggered']) if 'proximity_alert_triggered' in kwargs else None
         self.reply_markup = InlineKeyboardMarkup(**kwargs['reply_markup']) if 'reply_markup' in kwargs else None
 
 
