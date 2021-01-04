@@ -105,8 +105,11 @@ class Sender(TransportMixin):
             self.delete_webhook.__name__: self.delete_webhook,
             self.get_webhook_info.__name__: self.get_webhook_info,
             self.get_me.__name__: self.get_me,
+            self.logout.__name__: self.logout,
+            self.close.__name__: self.close,
             self.send_message.__name__: self.send_message,
             self.forward_message.__name__: self.forward_message,
+            self.copy_message.__name__: self.copy_message,
             self.send_photo.__name__: self.send_photo,
             self.send_audio.__name__: self.send_audio,
             self.send_document.__name__: self.send_document,
@@ -138,6 +141,7 @@ class Sender(TransportMixin):
             self.set_chat_description.__name__: self.set_chat_description,
             self.pin_chat_message.__name__: self.pin_chat_message,
             self.unpin_chat_message.__name__: self.unpin_chat_message,
+            self.unpin_all_chat_messages.__name__: self.unpin_all_chat_messages,
             self.leave_chat.__name__: self.leave_chat,
             self.get_chat.__name__: self.get_chat,
             self.get_chat_administrators.__name__: self.get_chat_administrators,
@@ -278,15 +282,18 @@ class Sender(TransportMixin):
         )
 
     def get_updates(self, offset=None, limit=None, timeout=None, allowed_updates=None):
-        kwargs = dict(
+        return self._request(self._url + 'getUpdates', data=dict(
             offset=offset,
             limit=limit,
             timeout=timeout,
-            allowed_updates=allowed_updates
-        )
-        return self._request(self._url + 'getUpdates', data=kwargs, **self._req_kwargs)
+            allowed_updates=allowed_updates), **self._req_kwargs)
 
-    def set_webhook(self, url, certificate=None, ip_address=None, max_connections=None, allowed_updates=None,
+    def set_webhook(self,
+                    url,
+                    certificate=None,
+                    ip_address=None,
+                    max_connections=None,
+                    allowed_updates=None,
                     drop_pending_updates=None):
         kwargs = dict(
             url=url,
@@ -307,8 +314,8 @@ class Sender(TransportMixin):
         return self._request(self._url + 'setWebhook', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
     def delete_webhook(self, drop_pending_updates=None):
-        kwargs = dict(drop_pending_updates=drop_pending_updates)
-        return self._request(self._url + 'deleteWebhook', data=kwargs, **self._req_kwargs)
+        return self._request(self._url + 'deleteWebhook', data=dict(drop_pending_updates=drop_pending_updates),
+                             **self._req_kwargs)
 
     def get_webhook_info(self):
         return self._request(self._url + 'getWebhookInfo', **self._req_kwargs)
@@ -316,15 +323,31 @@ class Sender(TransportMixin):
     def get_me(self):
         return self._request(self._url + 'getMe', **self._req_kwargs)
 
-    def send_message(self, chat_id, text, parse_mode=None, disable_web_page_preview=None, disable_notification=None,
-                     reply_to_message_id=None, reply_markup=None):
-        return self._request(url=self._url + 'sendMessage', data=dict(chat_id=chat_id,
-                                                                      text=text,
-                                                                      parse_mode=parse_mode,
-                                                                      disable_web_page_preview=disable_web_page_preview,
-                                                                      disable_notification=disable_notification,
-                                                                      reply_to_message_id=reply_to_message_id,
-                                                                      reply_markup=reply_markup), **self._req_kwargs)
+    def logout(self):
+        return self._request(self._url + 'logOut', **self._req_kwargs)
+
+    def close(self):
+        return self._request(self._url + 'close', **self._req_kwargs)
+
+    def send_message(self,
+                     chat_id,
+                     text,
+                     parse_mode=None,
+                     entities=None,
+                     disable_web_page_preview=None,
+                     disable_notification=None,
+                     reply_to_message_id=None,
+                     allow_sending_without_reply=None,
+                     reply_markup=None):
+        return self._request(self._url + 'sendMessage', data=dict(chat_id=chat_id,
+                                                                  text=text,
+                                                                  parse_mode=parse_mode,
+                                                                  entities=entities,
+                                                                  disable_web_page_preview=disable_web_page_preview,
+                                                                  disable_notification=disable_notification,
+                                                                  reply_to_message_id=reply_to_message_id,
+                                                                  allow_sending_without_reply=allow_sending_without_reply,
+                                                                  reply_markup=reply_markup), **self._req_kwargs)
 
     def forward_message(self, chat_id, from_chat_id, message_id, disable_notification=None):
         return self._request(self._url + 'forwardMessage', data=dict(chat_id=chat_id,
@@ -333,11 +356,49 @@ class Sender(TransportMixin):
                                                                      disable_notification=disable_notification),
                              **self._req_kwargs)
 
-    def send_photo(self, chat_id, photo, caption=None, parse_mode=None, disable_notification=None,
-                   reply_to_message_id=None, reply_markup=None):
-        kwargs = {'chat_id': chat_id, 'caption': caption, 'parse_mode': parse_mode,
-                  'disable_notification': disable_notification, 'reply_to_message_id': reply_to_message_id,
-                  'reply_markup': reply_markup}
+    def copy_message(self,
+                     chat_id,
+                     from_chat_id,
+                     message_id,
+                     caption=None,
+                     parse_mode=None,
+                     caption_entities=None,
+                     disable_notification=None,
+                     reply_to_message_id=None,
+                     allow_sending_without_reply=None,
+                     reply_markup=None):
+        return self._request(self._url + 'copyMessage', data=dict(
+            chat_id=chat_id,
+            from_chat_id=from_chat_id,
+            message_id=message_id,
+            caption=caption,
+            parse_mode=parse_mode,
+            caption_entities=caption_entities,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup
+        ), **self._req_kwargs)
+
+    def send_photo(self,
+                   chat_id,
+                   photo,
+                   caption=None,
+                   parse_mode=None,
+                   disable_notification=None,
+                   reply_to_message_id=None,
+                   allow_sending_without_reply=None,
+                   reply_markup=None):
+        kwargs = dict(
+            chat_id=chat_id,
+            photo=photo,
+            caption=caption,
+            parse_mode=parse_mode,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup
+        )
         files_kwargs = dict()
         file_id = photo.get('file_id')
         url = photo.get('url')
@@ -354,12 +415,33 @@ class Sender(TransportMixin):
             return self._error_response('Location not found')
         return self._request(self._url + 'sendPhoto', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
-    def send_audio(self, chat_id, audio, caption=None, parse_mode=None, duration=None,
-                   performer=None, title=None, thumb=None, disable_notification=None, reply_to_message_id=None,
+    def send_audio(self,
+                   chat_id,
+                   audio,
+                   caption=None,
+                   parse_mode=None,
+                   caption_entities=None,
+                   duration=None,
+                   performer=None,
+                   title=None,
+                   thumb=None,
+                   disable_notification=None,
+                   reply_to_message_id=None,
+                   allow_sending_without_reply=None,
                    reply_markup=None):
-        kwargs = dict(chat_id=chat_id, caption=caption, parse_mode=parse_mode, duration=duration, title=title,
-                      performer=performer, disable_notification=disable_notification,
-                      reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
+        kwargs = dict(
+            chat_id=chat_id,
+            caption=caption,
+            parse_mode=parse_mode,
+            caption_entities=caption_entities,
+            duration=duration,
+            title=title,
+            performer=performer,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup
+        )
         files_kwargs = dict()
         file_id = audio.get('file_id')
         url = audio.get('url')
@@ -380,13 +462,29 @@ class Sender(TransportMixin):
             return self._error_response('Location not found')
         return self._request(self._url + 'sendAudio', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
-    def send_document(self, chat_id, document, thumb=None, caption=None, parse_mode=None, caption_entities=None,
-                      disable_content_type_detection=None, disable_notification=None, reply_to_message_id=None,
-                      allow_sending_without_reply=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, caption=caption, parse_mode=parse_mode, caption_entities=caption_entities,
-                      disable_content_type_detection=disable_content_type_detection,
-                      disable_notification=disable_notification, reply_to_message_id=reply_to_message_id,
-                      allow_sending_without_reply=allow_sending_without_reply, reply_markup=reply_markup)
+    def send_document(self,
+                      chat_id,
+                      document,
+                      thumb=None,
+                      caption=None,
+                      parse_mode=None,
+                      caption_entities=None,
+                      disable_content_type_detection=None,
+                      disable_notification=None,
+                      reply_to_message_id=None,
+                      allow_sending_without_reply=None,
+                      reply_markup=None):
+        kwargs = dict(
+            chat_id=chat_id,
+            caption=caption,
+            parse_mode=parse_mode,
+            caption_entities=caption_entities,
+            disable_content_type_detection=disable_content_type_detection,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup
+        )
         files_kwargs = dict()
         file_id = document.get('file_id')
         url = document.get('url')
@@ -407,13 +505,35 @@ class Sender(TransportMixin):
             return self._error_response('Location not found')
         return self._request(self._url + 'sendDocument', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
-    def send_video(self, chat_id, video, duration=None, width=None, height=None,
-                   thumb=None, caption=None, parse_mode=None, supports_streaming=None, disable_notification=None,
-                   reply_to_message_id=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, duration=duration, width=width, height=height, caption=caption,
-                      parse_mode=parse_mode, supports_streaming=supports_streaming,
-                      disable_notification=disable_notification,
-                      reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
+    def send_video(self,
+                   chat_id,
+                   video,
+                   duration=None,
+                   width=None,
+                   height=None,
+                   thumb=None,
+                   caption=None,
+                   parse_mode=None,
+                   caption_entities=None,
+                   supports_streaming=None,
+                   disable_notification=None,
+                   reply_to_message_id=None,
+                   allow_sending_without_reply=None,
+                   reply_markup=None):
+        kwargs = dict(
+            chat_id=chat_id,
+            duration=duration,
+            width=width,
+            height=height,
+            caption=caption,
+            parse_mode=parse_mode,
+            caption_entities=caption_entities,
+            supports_streaming=supports_streaming,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup
+        )
         files_kwargs = dict()
         file_id = video.get('file_id')
         url = video.get('url')
@@ -434,13 +554,33 @@ class Sender(TransportMixin):
             return self._error_response('Location not found')
         return self._request(self._url + 'sendVideo', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
-    def send_animation(self, chat_id, animation, duration=None, width=None, height=None,
-                       thumb=None, caption=None, parse_mode=None, disable_notification=None, reply_to_message_id=None,
+    def send_animation(self,
+                       chat_id,
+                       animation,
+                       duration=None,
+                       width=None,
+                       height=None,
+                       thumb=None,
+                       caption=None,
+                       parse_mode=None,
+                       caption_entities=None,
+                       disable_notification=None,
+                       reply_to_message_id=None,
+                       allow_sending_without_reply=None,
                        reply_markup=None):
-        kwargs = dict(chat_id=chat_id, duration=duration, width=width, height=height, caption=caption,
-                      parse_mode=parse_mode, disable_notification=disable_notification,
-                      reply_to_message_id=reply_to_message_id,
-                      reply_markup=reply_markup)
+        kwargs = dict(
+            chat_id=chat_id,
+            duration=duration,
+            width=width,
+            height=height,
+            caption=caption,
+            parse_mode=parse_mode,
+            caption_entities=caption_entities,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup
+        )
         files_kwargs = dict()
         file_id = animation.get('file_id')
         url = animation.get('url')
@@ -461,11 +601,28 @@ class Sender(TransportMixin):
             return self._error_response('Location not found')
         return self._request(self._url + 'sendAnimation', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
-    def send_voice(self, chat_id, voice, caption=None, parse_mode=None, duration=None,
-                   disable_notification=None, reply_to_message_id=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, caption=caption, parse_mode=parse_mode, duration=duration,
-                      disable_notification=disable_notification, reply_to_message_id=reply_to_message_id,
-                      reply_markup=reply_markup)
+    def send_voice(self,
+                   chat_id,
+                   voice,
+                   caption=None,
+                   parse_mode=None,
+                   caption_entities=None,
+                   duration=None,
+                   disable_notification=None,
+                   reply_to_message_id=None,
+                   allow_sending_without_reply=None,
+                   reply_markup=None):
+        kwargs = dict(
+            chat_id=chat_id,
+            caption=caption,
+            parse_mode=parse_mode,
+            caption_entities=caption_entities,
+            duration=duration,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup
+        )
         files_kwargs = dict()
         file_id = voice.get('file_id')
         url = voice.get('url')
@@ -482,10 +639,25 @@ class Sender(TransportMixin):
             return self._error_response('Location not found')
         return self._request(self._url + 'sendVoice', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
-    def send_video_note(self, chat_id, video_note, duration=None, length=None, thumb=None,
-                        disable_notification=None, reply_to_message_id=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, duration=duration, length=length, disable_notification=disable_notification,
-                      reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
+    def send_video_note(self,
+                        chat_id,
+                        video_note,
+                        duration=None,
+                        length=None,
+                        thumb=None,
+                        disable_notification=None,
+                        reply_to_message_id=None,
+                        allow_sending_without_reply=None,
+                        reply_markup=None):
+        kwargs = dict(
+            chat_id=chat_id,
+            duration=duration,
+            length=length,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup
+        )
         files_kwargs = dict()
         file_id = video_note.get('file_id')
         url = video_note.get('url')
@@ -506,9 +678,18 @@ class Sender(TransportMixin):
             return self._error_response('Location not found')
         return self._request(self._url + 'sendVideoNote', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
-    def send_media_group(self, chat_id, media, disable_notification=None, reply_to_message_id=None):
-        kwargs = dict(chat_id=chat_id, disable_notification=disable_notification,
-                      reply_to_message_id=reply_to_message_id)
+    def send_media_group(self,
+                         chat_id,
+                         media,
+                         disable_notification=None,
+                         reply_to_message_id=None,
+                         allow_sending_without_reply=None):
+        kwargs = dict(
+            chat_id=chat_id,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply
+        )
         kwargs['media'] = list()
         files_kwargs = dict()
         for m in media:
@@ -521,60 +702,166 @@ class Sender(TransportMixin):
         kwargs['media'] = json.dumps(kwargs['media'])
         return self._request(self._url + 'sendMediaGroup', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
-    def send_location(self, chat_id, latitude, longitude, live_period=None, disable_notification=None,
-                      reply_to_message_id=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, latitude=latitude, longitude=longitude, live_period=live_period,
-                      disable_notification=disable_notification, reply_to_message_id=reply_to_message_id,
-                      reply_markup=reply_markup)
-        return self._request(self._url + 'sendLocation', data=kwargs, **self._req_kwargs)
+    def send_location(self,
+                      chat_id,
+                      latitude,
+                      longitude,
+                      horizontal_accuracy=None,
+                      live_period=None,
+                      heading=None,
+                      proximity_alert_radius=None,
+                      disable_notification=None,
+                      reply_to_message_id=None,
+                      allow_sending_without_reply=None,
+                      reply_markup=None):
+        return self._request(self._url + 'sendLocation', data=dict(
+            chat_id=chat_id,
+            latitude=latitude,
+            longitude=longitude,
+            horizontal_accuracy=horizontal_accuracy,
+            live_period=live_period,
+            heading=heading,
+            proximity_alert_radius=proximity_alert_radius,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup), **self._req_kwargs)
 
-    def edit_message_live_location(self, latitude, longitude, chat_id=None, message_id=None, inline_message_id=None,
+    def edit_message_live_location(self,
+                                   latitude,
+                                   longitude,
+                                   chat_id=None,
+                                   message_id=None,
+                                   inline_message_id=None,
+                                   horizontal_accuracy=None,
+                                   heading=None,
+                                   proximity_alert_radius=None,
                                    reply_markup=None):
-        kwargs = dict(chat_id=chat_id, latitude=latitude, longitude=longitude, message_id=message_id,
-                      inline_message_id=inline_message_id, reply_markup=reply_markup)
-        return self._request(self._url + 'editMessageLiveLocation', data=kwargs, **self._req_kwargs)
+        return self._request(self._url + 'editMessageLiveLocation', data=dict(
+            chat_id=chat_id,
+            latitude=latitude,
+            longitude=longitude,
+            message_id=message_id,
+            inline_message_id=inline_message_id,
+            horizontal_accuracy=horizontal_accuracy,
+            heading=heading,
+            proximity_alert_radius=proximity_alert_radius,
+            reply_markup=reply_markup), **self._req_kwargs)
 
     def stop_message_live_location(self, chat_id=None, message_id=None, inline_message_id=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id,
-                      reply_markup=reply_markup)
-        return self._request(self._url + 'stopMessageLiveLocation', data=kwargs, **self._req_kwargs)
+        return self._request(self._url + 'stopMessageLiveLocation', data=dict(
+            chat_id=chat_id,
+            message_id=message_id,
+            inline_message_id=inline_message_id,
+            reply_markup=reply_markup), **self._req_kwargs)
 
-    def send_venue(self, chat_id, latitude, longitude, title, address, foursquare_id=None, foursquare_type=None,
-                   disable_notification=None, reply_to_message_id=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, latitude=latitude, longitude=longitude, title=title, address=address,
-                      foursquare_id=foursquare_id, foursquare_type=foursquare_type,
-                      disable_notification=disable_notification,
-                      reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
-        return self._request(self._url + 'sendVenue', data=kwargs, **self._req_kwargs)
+    def send_venue(self,
+                   chat_id,
+                   latitude,
+                   longitude,
+                   title,
+                   address,
+                   foursquare_id=None,
+                   foursquare_type=None,
+                   google_place_id=None,
+                   google_place_type=None,
+                   disable_notification=None,
+                   reply_to_message_id=None,
+                   allow_sending_without_reply=None,
+                   reply_markup=None):
+        return self._request(self._url + 'sendVenue', data=dict(
+            chat_id=chat_id,
+            latitude=latitude,
+            longitude=longitude,
+            title=title,
+            address=address,
+            foursquare_id=foursquare_id,
+            foursquare_type=foursquare_type,
+            google_place_id=google_place_id,
+            google_place_type=google_place_type,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup), **self._req_kwargs)
 
-    def send_contact(self, chat_id, phone_number, first_name, last_name=None, vcard=None, disable_notification=None,
-                     reply_to_message_id=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, phone_number=phone_number, first_name=first_name, last_name=last_name,
-                      vcard=vcard,
-                      disable_notification=disable_notification, reply_to_message_id=reply_to_message_id,
-                      reply_markup=reply_markup)
-        return self._request(self._url + 'sendContact', data=kwargs, **self._req_kwargs)
+    def send_contact(self,
+                     chat_id,
+                     phone_number,
+                     first_name,
+                     last_name=None,
+                     vcard=None,
+                     disable_notification=None,
+                     reply_to_message_id=None,
+                     allow_sending_without_reply=None,
+                     reply_markup=None):
+        return self._request(self._url + 'sendContact', data=dict(
+            chat_id=chat_id,
+            phone_number=phone_number,
+            first_name=first_name,
+            last_name=last_name,
+            vcard=vcard,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup), **self._req_kwargs)
 
-    def send_poll(self, chat_id, question, options, is_anonymous=None, type=None, allows_multiple_answers=None,
-                  correct_option_id=None, explanation=None, explanation_parse_mode=None, open_period=None,
-                  close_date=None, is_closed=None, disable_notification=None, reply_to_message_id=None,
+    def send_poll(self,
+                  chat_id,
+                  question,
+                  options,
+                  is_anonymous=None,
+                  type=None,
+                  allows_multiple_answers=None,
+                  correct_option_id=None,
+                  explanation=None,
+                  explanation_parse_mode=None,
+                  explanation_entities=None,
+                  open_period=None,
+                  close_date=None,
+                  is_closed=None,
+                  disable_notification=None,
+                  reply_to_message_id=None,
+                  allow_sending_without_reply=None,
                   reply_markup=None):
         if isinstance(options, list):
             options = json.dumps(options)
-        kwargs = dict(chat_id=chat_id, question=question, options=options, is_anonymous=is_anonymous, type=type,
-                      allows_multiple_answers=allows_multiple_answers, correct_option_id=correct_option_id,
-                      explanation=explanation, explanation_parse_mode=explanation_parse_mode, open_period=open_period,
-                      close_date=close_date, is_closed=is_closed, disable_notification=disable_notification,
-                      reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
-        return self._request(self._url + 'sendPoll', data=kwargs, **self._req_kwargs)
+        return self._request(self._url + 'sendPoll', data=dict(
+            chat_id=chat_id,
+            question=question,
+            options=options,
+            is_anonymous=is_anonymous,
+            type=type,
+            allows_multiple_answers=allows_multiple_answers,
+            correct_option_id=correct_option_id,
+            explanation=explanation,
+            explanation_parse_mode=explanation_parse_mode,
+            explanation_entities=explanation_entities,
+            open_period=open_period,
+            close_date=close_date,
+            is_closed=is_closed,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup), **self._req_kwargs)
 
-    def send_dice(self, chat_id, emoji=None, disable_notification=None, reply_to_message_id=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, emoji=emoji, disable_notification=disable_notification,
-                      reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
-        return self._request(self._url + 'sendDice', data=kwargs, **self._req_kwargs)
+    def send_dice(self,
+                  chat_id,
+                  emoji=None,
+                  disable_notification=None,
+                  reply_to_message_id=None,
+                  allow_sending_without_reply=None,
+                  reply_markup=None):
+        return self._request(self._url + 'sendDice', data=dict(
+            chat_id=chat_id,
+            emoji=emoji,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup), **self._req_kwargs)
 
     def send_chat_action(self, chat_id, action):
-        return self._request(self._url + 'sendChatAction', data=dict(chat_id=chat_id, action=action), **self._req_kwargs)
+        return self._request(self._url + 'sendChatAction', data=dict(chat_id=chat_id, action=action),
+                             **self._req_kwargs)
 
     def get_user_profile_photos(self, user_id, offset=None, limit=None):
         return self._request(self._url + 'getUserProfilePhotos', data=dict(
@@ -588,40 +875,54 @@ class Sender(TransportMixin):
             chat_id=chat_id, user_id=user_id, until_date=until_date), **self._req_kwargs)
 
     def unban_chat_member(self, chat_id, user_id, only_if_banned=None):
-        kwargs = dict(chat_id=chat_id, user_id=user_id, only_if_banned=only_if_banned)
-        return self._request(self._url + 'unbanChatMember', data=kwargs, **self._req_kwargs)
+        return self._request(self._url + 'unbanChatMember', data=dict(
+            chat_id=chat_id,
+            user_id=user_id,
+            only_if_banned=only_if_banned), **self._req_kwargs)
 
     def restrict_chat_member(self, chat_id, user_id, permissions, until_date=None):
-        kwargs = dict(
+        return self._request(self._url + 'restrictChatMember', data=dict(
             chat_id=chat_id,
             user_id=user_id,
             permissions=permissions,
             until_date=until_date
-        )
-        return self._request(self._url + 'restrictChatMember', data=kwargs, **self._req_kwargs)
+        ), **self._req_kwargs)
 
-    def promote_chat_member(self, chat_id, user_id, can_change_info=None, can_post_messages=None,
+    def promote_chat_member(self,
+                            chat_id,
+                            user_id,
+                            is_anonymous=None,
+                            can_change_info=None,
+                            can_post_messages=None,
                             can_edit_messages=None,
-                            can_delete_messages=None, can_invite_users=None, can_restrict_members=None,
-                            can_pin_messages=None, can_promote_members=None):
-        kwargs = dict(chat_id=chat_id, user_id=user_id, can_change_info=can_change_info,
-                      can_post_messages=can_post_messages,
-                      can_edit_messages=can_edit_messages, can_delete_messages=can_delete_messages,
-                      can_invite_users=can_invite_users,
-                      can_restrict_members=can_restrict_members, can_pin_messages=can_pin_messages,
-                      can_promote_members=can_promote_members)
-        return self._request(self._url + 'promoteChatMember', data=kwargs, **self._req_kwargs)
+                            can_delete_messages=None,
+                            can_invite_users=None,
+                            can_restrict_members=None,
+                            can_pin_messages=None,
+                            can_promote_members=None):
+        return self._request(self._url + 'promoteChatMember', data=dict(
+            chat_id=chat_id,
+            user_id=user_id,
+            is_anonymous=is_anonymous,
+            can_change_info=can_change_info,
+            can_post_messages=can_post_messages,
+            can_edit_messages=can_edit_messages,
+            can_delete_messages=can_delete_messages,
+            can_invite_users=can_invite_users,
+            can_restrict_members=can_restrict_members,
+            can_pin_messages=can_pin_messages,
+            can_promote_members=can_promote_members), **self._req_kwargs)
 
     def set_chat_administrator_custom_title(self, chat_id, user_id, custom_title):
-        kwargs = dict(chat_id=chat_id, user_id=user_id, custom_title=custom_title)
-        return self._request(self._url + 'setChatAdministratorCustomTitle', data=kwargs, **self._req_kwargs)
+        return self._request(self._url + 'setChatAdministratorCustomTitle', data=dict(
+            chat_id=chat_id,
+            user_id=user_id,
+            custom_title=custom_title), **self._req_kwargs)
 
     def set_chat_permissions(self, chat_id, permissions):
-        kwargs = dict(
+        return self._request(self._url + 'setChatPermissions', data=dict(
             chat_id=chat_id,
-            permissions=permissions
-        )
-        return self._request(self._url + 'setChatPermissions', data=kwargs, **self._req_kwargs)
+            permissions=permissions), **self._req_kwargs)
 
     def export_chat_invite_link(self, chat_id):
         return self._request(self._url + 'exportChatInviteLink', data=dict(chat_id=chat_id), **self._req_kwargs)
@@ -650,17 +951,21 @@ class Sender(TransportMixin):
     def set_chat_title(self, chat_id, title):
         return self._request(self._url + 'setChatTitle', data=dict(chat_id=chat_id, title=title), **self._req_kwargs)
 
-    def set_chat_description(self, chat_id, description=''):
+    def set_chat_description(self, chat_id, description=None):
         return self._request(self._url + 'setChatDescription', data=dict(chat_id=chat_id, description=description),
                              **self._req_kwargs)
 
     def pin_chat_message(self, chat_id, message_id, disable_notification=None):
         return self._request(self._url + 'pinChatMessage', data=dict(
-            chat_id=chat_id, message_id=message_id, disable_notification=disable_notification
-        ), **self._req_kwargs)
+            chat_id=chat_id, message_id=message_id, disable_notification=disable_notification), **self._req_kwargs)
 
-    def unpin_chat_message(self, chat_id):
-        return self._request(self._url + 'unpinChatMessage', data=dict(chat_id=chat_id), **self._req_kwargs)
+    def unpin_chat_message(self, chat_id, message_id=None):
+        return self._request(self._url + 'unpinChatMessage', data=dict(
+            chat_id=chat_id,
+            message_id=message_id), **self._req_kwargs)
+
+    def unpin_all_chat_messages(self, chat_id):
+        return self._request(self._url + 'unpinAllChatMessages', data=dict(chat_id=chat_id), **self._req_kwargs)
 
     def leave_chat(self, chat_id):
         return self._request(self._url + 'leaveChat', data=dict(chat_id=chat_id), **self._req_kwargs)
@@ -685,56 +990,99 @@ class Sender(TransportMixin):
     def delete_chat_sticker_set(self, chat_id):
         return self._request(self._url + 'deleteChatStickerSet', data=dict(chat_id=chat_id), **self._req_kwargs)
 
-    def answer_callback_query(self, callback_query_id, text=None, show_alert=None, url=None, cache_time=None):
-        kwargs = dict(callback_query_id=callback_query_id, text=text, show_alert=show_alert, url=url,
-                      cache_time=cache_time)
-        return self._request(self._url + 'answerCallbackQuery', data=kwargs, **self._req_kwargs)
+    def answer_callback_query(self,
+                              callback_query_id,
+                              text=None,
+                              show_alert=None,
+                              url=None,
+                              cache_time=None):
+        return self._request(self._url + 'answerCallbackQuery', data=dict(
+            callback_query_id=callback_query_id,
+            text=text,
+            show_alert=show_alert,
+            url=url,
+            cache_time=cache_time), **self._req_kwargs)
 
     def set_my_commands(self, commands):
-        kwargs = dict(commands=json.dumps(commands))
-        return self._request(self._url + 'setMyCommands', data=kwargs, **self._req_kwargs)
+        return self._request(self._url + 'setMyCommands', data=dict(commands=json.dumps(commands)), **self._req_kwargs)
 
     def get_my_commands(self):
         return self._request(self._url + 'getMyCommands', **self._req_kwargs)
 
-    def edit_message_text(self, text, chat_id=None, message_id=None, inline_message_id=None,
-                          parse_mode=None, disable_web_page_preview=None, reply_markup=None):
-        kwargs = dict(text=text, chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id,
-                      parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview,
-                      reply_markup=reply_markup)
-        return self._request(self._url + 'editMessageText', data=kwargs, **self._req_kwargs)
+    def edit_message_text(self,
+                          text,
+                          chat_id=None,
+                          message_id=None,
+                          inline_message_id=None,
+                          parse_mode=None,
+                          entities=None,
+                          disable_web_page_preview=None,
+                          reply_markup=None):
+        return self._request(self._url + 'editMessageText', data=dict(
+            text=text,
+            chat_id=chat_id,
+            message_id=message_id,
+            inline_message_id=inline_message_id,
+            parse_mode=parse_mode,
+            entities=entities,
+            disable_web_page_preview=disable_web_page_preview,
+            reply_markup=reply_markup), **self._req_kwargs)
 
-    def edit_message_caption(self, chat_id=None, message_id=None, inline_message_id=None, caption=None,
-                             parse_mode=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id, caption=caption,
-                      parse_mode=parse_mode, reply_markup=reply_markup)
-        return self._request(self._url + 'editMessageCaption', data=kwargs, **self._req_kwargs)
+    def edit_message_caption(self,
+                             chat_id=None,
+                             message_id=None,
+                             inline_message_id=None,
+                             caption=None,
+                             parse_mode=None,
+                             caption_entities=None,
+                             reply_markup=None):
+        return self._request(self._url + 'editMessageCaption', data=dict(
+            chat_id=chat_id,
+            message_id=message_id,
+            inline_message_id=inline_message_id,
+            caption=caption,
+            parse_mode=parse_mode,
+            caption_entities=caption_entities,
+            reply_markup=reply_markup), **self._req_kwargs)
 
     def edit_message_media(self, media, chat_id=None, message_id=None, inline_message_id=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id,
-                      reply_markup=reply_markup)
-        kwargs['media'] = json.dumps(media)
-        return self._request(self._url + 'editMessageMedia', data=kwargs, **self._req_kwargs)
+        return self._request(self._url + 'editMessageMedia', data=dict(
+            media=media,
+            chat_id=chat_id,
+            message_id=message_id,
+            inline_message_id=inline_message_id,
+            reply_markup=reply_markup), **self._req_kwargs)
 
     def edit_message_reply_markup(self, chat_id=None, message_id=None, inline_message_id=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id,
-                      reply_markup=reply_markup)
-        return self._request(self._url + 'editMessageReplyMarkup', data=kwargs, **self._req_kwargs)
+        return self._request(self._url + 'editMessageReplyMarkup', data=dict(
+            chat_id=chat_id,
+            message_id=message_id,
+            inline_message_id=inline_message_id,
+            reply_markup=reply_markup), **self._req_kwargs)
 
     def stop_poll(self, chat_id, message_id, reply_markup=None):
         return self._request(self._url + 'stopPoll', data=dict(
-            chat_id=chat_id, message_id=message_id, reply_markup=reply_markup
-        ), **self._req_kwargs)
+            chat_id=chat_id,
+            message_id=message_id,
+            reply_markup=reply_markup), **self._req_kwargs)
 
     def delete_message(self, chat_id, message_id):
         return self._request(self._url + 'deleteMessage', data=dict(chat_id=chat_id, message_id=message_id),
                              **self._req_kwargs)
 
-    def send_sticker(self, chat_id, sticker, disable_notification=None,
-                     reply_to_message_id=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, disable_notification=disable_notification,
-                      reply_to_message_id=reply_to_message_id,
-                      reply_markup=reply_markup)
+    def send_sticker(self,
+                     chat_id,
+                     sticker,
+                     disable_notification=None,
+                     reply_to_message_id=None,
+                     allow_sending_without_reply=None,
+                     reply_markup=None):
+        kwargs = dict(
+            chat_id=chat_id,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup)
         files_kwargs = dict()
         file_id = sticker.get('file_id')
         url = sticker.get('url')
@@ -772,8 +1120,15 @@ class Sender(TransportMixin):
             return self._error_response('Location not found')
         return self._request(self._url + 'uploadStickerFile', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
-    def create_new_sticker_set(self, user_id, name, title, emojis, png_sticker=None, tgs_sticker=None,
-                               contains_masks=None, mask_position=None):
+    def create_new_sticker_set(self,
+                               user_id,
+                               name,
+                               title,
+                               emojis,
+                               png_sticker=None,
+                               tgs_sticker=None,
+                               contains_masks=None,
+                               mask_position=None):
         if png_sticker and tgs_sticker:
             return self._error_response('You must use exactly one of the fields png_sticker or tgs_sticker')
         kwargs = dict(user_id=user_id, name=name, title=title, emojis=emojis, contains_masks=contains_masks)
@@ -846,55 +1201,125 @@ class Sender(TransportMixin):
         return self._request(self._url + 'setStickerSetThumb', data=kwargs, files_kwargs=files_kwargs,
                              **self._req_kwargs)
 
-    def answer_inline_query(self, inline_query_id, results, cache_time=None, is_personal=None,
-                            next_offset=None, switch_pm_text=None, switch_pm_parameter=None):
-        kwargs = dict(inline_query_id=inline_query_id, cache_time=cache_time, is_personal=is_personal,
-                      next_offset=next_offset, switch_pm_text=switch_pm_text, switch_pm_parameter=switch_pm_parameter)
-        kwargs['results'] = json.dumps(results)
-        return self._request(self._url + 'answerInlineQuery', data=kwargs, **self._req_kwargs)
+    def answer_inline_query(self,
+                            inline_query_id,
+                            results,
+                            cache_time=None,
+                            is_personal=None,
+                            next_offset=None,
+                            switch_pm_text=None,
+                            switch_pm_parameter=None):
+        return self._request(self._url + 'answerInlineQuery', data=dict(
+            inline_query_id=inline_query_id,
+            results=json.dumps(results),
+            cache_time=cache_time,
+            is_personal=is_personal,
+            next_offset=next_offset,
+            switch_pm_text=switch_pm_text,
+            switch_pm_parameter=switch_pm_parameter), **self._req_kwargs)
 
-    def send_invoice(self, chat_id, title, description, payload, provider_token, start_parameter, currency, prices,
-                     provider_data=None, photo_url=None, photo_size=None, photo_width=None, photo_height=None,
-                     need_name=None, need_phone_number=None, need_email=None, need_shipping_address=None,
-                     send_phone_number_to_provider=None, send_email_to_provider=None, is_flexible=None,
-                     disable_notification=None, reply_to_message_id=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, title=title, description=description, payload=payload,
-                      provider_token=provider_token,
-                      start_parameter=start_parameter, currency=currency, prices=prices, provider_data=provider_data,
-                      photo_url=photo_url, photo_size=photo_size, photo_width=photo_width, photo_height=photo_height,
-                      need_name=need_name, need_phone_number=need_phone_number, need_email=need_email,
-                      need_shipping_address=need_shipping_address,
-                      send_phone_number_to_provider=send_phone_number_to_provider,
-                      send_email_to_provider=send_email_to_provider, is_flexible=is_flexible,
-                      disable_notification=disable_notification, reply_to_message_id=reply_to_message_id,
-                      reply_markup=reply_markup)
-        return self._request(self._url + 'sendInvoice', data=kwargs, **self._req_kwargs)
+    def send_invoice(self,
+                     chat_id,
+                     title,
+                     description,
+                     payload,
+                     provider_token,
+                     start_parameter,
+                     currency,
+                     prices,
+                     provider_data=None,
+                     photo_url=None,
+                     photo_size=None,
+                     photo_width=None,
+                     photo_height=None,
+                     need_name=None,
+                     need_phone_number=None,
+                     need_email=None,
+                     need_shipping_address=None,
+                     send_phone_number_to_provider=None,
+                     send_email_to_provider=None,
+                     is_flexible=None,
+                     disable_notification=None,
+                     reply_to_message_id=None,
+                     allow_sending_without_reply=None,
+                     reply_markup=None):
+        return self._request(self._url + 'sendInvoice', data=dict(
+            chat_id=chat_id,
+            title=title,
+            description=description,
+            payload=payload,
+            provider_token=provider_token,
+            start_parameter=start_parameter,
+            currency=currency, prices=prices,
+            provider_data=provider_data,
+            photo_url=photo_url,
+            photo_size=photo_size,
+            photo_width=photo_width,
+            photo_height=photo_height,
+            need_name=need_name,
+            need_phone_number=need_phone_number,
+            need_email=need_email,
+            need_shipping_address=need_shipping_address,
+            send_phone_number_to_provider=send_phone_number_to_provider,
+            send_email_to_provider=send_email_to_provider,
+            is_flexible=is_flexible,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup), **self._req_kwargs)
 
     def answer_shipping_query(self, shipping_query_id, ok, shipping_options=None, error_message=None):
-        kwargs = dict(shipping_query_id=shipping_query_id, ok=ok, shipping_options=shipping_options,
-                      error_message=error_message)
-        return self._request(self._url + 'answerShippingQuery', data=kwargs, **self._req_kwargs)
+        return self._request(self._url + 'answerShippingQuery', data=dict(
+            shipping_query_id=shipping_query_id,
+            ok=ok,
+            shipping_options=shipping_options,
+            error_message=error_message), **self._req_kwargs)
 
     def answer_pre_checkout_query(self, pre_checkout_query_id, ok, error_message=None):
-        kwargs = dict(pre_checkout_query_id=pre_checkout_query_id, ok=ok, error_message=error_message)
-        return self._request(self._url + 'answerPreCheckoutQuery', data=kwargs, **self._req_kwargs)
+        return self._request(self._url + 'answerPreCheckoutQuery', data=dict(
+            pre_checkout_query_id=pre_checkout_query_id,
+            ok=ok,
+            error_message=error_message), **self._req_kwargs)
 
     def set_passport_data_errors(self, user_id, errors):
         return self._request(self._url + 'setPassportDataErrors', data=dict(user_id=user_id, errors=errors),
                              **self._req_kwargs)
 
-    def send_game(self, chat_id, game_short_name, disable_notification=None, reply_to_message_id=None,
+    def send_game(self,
+                  chat_id,
+                  game_short_name,
+                  disable_notification=None,
+                  reply_to_message_id=None,
+                  allow_sending_without_reply=None,
                   reply_markup=None):
-        kwargs = dict(chat_id=chat_id, game_short_name=game_short_name, disable_notification=disable_notification,
-                      reply_to_message_id=reply_to_message_id, reply_markup=reply_markup)
-        return self._request(self._url + 'sendGame', data=kwargs, **self._req_kwargs)
+        return self._request(self._url + 'sendGame', data=dict(
+            chat_id=chat_id,
+            game_short_name=game_short_name,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            allow_sending_without_reply=allow_sending_without_reply,
+            reply_markup=reply_markup), **self._req_kwargs)
 
-    def set_game_score(self, user_id, score, force=None, disable_edit_message=None, chat_id=None,
-                       message_id=None, inline_message_id=None):
-        kwargs = dict(user_id=user_id, score=score, force=force, disable_edit_message=disable_edit_message,
-                      chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id)
-        return self._request(self._url + 'setGameScore', data=kwargs, **self._req_kwargs)
+    def set_game_score(self,
+                       user_id,
+                       score,
+                       force=None,
+                       disable_edit_message=None,
+                       chat_id=None,
+                       message_id=None,
+                       inline_message_id=None):
+        return self._request(self._url + 'setGameScore', data=dict(
+            user_id=user_id,
+            score=score,
+            force=force,
+            disable_edit_message=disable_edit_message,
+            chat_id=chat_id,
+            message_id=message_id,
+            inline_message_id=inline_message_id), **self._req_kwargs)
 
     def get_game_high_scores(self, user_id, chat_id=None, message_id=None, inline_message_id=None):
-        kwargs = dict(user_id=user_id, chat_id=chat_id, message_id=message_id, inline_message_id=inline_message_id)
-        return self._request(self._url + 'getGameHighScores', data=kwargs, **self._req_kwargs)
+        return self._request(self._url + 'getGameHighScores', data=dict(
+            user_id=user_id,
+            chat_id=chat_id,
+            message_id=message_id,
+            inline_message_id=inline_message_id), **self._req_kwargs)
