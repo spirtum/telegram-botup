@@ -380,11 +380,13 @@ class Sender(TransportMixin):
             return self._error_response('Location not found')
         return self._request(self._url + 'sendAudio', data=kwargs, files=files_kwargs, **self._req_kwargs)
 
-    def send_document(self, chat_id, document, thumb=None, caption=None, parse_mode=None,
-                      disable_notification=None, reply_to_message_id=None, reply_markup=None):
-        kwargs = dict(chat_id=chat_id, caption=caption, parse_mode=parse_mode,
+    def send_document(self, chat_id, document, thumb=None, caption=None, parse_mode=None, caption_entities=None,
+                      disable_content_type_detection=None, disable_notification=None, reply_to_message_id=None,
+                      allow_sending_without_reply=None, reply_markup=None):
+        kwargs = dict(chat_id=chat_id, caption=caption, parse_mode=parse_mode, caption_entities=caption_entities,
+                      disable_content_type_detection=disable_content_type_detection,
                       disable_notification=disable_notification, reply_to_message_id=reply_to_message_id,
-                      reply_markup=reply_markup)
+                      allow_sending_without_reply=allow_sending_without_reply, reply_markup=reply_markup)
         files_kwargs = dict()
         file_id = document.get('file_id')
         url = document.get('url')

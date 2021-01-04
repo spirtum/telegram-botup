@@ -338,7 +338,8 @@ class Venue(BaseObject):
 
 
 class Video(BaseObject):
-    __slots__ = ['file_id', 'file_unique_id', 'width', 'height', 'duration', 'thumb', 'mime_type', 'file_size']
+    __slots__ = ['file_id', 'file_unique_id', 'width', 'height', 'duration', 'thumb',
+                 'file_name', 'mime_type', 'file_size']
     NESTED = ['thumb', ]
 
     def __init__(self, **kwargs):
@@ -348,6 +349,7 @@ class Video(BaseObject):
         self.height = kwargs.get('height')
         self.duration = kwargs.get('duration')
         self.thumb = PhotoSize(**kwargs['thumb']) if 'thumb' in kwargs else None
+        self.file_name = kwargs.get('file_name')
         self.mime_type = kwargs.get('mime_type')
         self.file_size = kwargs.get('file_size')
 
@@ -409,7 +411,8 @@ class Animation(BaseObject):
 
 
 class Audio(BaseObject):
-    __slots__ = ['file_id', 'file_unique_id', 'duration', 'performer', 'title', 'mime_type', 'file_size', 'thumb']
+    __slots__ = ['file_id', 'file_unique_id', 'duration', 'performer', 'title', 'file_name',
+                 'mime_type', 'file_size', 'thumb']
     NESTED = ['thumb', ]
 
     def __init__(self, **kwargs):
@@ -418,6 +421,7 @@ class Audio(BaseObject):
         self.duration = kwargs.get('duration')
         self.performer = kwargs.get('performer')
         self.title = kwargs.get('title')
+        self.file_name = kwargs.get('file_name')
         self.mime_type = kwargs.get('mime_type')
         self.file_size = kwargs.get('file_size')
         self.thumb = PhotoSize(**kwargs['thumb']) if 'thumb' in kwargs else None
@@ -516,18 +520,21 @@ class InputFile(BaseObject):
 
 
 class InputMedia(BaseObject):
-    __slots__ = ['type', 'media', 'caption', 'parse_mode']
+    __slots__ = ['type', 'media', 'caption', 'parse_mode', 'caption_entities']
+    NESTED = ['caption_entities']
 
     def __init__(self, **kwargs):
         self.type = kwargs.get('type')
         self.media = kwargs.get('media')
         self.caption = kwargs.get('caption')
         self.parse_mode = kwargs.get('parse_mode')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class InputMediaAnimation(InputMedia):
-    __slots__ = ['type', 'media', 'caption', 'parse_mode', 'thumb', 'width', 'height', 'duration']
-    NESTED = ['thumb', ]
+    __slots__ = ['type', 'media', 'caption', 'parse_mode', 'caption_entities', 'thumb', 'width', 'height', 'duration']
+    NESTED = ['thumb', 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -539,8 +546,9 @@ class InputMediaAnimation(InputMedia):
 
 
 class InputMediaAudio(InputMedia):
-    __slots__ = ['type', 'media', 'caption', 'parse_mode', 'thumb', 'duration', 'performer', 'title']
-    NESTED = ['thumb', ]
+    __slots__ = ['type', 'media', 'caption', 'parse_mode', 'caption_entities', 'thumb', 'duration', 'performer',
+                 'title']
+    NESTED = ['thumb', 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -552,17 +560,20 @@ class InputMediaAudio(InputMedia):
 
 
 class InputMediaDocument(InputMedia):
-    __slots__ = ['type', 'media', 'caption', 'parse_mode', 'thumb']
-    NESTED = ['thumb', ]
+    __slots__ = ['type', 'media', 'caption', 'parse_mode', 'caption_entities', 'thumb',
+                 'disable_content_type_detection']
+    NESTED = ['thumb', 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.type = 'document'
         self.thumb = InputFile(**kwargs['thumb']) if 'thumb' in kwargs else None
+        self.disable_content_type_detection = kwargs.get('disable_content_type_detection')
 
 
 class InputMediaPhoto(InputMedia):
-    __slots__ = ['type', 'media', 'caption', 'parse_mode']
+    __slots__ = ['type', 'media', 'caption', 'parse_mode', 'caption_entities']
+    NESTED = ['caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -570,8 +581,9 @@ class InputMediaPhoto(InputMedia):
 
 
 class InputMediaVideo(InputMedia):
-    __slots__ = ['type', 'media', 'caption', 'parse_mode', 'thumb', 'width', 'height', 'duration', 'supports_streaming']
-    NESTED = ['thumb', ]
+    __slots__ = ['type', 'media', 'caption', 'parse_mode', 'caption_entities', 'thumb', 'width', 'height', 'duration',
+                 'supports_streaming']
+    NESTED = ['thumb', 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
