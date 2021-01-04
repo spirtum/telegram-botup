@@ -340,7 +340,8 @@ class UserProfilePhotos(BaseObject):
 
 
 class Venue(BaseObject):
-    __slots__ = ['location', 'title', 'address', 'foursquare_id', 'foursquare_type']
+    __slots__ = ['location', 'title', 'address', 'foursquare_id', 'foursquare_type',
+                 'google_place_id', 'google_place_type']
     NESTED = ['location', ]
 
     def __init__(self, **kwargs):
@@ -349,6 +350,8 @@ class Venue(BaseObject):
         self.address = kwargs.get('address')
         self.foursquare_id = kwargs.get('foursquare_id')
         self.foursquare_type = kwargs.get('foursquare_type')
+        self.google_place_id = kwargs.get('google_place_id')
+        self.google_place_type = kwargs.get('google_place_type')
 
 
 class Video(BaseObject):
@@ -588,7 +591,6 @@ class InputMediaDocument(InputMedia):
 
 class InputMediaPhoto(InputMedia):
     __slots__ = ['type', 'media', 'caption', 'parse_mode', 'caption_entities']
-    NESTED = ['caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -670,7 +672,8 @@ class InputTextMessageContent(InputMessageContent):
 
 
 class InputVenueMessageContent(InputMessageContent):
-    __slots__ = ['latitude', 'longitude', 'title', 'address', 'foursquare_id', 'foursquare_type']
+    __slots__ = ['latitude', 'longitude', 'title', 'address', 'foursquare_id', 'foursquare_type',
+                 'google_place_id', 'google_place_type']
 
     def __init__(self, **kwargs):
         self.latitude = kwargs.get('latitude')
@@ -679,6 +682,8 @@ class InputVenueMessageContent(InputMessageContent):
         self.address = kwargs.get('address')
         self.foursquare_id = kwargs.get('foursquare_id')
         self.foursquare_type = kwargs.get('foursquare_type')
+        self.google_place_id = kwargs.get('google_place_id')
+        self.google_place_type = kwargs.get('google_place_type')
 
 
 class ChosenInlineResult(BaseObject):
@@ -744,7 +749,7 @@ class InlineQueryResultArticle(InlineQueryResult):
 
 class InlineQueryResultAudio(InlineQueryResult):
     __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'audio_url', 'parse_mode', 'title',
-                 'caption', 'performer', 'audio_duration']
+                 'caption', 'performer', 'audio_duration', 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -755,11 +760,13 @@ class InlineQueryResultAudio(InlineQueryResult):
         self.caption = kwargs.get('caption')
         self.performer = kwargs.get('performer')
         self.audio_duration = kwargs.get('audio_duration')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class InlineQueryResultCachedAudio(InlineQueryResult):
     __slots__ = ['type', 'id', 'reply_markup', 'input_message_content',
-                 'audio_file_id', 'caption', 'parse_mode']
+                 'audio_file_id', 'caption', 'parse_mode', 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -767,10 +774,12 @@ class InlineQueryResultCachedAudio(InlineQueryResult):
         self.audio_file_id = kwargs.get('audio_file_id')
         self.caption = kwargs.get('caption')
         self.parse_mode = kwargs.get('parse_mode')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class InlineQueryResultCachedDocument(InlineQueryResult):
-    __slots__ = ['type', 'id', 'reply_markup', 'input_message_content',
+    __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'caption_entities',
                  'title', 'document_file_id', 'description', 'caption', 'parse_mode']
 
     def __init__(self, **kwargs):
@@ -781,10 +790,13 @@ class InlineQueryResultCachedDocument(InlineQueryResult):
         self.description = kwargs.get('description')
         self.caption = kwargs.get('caption')
         self.parse_mode = kwargs.get('parse_mode')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class InlineQueryResultCachedGif(InlineQueryResult):
-    __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'gif_file_id', 'title', 'caption', 'parse_mode']
+    __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'gif_file_id', 'title', 'caption', 'parse_mode',
+                 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -793,11 +805,13 @@ class InlineQueryResultCachedGif(InlineQueryResult):
         self.title = kwargs.get('title')
         self.caption = kwargs.get('caption')
         self.parse_mode = kwargs.get('parse_mode')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class InlineQueryResultCachedMpeg4Gif(InlineQueryResult):
     __slots__ = ['type', 'id', 'reply_markup', 'input_message_content',
-                 'mpeg4_file_id', 'title', 'caption', 'parse_mode']
+                 'mpeg4_file_id', 'title', 'caption', 'parse_mode', 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -806,10 +820,12 @@ class InlineQueryResultCachedMpeg4Gif(InlineQueryResult):
         self.title = kwargs.get('title')
         self.caption = kwargs.get('caption')
         self.parse_mode = kwargs.get('parse_mode')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class InlineQueryResultCachedPhoto(InlineQueryResult):
-    __slots__ = ['type', 'id', 'reply_markup', 'input_message_content',
+    __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'caption_entities',
                  'photo_file_id', 'title', 'description', 'caption', 'parse_mode']
 
     def __init__(self, **kwargs):
@@ -820,6 +836,8 @@ class InlineQueryResultCachedPhoto(InlineQueryResult):
         self.description = kwargs.get('description')
         self.caption = kwargs.get('caption')
         self.parse_mode = kwargs.get('parse_mode')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class InlineQueryResultCachedSticker(InlineQueryResult):
@@ -833,7 +851,7 @@ class InlineQueryResultCachedSticker(InlineQueryResult):
 
 class InlineQueryResultCachedVideo(InlineQueryResult):
     __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'video_file_id', 'title', 'description',
-                 'caption', 'parse_mode']
+                 'caption', 'parse_mode', 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -843,11 +861,13 @@ class InlineQueryResultCachedVideo(InlineQueryResult):
         self.description = kwargs.get('description')
         self.caption = kwargs.get('caption')
         self.parse_mode = kwargs.get('parse_mode')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class InlineQueryResultCachedVoice(InlineQueryResult):
     __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'voice_file_id',
-                 'title', 'caption', 'parse_mode']
+                 'title', 'caption', 'parse_mode', 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -856,6 +876,8 @@ class InlineQueryResultCachedVoice(InlineQueryResult):
         self.title = kwargs.get('title')
         self.caption = kwargs.get('caption')
         self.parse_mode = kwargs.get('parse_mode')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class InlineQueryResultContact(InlineQueryResult):
@@ -876,7 +898,8 @@ class InlineQueryResultContact(InlineQueryResult):
 
 class InlineQueryResultDocument(InlineQueryResult):
     __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'title', 'caption', 'parse_mode',
-                 'document_url', 'mime_type', 'description', 'thumb_url', 'thumb_width', 'thumb_height']
+                 'document_url', 'mime_type', 'description', 'thumb_url', 'thumb_width', 'thumb_height',
+                 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -890,6 +913,8 @@ class InlineQueryResultDocument(InlineQueryResult):
         self.thumb_url = kwargs.get('thumb_url')
         self.thumb_width = kwargs.get('thumb_width')
         self.thumb_height = kwargs.get('thumb_height')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class InlineQueryResultGame(InlineQueryResult):
@@ -904,7 +929,7 @@ class InlineQueryResultGame(InlineQueryResult):
 
 class InlineQueryResultGif(InlineQueryResult):
     __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'gif_url', 'gif_width', 'gif_height',
-                 'gif_duration', 'thumb_url', 'thumb_mime_type', 'title', 'caption', 'parse_mode']
+                 'gif_duration', 'thumb_url', 'thumb_mime_type', 'title', 'caption', 'parse_mode', 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -918,6 +943,8 @@ class InlineQueryResultGif(InlineQueryResult):
         self.title = kwargs.get('title')
         self.caption = kwargs.get('caption')
         self.parse_mode = kwargs.get('parse_mode')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class InlineQueryResultLocation(InlineQueryResult):
@@ -942,7 +969,7 @@ class InlineQueryResultLocation(InlineQueryResult):
 
 class InlineQueryResultMpeg4Gif(InlineQueryResult):
     __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'mpeg4_url', 'mpeg4_width', 'mpeg4_height',
-                 'mpeg4_duration', 'thumb_url', 'thumb_mime_type', 'title', 'caption', 'parse_mode']
+                 'mpeg4_duration', 'thumb_url', 'thumb_mime_type', 'title', 'caption', 'parse_mode', 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -956,11 +983,13 @@ class InlineQueryResultMpeg4Gif(InlineQueryResult):
         self.title = kwargs.get('title')
         self.caption = kwargs.get('caption')
         self.parse_mode = kwargs.get('parse_mode')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class InlineQueryResultPhoto(InlineQueryResult):
     __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'photo_url', 'thumb_url',
-                 'photo_width', 'photo_height', 'title', 'description', 'caption', 'parse_mode']
+                 'photo_width', 'photo_height', 'title', 'description', 'caption', 'parse_mode', 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -973,11 +1002,14 @@ class InlineQueryResultPhoto(InlineQueryResult):
         self.description = kwargs.get('description')
         self.caption = kwargs.get('caption')
         self.parse_mode = kwargs.get('parse_mode')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class InlineQueryResultVenue(InlineQueryResult):
     __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'latitude', 'longitude', 'title',
-                 'address', 'foursquare_id', 'foursquare_type', 'thumb_url', 'thumb_width', 'thumb_height']
+                 'address', 'foursquare_id', 'foursquare_type', 'thumb_url', 'thumb_width', 'thumb_height',
+                 'google_place_id', 'google_place_type']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -988,6 +1020,8 @@ class InlineQueryResultVenue(InlineQueryResult):
         self.address = kwargs.get('address')
         self.foursquare_id = kwargs.get('foursquare_id')
         self.foursquare_type = kwargs.get('foursquare_type')
+        self.google_place_id = kwargs.get('google_place_id')
+        self.google_place_type = kwargs.get('google_place_type')
         self.thumb_url = kwargs.get('thumb_url')
         self.thumb_width = kwargs.get('thumb_width')
         self.thumb_height = kwargs.get('thumb_height')
@@ -995,7 +1029,8 @@ class InlineQueryResultVenue(InlineQueryResult):
 
 class InlineQueryResultVideo(InlineQueryResult):
     __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'video_url', 'mime_type', 'thumb_url',
-                 'title', 'caption', 'parse_mode', 'video_width', 'video_height', 'video_duration', 'description']
+                 'title', 'caption', 'parse_mode', 'video_width', 'video_height', 'video_duration', 'description',
+                 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -1010,11 +1045,13 @@ class InlineQueryResultVideo(InlineQueryResult):
         self.video_height = kwargs.get('video_height')
         self.video_duration = kwargs.get('video_duration')
         self.description = kwargs.get('description')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class InlineQueryResultVoice(InlineQueryResult):
     __slots__ = ['type', 'id', 'reply_markup', 'input_message_content', 'voice_url', 'title', 'caption',
-                 'parse_mode', 'voice_duration']
+                 'parse_mode', 'voice_duration', 'caption_entities']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -1024,6 +1061,8 @@ class InlineQueryResultVoice(InlineQueryResult):
         self.caption = kwargs.get('caption')
         self.parse_mode = kwargs.get('parse_mode')
         self.voice_duration = kwargs.get('voice_duration')
+        self.caption_entities = [MessageEntity(**v) for v in
+                                 kwargs['caption_entities']] if 'caption_entities' in kwargs else list()
 
 
 class BaseElementError(BaseObject):
