@@ -71,3 +71,43 @@ def test_reverse_dispatching():
     assert len(child_two_updates) == 1
 
 
+def test_direct_handling_decorator():
+    update = utils.command_update_by_text('/test')
+
+    sm = DictStateManager()
+    dispatcher = StateDispatcher(sm, 'main')
+    child_one = Dispatcher()
+    dispatcher.register_state('1', child_one)
+    dispatcher_updates = list()
+
+    @dispatcher.command_handler('test')
+    def dispatcher_test(c, u):
+        dispatcher_updates.append(u)
+
+    dispatcher.handle(update)
+    assert len(dispatcher_updates) == 1
+
+    sm.update = update
+    sm.set('main', '1')
+
+    dispatcher.handle(update)
+    assert len(dispatcher_updates) == 2
+
+    # with direct handling
+
+    @dispatcher.command_handler('test')
+    @dispatcher.direct_handling
+    def dispatcher_test_direct_handling(c, u):
+        dispatcher_updates.append(u)
+
+    sm.update = update
+    assert sm.get('main') == '1'
+
+    dispatcher.handle(update)
+    assert len(dispatcher_updates) == 2
+
+    sm.update = update
+    sm.reset('main')
+    assert not sm.get('main')
+    dispatcher.handle(update)
+    assert len(dispatcher_updates) == 3

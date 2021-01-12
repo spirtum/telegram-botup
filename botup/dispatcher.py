@@ -599,6 +599,13 @@ class StateDispatcher(Dispatcher):
         assert isinstance(dispatcher, (Dispatcher, StateDispatcher))
         self._states[state] = dispatcher
 
+    def direct_handling(self, handler):
+        def new_handler(chat_id, update):
+            if self._sm.get(self.key):
+                return
+            handler(chat_id, update)
+        return new_handler
+
     def handle(self, update, *args, **kwargs):
         if not isinstance(update, Update):
             update = Update(**update)
