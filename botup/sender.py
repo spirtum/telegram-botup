@@ -275,7 +275,8 @@ class Sender(TransportMixin):
     def quick_callback_answer(self, update):
         if not self.connection:
             raise NoTransportException('Sender is not connected to transport db')
-        assert update.callback_query, 'Update do not have a CallbackQuery'
+        if not update.callback_query:
+            return
         self.push(
             func=self.answer_callback_query,
             callback_query_id=update.callback_query.id
