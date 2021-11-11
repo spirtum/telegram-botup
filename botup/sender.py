@@ -138,6 +138,8 @@ class Sender(TransportMixin):
             self.create_chat_invite_link.__name__: self.create_chat_invite_link,
             self.edit_chat_invite_link.__name__: self.edit_chat_invite_link,
             self.revoke_chat_invite_link.__name__: self.revoke_chat_invite_link,
+            self.approve_chat_join_request.__name__: self.approve_chat_join_request,
+            self.decline_chat_join_request.__name__: self.decline_chat_join_request,
             self.set_chat_photo.__name__: self.set_chat_photo,
             self.delete_chat_photo.__name__: self.delete_chat_photo,
             self.set_chat_title.__name__: self.set_chat_title,
@@ -973,6 +975,18 @@ class Sender(TransportMixin):
         return self._request(self._url + 'revokeChatInviteLink', data=dict(
             chat_id=chat_id,
             invite_link=invite_link
+        ), **self._req_kwargs)
+
+    def approve_chat_join_request(self, chat_id, user_id):
+        return self._request(self._url + 'approveChatJoinRequest', data=dict(
+            chat_id=chat_id,
+            user_id=user_id
+        ), **self._req_kwargs)
+
+    def decline_chat_join_request(self, chat_id, user_id):
+        return self._request(self._url + 'declineChatJoinRequest', data=dict(
+            chat_id=chat_id,
+            user_id=user_id
         ), **self._req_kwargs)
 
     def set_chat_photo(self, chat_id, photo):

@@ -1721,6 +1721,21 @@ class ChatMemberUpdated(BaseObject):
     }
 
 
+class ChatJoinRequest(BaseObject):
+    __slots__ = [
+        'chat',
+        'from_',
+        'date',
+        'bio',
+        'invite_link'
+    ]
+    NESTED = {
+        'chat': (_simple_object, Chat),
+        'from_': (_simple_object, User, 'from'),
+        'invite_link': (_simple_object, ChatInviteLink)
+    }
+
+
 class Message(BaseObject):
     __slots__ = [
         'message_id',
@@ -1841,24 +1856,6 @@ class CallbackQuery(BaseObject):
     }
 
 
-class ChatMemberUpdated(BaseObject):
-    __slots__ = [
-        'chat',
-        'from_',
-        'date',
-        'old_chat_member',
-        'new_chat_member',
-        'invite_link'
-    ]
-    NESTED = {
-        'chat': (_simple_object, Chat),
-        'from_': (_simple_object, User, 'from'),
-        'old_chat_member': (_simple_object, ChatMember),
-        'new_chat_member': (_simple_object, ChatMember),
-        'invite_link': (_simple_object, ChatInviteLink)
-    }
-
-
 class Update(BaseObject):
     __slots__ = [
         'update_id',
@@ -1874,7 +1871,8 @@ class Update(BaseObject):
         'poll',
         'poll_answer',
         'my_chat_member',
-        'chat_member'
+        'chat_member',
+        'chat_join_request'
     ]
     NESTED = {
         'message': (_simple_object, Message),
@@ -1889,7 +1887,8 @@ class Update(BaseObject):
         'poll': (_simple_object, Poll),
         'poll_answer': (_simple_object, PollAnswer),
         'my_chat_member': (_simple_object, ChatMemberUpdated),
-        'chat_member': (_simple_object, ChatMemberUpdated)
+        'chat_member': (_simple_object, ChatMemberUpdated),
+        'chat_join_request': (_simple_object, ChatJoinRequest)
     }
 
 
