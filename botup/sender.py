@@ -11,8 +11,8 @@ try:
 except ImportError:
     import json
 
-from .types import ErrorResponse
-from .utils import error_response, get_logger, parse_response
+from .types import ErrorResponse, TelegramResponse
+from .utils import get_logger
 from .exceptions import NoTransportException
 
 logger = get_logger()
@@ -82,7 +82,7 @@ class AsyncResult(TransportMixin):
             time.sleep(tick)
         if not self._value:
             self._value = {'ok': False, 'error_code': 502, 'description': 'No result'}
-        return parse_response(self._value) if parse else self._value
+        return TelegramResponse(self._value) if parse else self._value
 
 
 class Sender(TransportMixin):
@@ -239,7 +239,7 @@ class Sender(TransportMixin):
     def _error_response(self, text):
         if self.auto_parse_type:
             return ErrorResponse(ok=False, error_code=502, description=text)
-        return error_response(text)
+        return json.dumps({'ok': False, 'error_code': 502, 'description': text})
 
     def _request(self, *args, **kwargs):
         try:
@@ -248,7 +248,7 @@ class Sender(TransportMixin):
             return self._error_response(f'API connection error. {traceback.format_exc()}')
         except requests.exceptions.Timeout:
             return self._error_response(f'API timeout error. {traceback.format_exc()}')
-        return parse_response(resp.text) if self.auto_parse_type else resp.text
+        return TelegramResponse(resp.text) if self.auto_parse_type else resp.text
 
     def push(self, func, save_id=False, **kwargs):
         if not self.connection:
