@@ -128,7 +128,7 @@ class Sender(TransportMixin):
             self.send_chat_action.__name__: self.send_chat_action,
             self.get_user_profile_photos.__name__: self.get_user_profile_photos,
             self.get_file.__name__: self.get_file,
-            self.kick_chat_member.__name__: self.kick_chat_member,
+            self.ban_chat_member.__name__: self.ban_chat_member,
             self.unban_chat_member.__name__: self.unban_chat_member,
             self.restrict_chat_member.__name__: self.restrict_chat_member,
             self.promote_chat_member.__name__: self.promote_chat_member,
@@ -148,7 +148,7 @@ class Sender(TransportMixin):
             self.leave_chat.__name__: self.leave_chat,
             self.get_chat.__name__: self.get_chat,
             self.get_chat_administrators.__name__: self.get_chat_administrators,
-            self.get_chat_members_count.__name__: self.get_chat_members_count,
+            self.get_chat_member_count.__name__: self.get_chat_member_count,
             self.get_chat_member.__name__: self.get_chat_member,
             self.set_chat_sticker_set.__name__: self.set_chat_sticker_set,
             self.delete_chat_sticker_set.__name__: self.delete_chat_sticker_set,
@@ -874,8 +874,8 @@ class Sender(TransportMixin):
     def get_file(self, file_id):
         return self._request(self._url + 'getFile', data=dict(file_id=file_id), **self._req_kwargs)
 
-    def kick_chat_member(self, chat_id, user_id, until_date=None, revoke_messages=None):
-        return self._request(self._url + 'kickChatMember', data=dict(
+    def ban_chat_member(self, chat_id, user_id, until_date=None, revoke_messages=None):
+        return self._request(self._url + 'banChatMember', data=dict(
             chat_id=chat_id,
             user_id=user_id,
             until_date=until_date,
@@ -1024,8 +1024,8 @@ class Sender(TransportMixin):
     def get_chat_administrators(self, chat_id):
         return self._request(self._url + 'getChatAdministrators', data=dict(chat_id=chat_id), **self._req_kwargs)
 
-    def get_chat_members_count(self, chat_id):
-        return self._request(self._url + 'getChatMembersCount', data=dict(chat_id=chat_id), **self._req_kwargs)
+    def get_chat_member_count(self, chat_id):
+        return self._request(self._url + 'getChatMemberCount', data=dict(chat_id=chat_id), **self._req_kwargs)
 
     def get_chat_member(self, chat_id, user_id):
         return self._request(self._url + 'getChatMember', data=dict(chat_id=chat_id, user_id=user_id),
@@ -1051,11 +1051,24 @@ class Sender(TransportMixin):
             url=url,
             cache_time=cache_time), **self._req_kwargs)
 
-    def set_my_commands(self, commands):
-        return self._request(self._url + 'setMyCommands', data=dict(commands=json.dumps(commands)), **self._req_kwargs)
+    def set_my_commands(self, commands, scope=None, language_code=None):
+        return self._request(self._url + 'setMyCommands', data=dict(
+            commands=json.dumps(commands),
+            scope=scope,
+            language_code=language_code
+        ), **self._req_kwargs)
 
-    def get_my_commands(self):
-        return self._request(self._url + 'getMyCommands', **self._req_kwargs)
+    def delete_my_commands(self, scope=None, language_code=None):
+        return self._request(self._url + 'deleteMyCommands', data=dict(
+            scope=scope,
+            language_code=language_code
+        ), **self._req_kwargs)
+
+    def get_my_commands(self, scope=None, language_code=None):
+        return self._request(self._url + 'getMyCommands', data=dict(
+            scope=scope,
+            language_code=language_code
+        ), **self._req_kwargs)
 
     def edit_message_text(self,
                           text,

@@ -116,6 +116,7 @@ class ErrorResponse(BaseObject):
 class ForceReply(BaseObject):
     __slots__ = [
         'force_reply',
+        'input_field_placeholder',
         'selective'
     ]
 
@@ -206,6 +207,7 @@ class ReplyKeyboardMarkup(BaseObject):
         'keyboard',
         'resize_keyboard',
         'one_time_keyboard',
+        'input_field_placeholder',
         'selective'
     ]
     NESTED = {
@@ -533,34 +535,106 @@ class Audio(BaseObject):
     }
 
 
-class ChatMember(BaseObject):
+class ChatMemberOwner(BaseObject):
     __slots__ = [
-        'user',
         'status',
-        'custom_title',
+        'user',
         'is_anonymous',
-        'until_date',
-        'can_be_edited',
-        'can_change_info',
-        'can_post_messages',
-        'can_edit_messages',
-        'can_delete_messages',
-        'can_invite_users',
-        'can_manage_chat',
-        'can_manage_voice_chats',
-        'can_restrict_members',
-        'can_pin_messages',
-        'can_promote_members',
-        'is_member',
-        'can_send_messages',
-        'can_send_media_messages',
-        'can_send_polls',
-        'can_send_other_messages',
-        'can_add_web_page_previews'
+        'custom_title'
     ]
     NESTED = {
         'user': (_simple_object, User)
     }
+
+
+class ChatMemberAdministrator(BaseObject):
+    __slots__ = [
+        'status',
+        'user',
+        'can_be_edited',
+        'is_anonymous',
+        'can_manage_chat',
+        'can_delete_messages',
+        'can_manage_voice_chats',
+        'can_restrict_members',
+        'can_promote_members',
+        'can_change_info',
+        'can_invite_users',
+        'can_post_messages',
+        'can_edit_messages',
+        'can_pin_messages',
+        'custom_title'
+    ]
+    NESTED = {
+        'user': (_simple_object, User)
+    }
+
+
+class ChatMemberMember(BaseObject):
+    __slots__ = [
+        'status',
+        'user'
+    ]
+    NESTED = {
+        'user': (_simple_object, User)
+    }
+
+
+class ChatMemberRestricted(BaseObject):
+    __slots__ = [
+        'status',
+        'user',
+        'is_member',
+        'can_change_info',
+        'can_invite_users',
+        'can_pin_messages',
+        'can_send_messages',
+        'can_send_media_messages',
+        'can_send_polls',
+        'can_send_other_messages',
+        'can_add_web_page_previews',
+        'until_date'
+    ]
+    NESTED = {
+        'user': (_simple_object, User)
+    }
+
+
+class ChatMemberLeft(BaseObject):
+    __slots__ = [
+        'status',
+        'user'
+    ]
+    NESTED = {
+        'user': (_simple_object, User)
+    }
+
+
+class ChatMemberBanned(BaseObject):
+    __slots__ = [
+        'status',
+        'user',
+        'until_date'
+    ]
+    NESTED = {
+        'user': (_simple_object, User)
+    }
+
+
+class ChatMember:
+
+    _dispatch_map = {
+        'creator': ChatMemberOwner,
+        'administrator': ChatMemberAdministrator,
+        'member': ChatMemberMember,
+        'restricted': ChatMemberRestricted,
+        'left': ChatMemberLeft,
+        'kicked': ChatMemberBanned
+    }
+
+    def __new__(cls, **kwargs):
+        _class = cls._dispatch_map[kwargs['status']]
+        return _class(**kwargs)
 
 
 class Document(BaseObject):
@@ -1533,6 +1607,72 @@ class BotCommand(BaseObject):
     ]
 
 
+
+
+
+class BotCommandScopeDefault(BaseObject):
+    __slots__ = [
+        'type'
+    ]
+
+
+class BotCommandScopeAllPrivateChats(BaseObject):
+    __slots__ = [
+        'type'
+    ]
+
+
+class BotCommandScopeAllGroupChats(BaseObject):
+    __slots__ = [
+        'type'
+    ]
+
+
+class BotCommandScopeAllChatAdministrators(BaseObject):
+    __slots__ = [
+        'type'
+    ]
+
+
+class BotCommandScopeChat(BaseObject):
+    __slots__ = [
+        'type',
+        'chat_id'
+    ]
+
+
+class BotCommandScopeChatAdministrators(BaseObject):
+    __slots__ = [
+        'type',
+        'chat_id'
+    ]
+
+
+class BotCommandScopeChatMember(BaseObject):
+    __slots__ = [
+        'type',
+        'chat_id',
+        'user_id'
+    ]
+
+
+class BotCommandScope:
+
+    _dispatch_map = {
+        'default': BotCommandScopeDefault,
+        'all_private_chats': BotCommandScopeAllPrivateChats,
+        'all_group_chats': BotCommandScopeAllGroupChats,
+        'all_chat_administrators': BotCommandScopeAllChatAdministrators,
+        'chat': BotCommandScopeChat,
+        'chat_administrators': BotCommandScopeChatAdministrators,
+        'chat_member': BotCommandScopeChatMember
+    }
+
+    def __new__(cls, **kwargs):
+        _class = cls._dispatch_map[kwargs['type']]
+        return _class(**kwargs)
+
+
 class Chat(BaseObject):
     __slots__ = [
         'id',
@@ -1561,6 +1701,24 @@ class Chat(BaseObject):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.pinned_message = Message(**kwargs['pinned_message']) if 'pinned_message' in kwargs else None
+
+
+class ChatMemberUpdated(BaseObject):
+    __slots__ = [
+        'chat',
+        'from_',
+        'date',
+        'old_chat_member',
+        'new_chat_member',
+        'invite_link'
+    ]
+    NESTED = {
+        'chat': (_simple_object, Chat),
+        'from_': (_simple_object, User, 'from'),
+        'old_chat_member': (_simple_object, ChatMember),
+        'new_chat_member': (_simple_object, ChatMember),
+        'invite_link': (_simple_object, ChatInviteLink)
+    }
 
 
 class Message(BaseObject):
