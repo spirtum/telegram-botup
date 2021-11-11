@@ -11,8 +11,8 @@ try:
 except ImportError:
     import json
 
-from .types import ErrorResponse
-from .utils import error_response, get_logger, parse_response
+from .types import ErrorResponse, TelegramResponse
+from .utils import get_logger
 from .exceptions import NoTransportException
 
 logger = get_logger()
@@ -82,7 +82,7 @@ class AsyncResult(TransportMixin):
             time.sleep(tick)
         if not self._value:
             self._value = {'ok': False, 'error_code': 502, 'description': 'No result'}
-        return parse_response(self._value) if parse else self._value
+        return TelegramResponse(self._value) if parse else self._value
 
 
 class Sender(TransportMixin):
@@ -128,13 +128,18 @@ class Sender(TransportMixin):
             self.send_chat_action.__name__: self.send_chat_action,
             self.get_user_profile_photos.__name__: self.get_user_profile_photos,
             self.get_file.__name__: self.get_file,
-            self.kick_chat_member.__name__: self.kick_chat_member,
+            self.ban_chat_member.__name__: self.ban_chat_member,
             self.unban_chat_member.__name__: self.unban_chat_member,
             self.restrict_chat_member.__name__: self.restrict_chat_member,
             self.promote_chat_member.__name__: self.promote_chat_member,
             self.set_chat_administrator_custom_title.__name__: self.set_chat_administrator_custom_title,
             self.set_chat_permissions.__name__: self.set_chat_permissions,
             self.export_chat_invite_link.__name__: self.export_chat_invite_link,
+            self.create_chat_invite_link.__name__: self.create_chat_invite_link,
+            self.edit_chat_invite_link.__name__: self.edit_chat_invite_link,
+            self.revoke_chat_invite_link.__name__: self.revoke_chat_invite_link,
+            self.approve_chat_join_request.__name__: self.approve_chat_join_request,
+            self.decline_chat_join_request.__name__: self.decline_chat_join_request,
             self.set_chat_photo.__name__: self.set_chat_photo,
             self.delete_chat_photo.__name__: self.delete_chat_photo,
             self.set_chat_title.__name__: self.set_chat_title,
@@ -145,7 +150,7 @@ class Sender(TransportMixin):
             self.leave_chat.__name__: self.leave_chat,
             self.get_chat.__name__: self.get_chat,
             self.get_chat_administrators.__name__: self.get_chat_administrators,
-            self.get_chat_members_count.__name__: self.get_chat_members_count,
+            self.get_chat_member_count.__name__: self.get_chat_member_count,
             self.get_chat_member.__name__: self.get_chat_member,
             self.set_chat_sticker_set.__name__: self.set_chat_sticker_set,
             self.delete_chat_sticker_set.__name__: self.delete_chat_sticker_set,
@@ -239,7 +244,7 @@ class Sender(TransportMixin):
     def _error_response(self, text):
         if self.auto_parse_type:
             return ErrorResponse(ok=False, error_code=502, description=text)
-        return error_response(text)
+        return json.dumps({'ok': False, 'error_code': 502, 'description': text})
 
     def _request(self, *args, **kwargs):
         try:
@@ -248,7 +253,7 @@ class Sender(TransportMixin):
             return self._error_response(f'API connection error. {traceback.format_exc()}')
         except requests.exceptions.Timeout:
             return self._error_response(f'API timeout error. {traceback.format_exc()}')
-        return parse_response(resp.text) if self.auto_parse_type else resp.text
+        return TelegramResponse(resp.text) if self.auto_parse_type else resp.text
 
     def push(self, func, save_id=False, **kwargs):
         if not self.connection:
@@ -871,9 +876,13 @@ class Sender(TransportMixin):
     def get_file(self, file_id):
         return self._request(self._url + 'getFile', data=dict(file_id=file_id), **self._req_kwargs)
 
-    def kick_chat_member(self, chat_id, user_id, until_date=None):
-        return self._request(self._url + 'kickChatMember', data=dict(
-            chat_id=chat_id, user_id=user_id, until_date=until_date), **self._req_kwargs)
+    def ban_chat_member(self, chat_id, user_id, until_date=None, revoke_messages=None):
+        return self._request(self._url + 'banChatMember', data=dict(
+            chat_id=chat_id,
+            user_id=user_id,
+            until_date=until_date,
+            revoke_messages=revoke_messages
+        ), **self._req_kwargs)
 
     def unban_chat_member(self, chat_id, user_id, only_if_banned=None):
         return self._request(self._url + 'unbanChatMember', data=dict(
@@ -893,10 +902,12 @@ class Sender(TransportMixin):
                             chat_id,
                             user_id,
                             is_anonymous=None,
+                            can_manage_chat=None,
                             can_change_info=None,
                             can_post_messages=None,
                             can_edit_messages=None,
                             can_delete_messages=None,
+                            can_manage_voice_chats=None,
                             can_invite_users=None,
                             can_restrict_members=None,
                             can_pin_messages=None,
@@ -905,10 +916,12 @@ class Sender(TransportMixin):
             chat_id=chat_id,
             user_id=user_id,
             is_anonymous=is_anonymous,
+            can_manage_chat=can_manage_chat,
             can_change_info=can_change_info,
             can_post_messages=can_post_messages,
             can_edit_messages=can_edit_messages,
             can_delete_messages=can_delete_messages,
+            can_manage_voice_chats=can_manage_voice_chats,
             can_invite_users=can_invite_users,
             can_restrict_members=can_restrict_members,
             can_pin_messages=can_pin_messages,
@@ -927,6 +940,54 @@ class Sender(TransportMixin):
 
     def export_chat_invite_link(self, chat_id):
         return self._request(self._url + 'exportChatInviteLink', data=dict(chat_id=chat_id), **self._req_kwargs)
+
+    def create_chat_invite_link(self,
+                                chat_id,
+                                name=None,
+                                expire_date=None,
+                                member_limit=None,
+                                creates_join_request=None):
+        return self._request(self._url + 'createChatInviteLink', data=dict(
+            chat_id=chat_id,
+            name=name,
+            expire_date=expire_date,
+            member_limit=member_limit,
+            creates_join_request=creates_join_request
+        ), **self._req_kwargs)
+
+    def edit_chat_invite_link(self,
+                              chat_id,
+                              invite_link,
+                              name=None,
+                              expire_date=None,
+                              member_limit=None,
+                              creates_join_request=None):
+        return self._request(self._url + 'editChatInviteLink', data=dict(
+            chat_id=chat_id,
+            invite_link=invite_link,
+            name=name,
+            expire_date=expire_date,
+            member_limit=member_limit,
+            creates_join_request=creates_join_request
+        ), **self._req_kwargs)
+
+    def revoke_chat_invite_link(self, chat_id, invite_link):
+        return self._request(self._url + 'revokeChatInviteLink', data=dict(
+            chat_id=chat_id,
+            invite_link=invite_link
+        ), **self._req_kwargs)
+
+    def approve_chat_join_request(self, chat_id, user_id):
+        return self._request(self._url + 'approveChatJoinRequest', data=dict(
+            chat_id=chat_id,
+            user_id=user_id
+        ), **self._req_kwargs)
+
+    def decline_chat_join_request(self, chat_id, user_id):
+        return self._request(self._url + 'declineChatJoinRequest', data=dict(
+            chat_id=chat_id,
+            user_id=user_id
+        ), **self._req_kwargs)
 
     def set_chat_photo(self, chat_id, photo):
         kwargs = dict(chat_id=chat_id)
@@ -977,8 +1038,8 @@ class Sender(TransportMixin):
     def get_chat_administrators(self, chat_id):
         return self._request(self._url + 'getChatAdministrators', data=dict(chat_id=chat_id), **self._req_kwargs)
 
-    def get_chat_members_count(self, chat_id):
-        return self._request(self._url + 'getChatMembersCount', data=dict(chat_id=chat_id), **self._req_kwargs)
+    def get_chat_member_count(self, chat_id):
+        return self._request(self._url + 'getChatMemberCount', data=dict(chat_id=chat_id), **self._req_kwargs)
 
     def get_chat_member(self, chat_id, user_id):
         return self._request(self._url + 'getChatMember', data=dict(chat_id=chat_id, user_id=user_id),
@@ -1004,11 +1065,24 @@ class Sender(TransportMixin):
             url=url,
             cache_time=cache_time), **self._req_kwargs)
 
-    def set_my_commands(self, commands):
-        return self._request(self._url + 'setMyCommands', data=dict(commands=json.dumps(commands)), **self._req_kwargs)
+    def set_my_commands(self, commands, scope=None, language_code=None):
+        return self._request(self._url + 'setMyCommands', data=dict(
+            commands=json.dumps(commands),
+            scope=scope,
+            language_code=language_code
+        ), **self._req_kwargs)
 
-    def get_my_commands(self):
-        return self._request(self._url + 'getMyCommands', **self._req_kwargs)
+    def delete_my_commands(self, scope=None, language_code=None):
+        return self._request(self._url + 'deleteMyCommands', data=dict(
+            scope=scope,
+            language_code=language_code
+        ), **self._req_kwargs)
+
+    def get_my_commands(self, scope=None, language_code=None):
+        return self._request(self._url + 'getMyCommands', data=dict(
+            scope=scope,
+            language_code=language_code
+        ), **self._req_kwargs)
 
     def edit_message_text(self,
                           text,
@@ -1225,9 +1299,11 @@ class Sender(TransportMixin):
                      description,
                      payload,
                      provider_token,
-                     start_parameter,
                      currency,
                      prices,
+                     start_parameter=None,
+                     max_tip_amount=None,
+                     suggested_tip_amounts=None,
                      provider_data=None,
                      photo_url=None,
                      photo_size=None,
@@ -1250,8 +1326,11 @@ class Sender(TransportMixin):
             description=description,
             payload=payload,
             provider_token=provider_token,
+            currency=currency,
+            prices=prices,
             start_parameter=start_parameter,
-            currency=currency, prices=prices,
+            max_tip_amount=max_tip_amount,
+            suggested_tip_amounts=suggested_tip_amounts,
             provider_data=provider_data,
             photo_url=photo_url,
             photo_size=photo_size,
