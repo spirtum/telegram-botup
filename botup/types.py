@@ -299,6 +299,23 @@ class User(BaseObject):
     ]
 
 
+class ChatInviteLink(BaseObject):
+    __slots__ = [
+        'invite_link',
+        'creator',
+        'creates_join_request',
+        'is_primary',
+        'is_revoked',
+        'name',
+        'expire_date',
+        'member_limit',
+        'pending_join_request_count'
+    ]
+    NESTED = {
+        'creator': (_simple_object, User)
+    }
+
+
 class MessageEntity(BaseObject):
     __slots__ = [
         'type',
@@ -369,6 +386,37 @@ class ProximityAlertTriggered(BaseObject):
     NESTED = {
         'traveler': (_simple_object, User),
         'watcher': (_simple_object, User)
+    }
+
+
+class MessageAutoDeleteTimerChanged(BaseObject):
+    __slots__ = [
+        'message_auto_delete_time'
+    ]
+
+
+class VoiceChatScheduled(BaseObject):
+    __slots__ = [
+        'start_date'
+    ]
+
+
+class VoiceChatStarted(BaseObject):
+    pass
+
+
+class VoiceChatEnded(BaseObject):
+    __slots__ = [
+        'duration'
+    ]
+
+
+class VoiceChatParticipantsInvited(BaseObject):
+    __slots__ = [
+        'users'
+    ]
+    NESTED = {
+        'users': (_objects_list, User)
     }
 
 
@@ -498,6 +546,8 @@ class ChatMember(BaseObject):
         'can_edit_messages',
         'can_delete_messages',
         'can_invite_users',
+        'can_manage_chat',
+        'can_manage_voice_chats',
         'can_restrict_members',
         'can_pin_messages',
         'can_promote_members',
@@ -661,6 +711,13 @@ class GameHighScore(BaseObject):
     }
 
 
+class LabeledPrice(BaseObject):
+    __slots__ = [
+        'label',
+        'amount'
+    ]
+
+
 class InputMessageContent:
 
     def __new__(cls, **kwargs):
@@ -675,6 +732,8 @@ class InputMessageContent:
             return InputLocationMessageContent(**imc)
         elif 'message_text' in imc:
             return InputTextMessageContent(**imc)
+        elif 'currency' in imc:
+            return InputInvoiceMessageContent(**imc)
 
 
 class InputContactMessageContent(BaseObject):
@@ -718,6 +777,34 @@ class InputVenueMessageContent(BaseObject):
     ]
 
 
+class InputInvoiceMessageContent(BaseObject):
+    __slots__ = [
+        'title',
+        'description',
+        'payload',
+        'provider_token',
+        'currency',
+        'prices',
+        'max_tip_amount',
+        'suggested_tip_amounts',
+        'provider_data',
+        'photo_url',
+        'photo_size',
+        'photo_width',
+        'photo_height',
+        'need_name',
+        'need_phone_number',
+        'need_email',
+        'need_shipping_address',
+        'send_phone_number_to_provider',
+        'send_email_to_provider',
+        'is_flexible'
+    ]
+    NESTED = {
+        'prices': (_objects_list, LabeledPrice)
+    }
+
+
 class ChosenInlineResult(BaseObject):
     __slots__ = [
         'result_id',
@@ -738,7 +825,8 @@ class InlineQuery(BaseObject):
         'from_',
         'location',
         'query',
-        'offset'
+        'offset',
+        'chat_type'
     ]
     NESTED = {
         'from_': (_simple_object, User, 'from'),
@@ -1304,13 +1392,6 @@ class Invoice(BaseObject):
     ]
 
 
-class LabeledPrice(BaseObject):
-    __slots__ = [
-        'label',
-        'amount'
-    ]
-
-
 class ShippingAddress(BaseObject):
     __slots__ = [
         'country_code',
@@ -1525,6 +1606,7 @@ class Message(BaseObject):
         'group_chat_created',
         'supergroup_chat_created',
         'channel_chat_created',
+        'message_auto_delete_timer_changed',
         'migrate_to_chat_id',
         'migrate_from_chat_id',
         'pinned_message',
@@ -1533,6 +1615,10 @@ class Message(BaseObject):
         'connected_website',
         'passport_data',
         'proximity_alert_triggered',
+        'voice_chat_scheduled',
+        'voice_chat_started',
+        'voice_chat_ended',
+        'voice_chat_participants_invited',
         'reply_markup'
     ]
     NESTED = {
@@ -1562,11 +1648,16 @@ class Message(BaseObject):
         'new_chat_members': (_objects_list, User),
         'left_chat_member': (_simple_object, User),
         'new_chat_photo': (_objects_list, PhotoSize),
+        'message_auto_delete_timer_changed': (_simple_object, MessageAutoDeleteTimerChanged),
         'pinned_message': (_raw_representation, None),
         'invoice': (_simple_object, Invoice),
         'successful_payment': (_simple_object, SuccessfulPayment),
         'passport_data': (_simple_object, PassportData),
         'proximity_alert_triggered': (_simple_object, ProximityAlertTriggered),
+        'voice_chat_scheduled': (_simple_object, VoiceChatScheduled),
+        'voice_chat_started': (_simple_object, VoiceChatStarted),
+        'voice_chat_ended': (_simple_object, VoiceChatEnded),
+        'voice_chat_participants_invited': (_simple_object, VoiceChatParticipantsInvited),
         'reply_markup': (_simple_object, InlineKeyboardMarkup)
     }
 
@@ -1592,6 +1683,24 @@ class CallbackQuery(BaseObject):
     }
 
 
+class ChatMemberUpdated(BaseObject):
+    __slots__ = [
+        'chat',
+        'from_',
+        'date',
+        'old_chat_member',
+        'new_chat_member',
+        'invite_link'
+    ]
+    NESTED = {
+        'chat': (_simple_object, Chat),
+        'from_': (_simple_object, User, 'from'),
+        'old_chat_member': (_simple_object, ChatMember),
+        'new_chat_member': (_simple_object, ChatMember),
+        'invite_link': (_simple_object, ChatInviteLink)
+    }
+
+
 class Update(BaseObject):
     __slots__ = [
         'update_id',
@@ -1605,7 +1714,9 @@ class Update(BaseObject):
         'shipping_query',
         'pre_checkout_query',
         'poll',
-        'poll_answer'
+        'poll_answer',
+        'my_chat_member',
+        'chat_member'
     ]
     NESTED = {
         'message': (_simple_object, Message),
@@ -1618,7 +1729,9 @@ class Update(BaseObject):
         'shipping_query': (_simple_object, ShippingQuery),
         'pre_checkout_query': (_simple_object, PreCheckoutQuery),
         'poll': (_simple_object, Poll),
-        'poll_answer': (_simple_object, PollAnswer)
+        'poll_answer': (_simple_object, PollAnswer),
+        'my_chat_member': (_simple_object, ChatMemberUpdated),
+        'chat_member': (_simple_object, ChatMemberUpdated)
     }
 
 
