@@ -53,6 +53,9 @@ class BaseObject:
                 if value:
                     result[alias] = [v.as_dict() for v in value]
                 continue
+            if cfg[0] is _raw_representation:
+                result[alias] = value
+                continue
             result[alias] = value.as_dict()
         return result
 
@@ -795,19 +798,18 @@ class LabeledPrice(BaseObject):
 class InputMessageContent:
 
     def __new__(cls, **kwargs):
-        imc = kwargs.get('input_message_content')
-        if not imc:
+        if not kwargs:
             return
-        if 'phone_number' in imc:
-            return InputContactMessageContent(**imc)
-        elif 'latitude' in imc and 'address' in imc:
-            return InputVenueMessageContent(**imc)
-        elif 'latitude' in imc:
-            return InputLocationMessageContent(**imc)
-        elif 'message_text' in imc:
-            return InputTextMessageContent(**imc)
-        elif 'currency' in imc:
-            return InputInvoiceMessageContent(**imc)
+        if 'phone_number' in kwargs:
+            return InputContactMessageContent(**kwargs)
+        elif 'latitude' in kwargs and 'address' in kwargs:
+            return InputVenueMessageContent(**kwargs)
+        elif 'latitude' in kwargs:
+            return InputLocationMessageContent(**kwargs)
+        elif 'message_text' in kwargs:
+            return InputTextMessageContent(**kwargs)
+        elif 'currency' in kwargs:
+            return InputInvoiceMessageContent(**kwargs)
 
 
 class InputContactMessageContent(BaseObject):
