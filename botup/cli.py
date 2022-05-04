@@ -1,6 +1,7 @@
 import os
 import subprocess
 import pathlib
+import pprint
 
 import click
 
@@ -102,7 +103,7 @@ def cmd_set_webhook(token, url, proxy_string):
     if resp.is_error():
         print(resp.description)
     else:
-        resp.pprint()
+        pprint.pprint(resp)
 
 
 @cli.command('delete_webhook')
@@ -118,7 +119,7 @@ def cmd_delete_webhook(token, proxy_string):
     if resp.is_error():
         print(resp.description)
     else:
-        resp.pprint()
+        pprint.pprint(resp)
 
 
 @cli.command('send_message')
@@ -136,4 +137,4 @@ def cmd_send_message(token, chat_id, message, proxy_string):
     if resp.is_error():
         print(resp.description)
     else:
-        resp.pprint()
+        pprint.pprint(resp)
