@@ -1,7 +1,3 @@
-class NoTransportException(Exception):
-    pass
-
-
 class StateManagerException(Exception):
     pass
 
@@ -11,4 +7,8 @@ class BadHandlerException(Exception):
 
 
 class ConfigException(Exception):
+    pass
+
+
+class ParseArgsException(Exception):
     pass

@@ -21,10 +21,10 @@ class SimpleHandler:
         self.function = function
 
     @classmethod
-    def handle(cls, update, handler):
+    async def handle(cls, update, handler):
         if not handler:
             return
-        handler(update.message.chat.id, update)
+        await handler(update.message.chat.id, update)
         return True
 
 
@@ -39,40 +39,40 @@ class AudioHandler(SimpleHandler):
 class CallbackQueryHandler(PatternHandler):
 
     @classmethod
-    def handle(cls, update, handlers):
+    async def handle(cls, update, handlers):
         handler = cls.get_handler(update.callback_query.data, handlers)
         if handler:
-            handler(update.callback_query.message.chat.id, update)
+            await handler(update.callback_query.message.chat.id, update)
             return True
 
 
 class ChannelPostHandler(SimpleHandler):
 
     @classmethod
-    def handle(cls, update, handler):
+    async def handle(cls, update, handler):
         if not handler:
             return
-        handler(update.channel_post.chat.id, update)
+        await handler(update.channel_post.chat.id, update)
         return True
 
 
 class ChosenInlineResultHandler(SimpleHandler):
 
     @classmethod
-    def handle(cls, update, handler):
+    async def handle(cls, update, handler):
         if not handler:
             return
-        handler(update.chosen_inline_result.from_.id, update)
+        await handler(update.chosen_inline_result.from_.id, update)
         return True
 
 
 class CommandHandler(PatternHandler):
 
     @classmethod
-    def handle(cls, update, handlers):
+    async def handle(cls, update, handlers):
         handler = cls.get_handler(update.message.text, handlers)
         if handler:
-            handler(update.message.chat.id, update)
+            await handler(update.message.chat.id, update)
             return True
 
 
@@ -95,20 +95,20 @@ class DocumentHandler(SimpleHandler):
 class EditedChannelPostHandler(SimpleHandler):
 
     @classmethod
-    def handle(cls, update, handler):
+    async def handle(cls, update, handler):
         if not handler:
             return
-        handler(update.edited_channel_post.chat.id, update)
+        await handler(update.edited_channel_post.chat.id, update)
         return True
 
 
 class EditedMessageHandler(SimpleHandler):
 
     @classmethod
-    def handle(cls, update, handler):
+    async def handle(cls, update, handler):
         if not handler:
             return
-        handler(update.edited_message.chat.id, update)
+        await handler(update.edited_message.chat.id, update)
         return True
 
 
@@ -119,10 +119,10 @@ class GameHandler(SimpleHandler):
 class InlineQueryHandler(PatternHandler):
 
     @classmethod
-    def handle(cls, update, handlers):
+    async def handle(cls, update, handlers):
         handler = cls.get_handler(update.inline_query.query, handlers)
         if handler:
-            handler(update.inline_query.from_.id, update)
+            await handler(update.inline_query.from_.id, update)
             return True
 
 
@@ -141,10 +141,10 @@ class LocationHandler(SimpleHandler):
 class MessageHandler(PatternHandler):
 
     @classmethod
-    def handle(cls, update, handlers):
+    async def handle(cls, update, handlers):
         handler = cls.get_handler(update.message.text, handlers)
         if handler:
-            handler(update.message.chat.id, update)
+            await handler(update.message.chat.id, update)
             return True
 
 
@@ -171,40 +171,40 @@ class PhotoHandler(SimpleHandler):
 class PollHandler(SimpleHandler):
 
     @classmethod
-    def handle(cls, update, handler):
+    async def handle(cls, update, handler):
         if not handler:
             return
-        handler(None, update)
+        await handler(None, update)
         return True
 
 
 class PollAnswerHandler(SimpleHandler):
 
     @classmethod
-    def handle(cls, update, handler):
+    async def handle(cls, update, handler):
         if not handler:
             return
-        handler(update.poll_answer.user.id, update)
+        await handler(update.poll_answer.user.id, update)
         return True
 
 
 class PreCheckoutQueryHandler(SimpleHandler):
 
     @classmethod
-    def handle(cls, update, handler):
+    async def handle(cls, update, handler):
         if not handler:
             return
-        handler(update.pre_checkout_query.from_.id, update)
+        await handler(update.pre_checkout_query.from_.id, update)
         return True
 
 
 class ShippingQueryHandler(SimpleHandler):
 
     @classmethod
-    def handle(cls, update, handler):
+    async def handle(cls, update, handler):
         if not handler:
             return
-        handler(update.shipping_query.from_.id, update)
+        await handler(update.shipping_query.from_.id, update)
         return True
 
 

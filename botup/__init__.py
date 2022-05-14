@@ -1,4 +1,4 @@
-from .dispatcher import Dispatcher, StateDispatcher, StateManager, DictStateManager
+from .dispatcher import Dispatcher, StateDispatcher, RedisStateManager, DictStateManager
 from .sender import Sender
 
-__version__ = "0.9.2"
+__version__ = "0.10.2"

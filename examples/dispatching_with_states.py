@@ -2,7 +2,7 @@ import re
 
 import redis
 from flask import Flask, request
-from botup import Sender, Dispatcher, StateDispatcher, StateManager
+from botup import Sender, Dispatcher, StateDispatcher, RedisStateManager
 
 
 TOKEN = ''
@@ -14,7 +14,7 @@ KEY_BAR = 'bar'
 
 app = Flask(__name__)
 sender = Sender(TOKEN)
-sm = StateManager(rdb)
+sm = RedisStateManager(rdb)
 dp_main = StateDispatcher(sm, KEY_MAIN)
 dp_foo = Dispatcher()
 dp_bar = Dispatcher()

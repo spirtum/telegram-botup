@@ -1,5 +1,6 @@
-import threading
 import inspect
+
+import typing
 
 try:
     import ujson as json
@@ -410,146 +411,150 @@ class Dispatcher:
         self._statements.add(self._is_voice)
         self._voice_handler = handler
 
-    def _is_command(self, update):
+    async def _is_command(self, update):
         if update.message and update.message.text and update.message.text.startswith('/'):
             self._success = True
-            return handlers.CommandHandler.handle(update, self._commands)
+            return await handlers.CommandHandler.handle(update, self._commands)
 
-    def _is_message(self, update):
+    async def _is_message(self, update):
         if update.message and update.message.text and not update.message.text.startswith('/'):
-            return handlers.MessageHandler.handle(update, self._messages)
+            return await handlers.MessageHandler.handle(update, self._messages)
 
-    def _is_callback(self, update):
+    async def _is_callback(self, update):
         if update.callback_query:
-            return handlers.CallbackQueryHandler.handle(update, self._callbacks)
+            return await handlers.CallbackQueryHandler.handle(update, self._callbacks)
 
-    def _is_inline(self, update):
+    async def _is_inline(self, update):
         if update.inline_query:
-            return handlers.InlineQueryHandler.handle(update, self._inlines)
+            return await handlers.InlineQueryHandler.handle(update, self._inlines)
 
-    def _is_channel_post(self, update):
+    async def _is_channel_post(self, update):
         if update.channel_post:
-            return handlers.ChannelPostHandler.handle(update, self._channel_post_handler)
+            return await handlers.ChannelPostHandler.handle(update, self._channel_post_handler)
 
-    def _is_edited_message(self, update):
+    async def _is_edited_message(self, update):
         if update.edited_message:
-            return handlers.EditedMessageHandler.handle(update, self._edited_message_handler)
+            return await handlers.EditedMessageHandler.handle(update, self._edited_message_handler)
 
-    def _is_edited_channel_post(self, update):
+    async def _is_edited_channel_post(self, update):
         if update.edited_channel_post:
-            return handlers.EditedChannelPostHandler.handle(update, self._edited_channel_post_handler)
+            return await handlers.EditedChannelPostHandler.handle(update, self._edited_channel_post_handler)
 
-    def _is_chosen_inline_result(self, update):
+    async def _is_chosen_inline_result(self, update):
         if update.chosen_inline_result:
-            return handlers.ChosenInlineResultHandler.handle(update, self._chosen_inline_result_handler)
+            return await handlers.ChosenInlineResultHandler.handle(update, self._chosen_inline_result_handler)
 
-    def _is_shipping_query(self, update):
+    async def _is_shipping_query(self, update):
         if update.shipping_query:
-            return handlers.ShippingQueryHandler.handle(update, self._shipping_query_handler)
+            return await handlers.ShippingQueryHandler.handle(update, self._shipping_query_handler)
 
-    def _is_pre_checkout_query(self, update):
+    async def _is_pre_checkout_query(self, update):
         if update.pre_checkout_query:
-            return handlers.PreCheckoutQueryHandler.handle(update, self._pre_checkout_query_handler)
+            return await handlers.PreCheckoutQueryHandler.handle(update, self._pre_checkout_query_handler)
 
-    def _is_poll(self, update):
+    async def _is_poll(self, update):
         if update.poll:
-            return handlers.PollHandler.handle(update, self._poll_handler)
+            return await handlers.PollHandler.handle(update, self._poll_handler)
 
-    def _is_poll_answer(self, update):
+    async def _is_poll_answer(self, update):
         if update.poll_answer:
-            return handlers.PollAnswerHandler.handle(update, self._poll_answer_handler)
+            return await handlers.PollAnswerHandler.handle(update, self._poll_answer_handler)
 
-    def _is_dice(self, update):
+    async def _is_dice(self, update):
         if update.message and update.message.dice:
-            return handlers.DiceHandler.handle(update, self._dice_handler)
+            return await handlers.DiceHandler.handle(update, self._dice_handler)
 
-    def _is_document(self, update):
+    async def _is_document(self, update):
         if update.message and update.message.document and not update.message.animation:
-            return handlers.DocumentHandler.handle(update, self._document_handler)
+            return await handlers.DocumentHandler.handle(update, self._document_handler)
 
-    def _is_animation(self, update):
+    async def _is_animation(self, update):
         if update.message and update.message.animation:
-            return handlers.AnimationHandler.handle(update, self._animation_handler)
+            return await handlers.AnimationHandler.handle(update, self._animation_handler)
 
-    def _is_audio(self, update):
+    async def _is_audio(self, update):
         if update.message and update.message.audio:
-            return handlers.AudioHandler.handle(update, self._audio_handler)
+            return await handlers.AudioHandler.handle(update, self._audio_handler)
 
-    def _is_connected_website(self, update):
+    async def _is_connected_website(self, update):
         if update.message and update.message.connected_website:
-            return handlers.ConnectedWebsiteHandler.handle(update, self._connected_website_handler)
+            return await handlers.ConnectedWebsiteHandler.handle(update, self._connected_website_handler)
 
-    def _is_contact(self, update):
+    async def _is_contact(self, update):
         if update.message and update.message.contact:
-            return handlers.ContactHandler.handle(update, self._contact_handler)
+            return await handlers.ContactHandler.handle(update, self._contact_handler)
 
-    def _is_game(self, update):
+    async def _is_game(self, update):
         if update.message and update.message.game:
-            return handlers.GameHandler.handle(update, self._game_handler)
+            return await handlers.GameHandler.handle(update, self._game_handler)
 
-    def _is_invoice(self, update):
+    async def _is_invoice(self, update):
         if update.message and update.message.invoice:
-            return handlers.InvoiceHandler.handle(update, self._invoice_handler)
+            return await handlers.InvoiceHandler.handle(update, self._invoice_handler)
 
-    def _is_left_chat_member(self, update):
+    async def _is_left_chat_member(self, update):
         if update.message and update.message.left_chat_member:
-            return handlers.LeftChatMemberHandler.handle(update, self._left_chat_member_handler)
+            return await handlers.LeftChatMemberHandler.handle(update, self._left_chat_member_handler)
 
-    def _is_location(self, update):
+    async def _is_location(self, update):
         if update.message and update.message.location:
-            return handlers.LocationHandler.handle(update, self._location_handler)
+            return await handlers.LocationHandler.handle(update, self._location_handler)
 
-    def _is_new_chat_members(self, update):
+    async def _is_new_chat_members(self, update):
         if update.message and update.message.new_chat_members:
-            return handlers.NewChatMembersHandler.handle(update, self._new_chat_members_handler)
+            return await handlers.NewChatMembersHandler.handle(update, self._new_chat_members_handler)
 
-    def _is_new_chat_photo(self, update):
+    async def _is_new_chat_photo(self, update):
         if update.message and update.message.new_chat_photo:
-            return handlers.NewChatPhotoHandler.handle(update, self._new_chat_photo_handler)
+            return await handlers.NewChatPhotoHandler.handle(update, self._new_chat_photo_handler)
 
-    def _is_new_chat_title(self, update):
+    async def _is_new_chat_title(self, update):
         if update.message and update.message.new_chat_title:
-            return handlers.NewChatTitleHandler.handle(update, self._new_chat_title_handler)
+            return await handlers.NewChatTitleHandler.handle(update, self._new_chat_title_handler)
 
-    def _is_passport_data(self, update):
+    async def _is_passport_data(self, update):
         if update.message and update.message.passport_data:
-            return handlers.PassportDataHandler.handle(update, self._passport_data_handler)
+            return await handlers.PassportDataHandler.handle(update, self._passport_data_handler)
 
-    def _is_photo(self, update):
+    async def _is_photo(self, update):
         if update.message and update.message.photo:
-            return handlers.PhotoHandler.handle(update, self._photo_handler)
+            return await handlers.PhotoHandler.handle(update, self._photo_handler)
 
-    def _is_sticker(self, update):
+    async def _is_sticker(self, update):
         if update.message and update.message.sticker:
-            return handlers.StickerHandler.handle(update, self._sticker_handler)
+            return await handlers.StickerHandler.handle(update, self._sticker_handler)
 
-    def _is_successful_payment(self, update):
+    async def _is_successful_payment(self, update):
         if update.message and update.message.successful_payment:
-            return handlers.SuccessfulPaymentHandler.handle(update, self._successful_payment_handler)
+            return await handlers.SuccessfulPaymentHandler.handle(update, self._successful_payment_handler)
 
-    def _is_venue(self, update):
+    async def _is_venue(self, update):
         if update.message and update.message.venue:
-            return handlers.VenueHandler.handle(update, self._venue_handler)
+            return await handlers.VenueHandler.handle(update, self._venue_handler)
 
-    def _is_video(self, update):
+    async def _is_video(self, update):
         if update.message and update.message.video:
-            return handlers.VideoHandler.handle(update, self._video_handler)
+            return await handlers.VideoHandler.handle(update, self._video_handler)
 
-    def _is_video_note(self, update):
+    async def _is_video_note(self, update):
         if update.message and update.message.video_note:
-            return handlers.VideoNoteHandler.handle(update, self._video_note_handler)
+            return await handlers.VideoNoteHandler.handle(update, self._video_note_handler)
 
-    def _is_voice(self, update):
+    async def _is_voice(self, update):
         if update.message and update.message.voice:
-            return handlers.VoiceHandler.handle(update, self._voice_handler)
+            return await handlers.VoiceHandler.handle(update, self._voice_handler)
 
-    def _run_statements(self, update):
+    async def _run_statements(self, update):
         for statement in self._statements:
-            if statement(update):
+            if await statement(update):
                 return True
 
-    def _run_middlewares(self, update):
-        return any([m(update) for m in self._middlewares])
+    async def _run_middlewares(self, update):
+        for middleware in self._middlewares:
+            result = await middleware(update)
+            if result is True:
+                return True
+        return False
 
     @staticmethod
     def _check_function_signature(function, args_count):
@@ -560,30 +565,12 @@ class Dispatcher:
             raise BadHandlerException(
                 f'{function_string} must be take {args_count} positional arguments but {count} defined')
 
-    def handle(self, update, *args, **kwargs):
+    async def handle(self, update, *args, **kwargs):
         if not isinstance(update, Update):
             update = Update(**update)
-        if self._run_middlewares(update):
+        if await self._run_middlewares(update):
             return True
-        return self._run_statements(update)
-
-    def polling(self, sender, tick=1.0, limit=None, timeout=None, allowed_updates=None):
-        last_update_id = 0
-        response = sender.get_updates(limit=limit, timeout=timeout, allowed_updates=allowed_updates)
-        while True:
-            response = json.loads(response)
-            for update in response['result']:
-                last_update_id = update['update_id']
-                self.handle(update)
-            timer = threading.Timer(tick, lambda *args: None)
-            timer.start()
-            timer.join()
-            response = sender.get_updates(
-                offset=last_update_id + 1,
-                limit=limit,
-                timeout=timeout,
-                allowed_updates=allowed_updates
-            )
+        return await self._run_statements(update)
 
 
 class StateDispatcher(Dispatcher):
@@ -600,35 +587,55 @@ class StateDispatcher(Dispatcher):
         self._states[state] = dispatcher
 
     def direct_handling(self, handler):
-        def new_handler(chat_id, update):
+        async def new_handler(chat_id, update):
             if self._sm.get(self.key):
                 return
-            handler(chat_id, update)
+            await handler(chat_id, update)
         return new_handler
 
-    def handle(self, update, *args, **kwargs):
+    async def handle(self, update, *args, **kwargs):
         if not isinstance(update, Update):
             update = Update(**update)
-        if self._run_middlewares(update):
+        if await self._run_middlewares(update):
             return True
         self._sm.update = update
         states = kwargs.get('states') or self._sm.get_all()
         dispatcher = self._states.get(states.get(self.key))
         processed = False
         if dispatcher:
-            processed = dispatcher.handle(update, states=states)
-        processed = processed or self._run_statements(update)
+            processed = await dispatcher.handle(update, states=states)
+        processed = processed or await self._run_statements(update)
         if processed:
             self._sm.update = None
             return True
 
 
 class StateManager:
+    def __init__(self):
+        self.update = None
+
+    def set(self, key: str, value: str) -> bool:
+        raise NotImplemented
+
+    def get_all(self) -> dict:
+        raise NotImplemented
+
+    def get(self, key: str) -> dict:
+        raise NotImplemented
+
+    def reset(self, *keys: typing.List[str]) -> bool:
+        raise NotImplemented
+
+    def reset_all(self) -> bool:
+        raise NotImplemented
+
+
+class RedisStateManager(StateManager):
 
     def __init__(self, connection, name='botup:{}:state'):
+        super().__init__()
         self.connection = connection
         self.name = name
-        self.update = None
 
     def set(self, key, value):
         chat_id = get_chat_id(self.update)
@@ -661,17 +668,16 @@ class StateManager:
         return self.connection.delete(self.name.format(chat_id))
 
 
-class DictStateManager:
-    def __init__(self, connection=None, name='botup:{}:state'):
-        self.data = dict()
-        self.name = name
-        self.update = None
+class DictStateManager(StateManager):
+    def __init__(self):
+        super().__init__()
+        self._data = dict()
 
     def set(self, key, value):
         chat_id = get_chat_id(self.update)
         if not chat_id:
             raise StateManagerException(f'Cannot set state with {self.update.pformat()}')
-        user_dict = self.data.setdefault(str(chat_id), {})
+        user_dict = self._data.setdefault(str(chat_id), {})
         user_dict[key] = value
         return True
 
@@ -679,21 +685,21 @@ class DictStateManager:
         chat_id = get_chat_id(self.update)
         if not chat_id:
             raise StateManagerException(f'Cannot get state with {self.update.pformat()}')
-        user_dict = self.data.setdefault(str(chat_id), {})
+        user_dict = self._data.setdefault(str(chat_id), {})
         return user_dict
 
     def get(self, key):
         chat_id = get_chat_id(self.update)
         if not chat_id:
             raise StateManagerException(f'Cannot get state with {self.update.pformat()}')
-        user_dict = self.data.setdefault(str(chat_id), {})
+        user_dict = self._data.setdefault(str(chat_id), {})
         return user_dict.get(key)
 
     def reset(self, *keys):
         chat_id = get_chat_id(self.update)
         if not chat_id:
             raise StateManagerException(f'Cannot reset state with {self.update.pformat()}')
-        user_dict = self.data.setdefault(str(chat_id), {})
+        user_dict = self._data.setdefault(str(chat_id), {})
         for k in keys:
             try:
                 user_dict.pop(k)
@@ -705,5 +711,5 @@ class DictStateManager:
         chat_id = get_chat_id(self.update)
         if not chat_id:
             raise StateManagerException(f'Cannot reset state with {self.update.pformat()}')
-        self.data.setdefault(str(chat_id), {})
-        del self.data[str(chat_id)]
+        self._data.setdefault(str(chat_id), {})
+        del self._data[str(chat_id)]
