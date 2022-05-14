@@ -1,7 +1,7 @@
 import re
 
 import redis
-from flask import Flask, request
+from fastapi import FastAPI, Request
 from botup import Sender, Dispatcher, StateDispatcher, RedisStateManager
 
 
@@ -12,7 +12,7 @@ KEY_MAIN = 'main'
 KEY_FOO = 'foo'
 KEY_BAR = 'bar'
 
-app = Flask(__name__)
+app = FastAPI()
 sender = Sender(TOKEN)
 sm = RedisStateManager(rdb)
 dp_main = StateDispatcher(sm, KEY_MAIN)
@@ -62,16 +62,7 @@ dp_bar.register_message_handler(re.compile('.*'), bar_handler)
 dp_bar.register_command_handler('/back', back)
 
 
-@app.route(f'/{TOKEN}', methods=['POST'])
-def index():
-    try:
-        req = request.get_json()
-        dp_main.handle(req)
-    except Exception as exc:
-        import traceback
-        print(traceback.format_exc())
-    return "!", 200
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+@app.post(f'/{TOKEN}')
+async def index(request: Request):
+    await dp_main.handle(await request.json())
+    return "!"

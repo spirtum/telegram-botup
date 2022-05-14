@@ -6,7 +6,7 @@ dp = Dispatcher()
 
 # Method 1
 @dp.command_handler('/start')
-def start_handler(chat_id, update):
+async def start_handler(chat_id, update):
     pass
 
 
@@ -19,6 +19,6 @@ dp.register(CommandHandler('/cancel', start_handler))
 
 
 # or PhotoHandler
-def photo_handler(chat_id, update):
+async def photo_handler(chat_id, update):
     pass
 dp.register(PhotoHandler(photo_handler))
