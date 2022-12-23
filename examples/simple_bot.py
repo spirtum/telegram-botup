@@ -1,11 +1,11 @@
 from fastapi import FastAPI, Request
-from botup import Dispatcher, Sender
+from botup import Dispatcher, Api
 
 TOKEN = "token"
 
 app = FastAPI()
 dispatcher = Dispatcher()
-sender = Sender(TOKEN)
+sender = Api(TOKEN)
 
 
 @dispatcher.message_handler('hello')

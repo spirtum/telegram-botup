@@ -1,7 +1,7 @@
 import re
 
-from botup import Dispatcher, Sender
-from botup.types import InputFile
+from botup import Dispatcher, Api
+from core.types import InputFile
 from fastapi import FastAPI, Request
 
 from my_func import get_random_image
@@ -10,7 +10,7 @@ from config import redis_connection as rdb
 
 app = FastAPI()
 dispatcher = Dispatcher()
-sender = Sender(token=TOKEN)
+sender = Api(token=TOKEN)
 
 
 @dispatcher.command_handler('/image')

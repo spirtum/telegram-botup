@@ -2,7 +2,7 @@ import re
 
 import redis
 from fastapi import FastAPI, Request
-from botup import Sender, Dispatcher, StateDispatcher, RedisStateManager
+from botup import Api, Dispatcher, StateDispatcher, RedisStateManager
 
 
 TOKEN = ''
@@ -13,7 +13,7 @@ KEY_FOO = 'foo'
 KEY_BAR = 'bar'
 
 app = FastAPI()
-sender = Sender(TOKEN)
+sender = Api(TOKEN)
 sm = RedisStateManager(rdb)
 dp_main = StateDispatcher(sm, KEY_MAIN)
 dp_foo = Dispatcher()

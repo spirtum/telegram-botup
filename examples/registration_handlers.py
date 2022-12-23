@@ -1,5 +1,5 @@
 from botup import Dispatcher
-from botup.handlers import CommandHandler, PhotoHandler
+from core.handlers import CommandHandler, PhotoHandler
 
 dp = Dispatcher()
 

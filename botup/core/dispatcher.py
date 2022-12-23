@@ -1,5 +1,4 @@
 import inspect
-
 import typing
 
 try:
@@ -8,9 +7,9 @@ except ImportError:
     import json
 
 from . import handlers
-from .utils import get_chat_id
 from .types import Update
-from .exceptions import StateManagerException, BadHandlerException
+from .utils import get_chat_id
+from .exceptions import BadHandlerException, StateManagerException
 
 
 class Dispatcher:
@@ -611,6 +610,7 @@ class StateDispatcher(Dispatcher):
 
 
 class StateManager:
+
     def __init__(self):
         self.update = None
 

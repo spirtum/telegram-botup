@@ -1,9 +1,7 @@
-import asyncio
 import os.path
 import traceback
-import functools
 
-import requests
+from aiohttp import ClientSession, ClientError
 
 try:
     import ujson as json
@@ -16,7 +14,7 @@ from .utils import get_logger
 logger = get_logger()
 
 
-class Sender:
+class Api:
     TIMEOUT = 5
 
     def __init__(self, token, auto_parse_type=True):
@@ -24,6 +22,10 @@ class Sender:
         self._token = token
         self._auto_parse_type = auto_parse_type
         self._url = f'https://api.telegram.org/bot{self._token}/'
+        self._session = ClientSession()
+
+    async def close_session(self):
+        await self._session.close()
 
     def get_form_message_id(self, chat_id):
         return self._message_id_data.get(chat_id)
@@ -53,13 +55,10 @@ class Sender:
 
     async def _request(self, *args, **kwargs):
         try:
-            resp = await asyncio.get_running_loop().run_in_executor(
-                None, functools.partial(requests.post, *args, **kwargs))
-        except requests.exceptions.ConnectionError:
-            return self._error_response(f'API connection error. {traceback.format_exc()}')
-        except requests.exceptions.Timeout:
-            return self._error_response(f'API timeout error. {traceback.format_exc()}')
-        return TelegramResponse(resp.text) if self._auto_parse_type else resp.text
+            resp = await self._session.post(*args, **kwargs)
+        except ClientError:
+            return self._error_response(f'API error:\n{traceback.format_exc()}')
+        return TelegramResponse(await resp.json()) if self._auto_parse_type else resp.text
 
     async def clear(self, chat_id):
         message_id = self.get_form_message_id(chat_id)
@@ -74,40 +73,26 @@ class Sender:
         await self.answer_callback_query(callback_query_id=update.callback_query.id)
 
     async def get_updates(self, offset=None, limit=None, timeout=None, allowed_updates=None):
-        return await self._request(self._url + 'getUpdates', data=dict(
-            offset=offset,
-            limit=limit,
-            timeout=timeout,
-            allowed_updates=allowed_updates), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'getUpdates', data=data, timeout=self.TIMEOUT)
 
     async def set_webhook(self,
                           url,
-                          certificate=None,
                           ip_address=None,
                           max_connections=None,
                           allowed_updates=None,
                           drop_pending_updates=None):
-        kwargs = dict(
-            url=url,
-            certificate=certificate,
-            ip_address=ip_address,
-            max_connections=max_connections,
-            allowed_updates=allowed_updates,
-            drop_pending_updates=drop_pending_updates
-        )
-        files_kwargs = dict()
-        if certificate:
-            path = certificate.get('path')
-            if not path:
-                return self._error_response('Field path in certificate not found')
-            if not os.path.isfile(path):
-                return self._error_response('File not found')
-            files_kwargs['certificate'] = open(path, 'rb')
-        return await self._request(self._url + 'setWebhook', data=kwargs, files=files_kwargs, timeout=self.TIMEOUT)
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'setWebhook', data=data, timeout=self.TIMEOUT)
 
     async def delete_webhook(self, drop_pending_updates=None):
-        return await self._request(self._url + 'deleteWebhook', data=dict(drop_pending_updates=drop_pending_updates),
-                                   timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(
+            self._url + 'deleteWebhook',
+            data=data,
+            timeout=self.TIMEOUT
+        )
 
     async def get_webhook_info(self):
         return await self._request(self._url + 'getWebhookInfo', timeout=self.TIMEOUT)
@@ -131,24 +116,20 @@ class Sender:
                            reply_to_message_id=None,
                            allow_sending_without_reply=None,
                            reply_markup=None):
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
         return await self._request(
             self._url + 'sendMessage',
-            data=dict(chat_id=chat_id,
-                      text=text,
-                      parse_mode=parse_mode,
-                      entities=entities,
-                      disable_web_page_preview=disable_web_page_preview,
-                      disable_notification=disable_notification,
-                      reply_to_message_id=reply_to_message_id,
-                      allow_sending_without_reply=allow_sending_without_reply,
-                      reply_markup=reply_markup), timeout=self.TIMEOUT)
+            data=data,
+            timeout=self.TIMEOUT
+        )
 
     async def forward_message(self, chat_id, from_chat_id, message_id, disable_notification=None):
-        return await self._request(self._url + 'forwardMessage', data=dict(chat_id=chat_id,
-                                                                           from_chat_id=from_chat_id,
-                                                                           message_id=message_id,
-                                                                           disable_notification=disable_notification),
-                                   timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(
+            self._url + 'forwardMessage',
+            data=data,
+            timeout=self.TIMEOUT
+        )
 
     async def copy_message(self,
                            chat_id,
@@ -161,18 +142,13 @@ class Sender:
                            reply_to_message_id=None,
                            allow_sending_without_reply=None,
                            reply_markup=None):
-        return await self._request(self._url + 'copyMessage', data=dict(
-            chat_id=chat_id,
-            from_chat_id=from_chat_id,
-            message_id=message_id,
-            caption=caption,
-            parse_mode=parse_mode,
-            caption_entities=caption_entities,
-            disable_notification=disable_notification,
-            reply_to_message_id=reply_to_message_id,
-            allow_sending_without_reply=allow_sending_without_reply,
-            reply_markup=reply_markup
-        ), timeout=self.TIMEOUT)
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(
+            self._url + 'copyMessage',
+            data=data,
+            timeout=self.TIMEOUT
+        )
 
     async def send_photo(self,
                          chat_id,
@@ -183,6 +159,8 @@ class Sender:
                          reply_to_message_id=None,
                          allow_sending_without_reply=None,
                          reply_markup=None):
+
+        raise NotImplemented
         kwargs = dict(
             chat_id=chat_id,
             photo=photo,
@@ -223,6 +201,7 @@ class Sender:
                          reply_to_message_id=None,
                          allow_sending_without_reply=None,
                          reply_markup=None):
+        raise NotImplemented
         kwargs = dict(
             chat_id=chat_id,
             caption=caption,
@@ -268,6 +247,7 @@ class Sender:
                             reply_to_message_id=None,
                             allow_sending_without_reply=None,
                             reply_markup=None):
+        raise NotImplemented
         kwargs = dict(
             chat_id=chat_id,
             caption=caption,
@@ -314,6 +294,7 @@ class Sender:
                          reply_to_message_id=None,
                          allow_sending_without_reply=None,
                          reply_markup=None):
+        raise NotImplemented
         kwargs = dict(
             chat_id=chat_id,
             duration=duration,
@@ -362,6 +343,7 @@ class Sender:
                              reply_to_message_id=None,
                              allow_sending_without_reply=None,
                              reply_markup=None):
+        raise NotImplemented
         kwargs = dict(
             chat_id=chat_id,
             duration=duration,
@@ -406,6 +388,7 @@ class Sender:
                          reply_to_message_id=None,
                          allow_sending_without_reply=None,
                          reply_markup=None):
+        raise NotImplemented
         kwargs = dict(
             chat_id=chat_id,
             caption=caption,
@@ -443,6 +426,7 @@ class Sender:
                               reply_to_message_id=None,
                               allow_sending_without_reply=None,
                               reply_markup=None):
+        raise NotImplemented
         kwargs = dict(
             chat_id=chat_id,
             duration=duration,
@@ -478,6 +462,7 @@ class Sender:
                                disable_notification=None,
                                reply_to_message_id=None,
                                allow_sending_without_reply=None):
+        raise NotImplemented
         kwargs = dict(
             chat_id=chat_id,
             disable_notification=disable_notification,
@@ -508,18 +493,13 @@ class Sender:
                             reply_to_message_id=None,
                             allow_sending_without_reply=None,
                             reply_markup=None):
-        return await self._request(self._url + 'sendLocation', data=dict(
-            chat_id=chat_id,
-            latitude=latitude,
-            longitude=longitude,
-            horizontal_accuracy=horizontal_accuracy,
-            live_period=live_period,
-            heading=heading,
-            proximity_alert_radius=proximity_alert_radius,
-            disable_notification=disable_notification,
-            reply_to_message_id=reply_to_message_id,
-            allow_sending_without_reply=allow_sending_without_reply,
-            reply_markup=reply_markup), timeout=self.TIMEOUT)
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(
+            self._url + 'sendLocation',
+            data=data,
+            timeout=self.TIMEOUT
+        )
 
     async def edit_message_live_location(self,
                                          latitude,
@@ -531,24 +511,19 @@ class Sender:
                                          heading=None,
                                          proximity_alert_radius=None,
                                          reply_markup=None):
-        return await self._request(self._url + 'editMessageLiveLocation', data=dict(
-            chat_id=chat_id,
-            latitude=latitude,
-            longitude=longitude,
-            message_id=message_id,
-            inline_message_id=inline_message_id,
-            horizontal_accuracy=horizontal_accuracy,
-            heading=heading,
-            proximity_alert_radius=proximity_alert_radius,
-            reply_markup=reply_markup), timeout=self.TIMEOUT)
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(
+            self._url + 'editMessageLiveLocation',
+            data=data,
+            timeout=self.TIMEOUT
+        )
 
     async def stop_message_live_location(self, chat_id=None, message_id=None, inline_message_id=None,
                                          reply_markup=None):
-        return await self._request(self._url + 'stopMessageLiveLocation', data=dict(
-            chat_id=chat_id,
-            message_id=message_id,
-            inline_message_id=inline_message_id,
-            reply_markup=reply_markup), timeout=self.TIMEOUT)
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'stopMessageLiveLocation', data=data, timeout=self.TIMEOUT)
 
     async def send_venue(self,
                          chat_id,
@@ -564,20 +539,9 @@ class Sender:
                          reply_to_message_id=None,
                          allow_sending_without_reply=None,
                          reply_markup=None):
-        return await self._request(self._url + 'sendVenue', data=dict(
-            chat_id=chat_id,
-            latitude=latitude,
-            longitude=longitude,
-            title=title,
-            address=address,
-            foursquare_id=foursquare_id,
-            foursquare_type=foursquare_type,
-            google_place_id=google_place_id,
-            google_place_type=google_place_type,
-            disable_notification=disable_notification,
-            reply_to_message_id=reply_to_message_id,
-            allow_sending_without_reply=allow_sending_without_reply,
-            reply_markup=reply_markup), timeout=self.TIMEOUT)
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'sendVenue', data=data, timeout=self.TIMEOUT)
 
     async def send_contact(self,
                            chat_id,
@@ -589,16 +553,9 @@ class Sender:
                            reply_to_message_id=None,
                            allow_sending_without_reply=None,
                            reply_markup=None):
-        return await self._request(self._url + 'sendContact', data=dict(
-            chat_id=chat_id,
-            phone_number=phone_number,
-            first_name=first_name,
-            last_name=last_name,
-            vcard=vcard,
-            disable_notification=disable_notification,
-            reply_to_message_id=reply_to_message_id,
-            allow_sending_without_reply=allow_sending_without_reply,
-            reply_markup=reply_markup), timeout=self.TIMEOUT)
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'sendContact', data=data, timeout=self.TIMEOUT)
 
     async def send_poll(self,
                         chat_id,
@@ -620,24 +577,9 @@ class Sender:
                         reply_markup=None):
         if isinstance(options, list):
             options = json.dumps(options)
-        return await self._request(self._url + 'sendPoll', data=dict(
-            chat_id=chat_id,
-            question=question,
-            options=options,
-            is_anonymous=is_anonymous,
-            type=type_,
-            allows_multiple_answers=allows_multiple_answers,
-            correct_option_id=correct_option_id,
-            explanation=explanation,
-            explanation_parse_mode=explanation_parse_mode,
-            explanation_entities=explanation_entities,
-            open_period=open_period,
-            close_date=close_date,
-            is_closed=is_closed,
-            disable_notification=disable_notification,
-            reply_to_message_id=reply_to_message_id,
-            allow_sending_without_reply=allow_sending_without_reply,
-            reply_markup=reply_markup), timeout=self.TIMEOUT)
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'sendPoll', data=data, timeout=self.TIMEOUT)
 
     async def send_dice(self,
                         chat_id,
@@ -646,46 +588,41 @@ class Sender:
                         reply_to_message_id=None,
                         allow_sending_without_reply=None,
                         reply_markup=None):
-        return await self._request(self._url + 'sendDice', data=dict(
-            chat_id=chat_id,
-            emoji=emoji,
-            disable_notification=disable_notification,
-            reply_to_message_id=reply_to_message_id,
-            allow_sending_without_reply=allow_sending_without_reply,
-            reply_markup=reply_markup), timeout=self.TIMEOUT)
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'sendDice', data=data, timeout=self.TIMEOUT)
 
     async def send_chat_action(self, chat_id, action):
-        return await self._request(self._url + 'sendChatAction', data=dict(chat_id=chat_id, action=action),
-                                   timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(
+            self._url + 'sendChatAction',
+            data=data,
+            timeout=self.TIMEOUT
+        )
 
     async def get_user_profile_photos(self, user_id, offset=None, limit=None):
-        return await self._request(self._url + 'getUserProfilePhotos', data=dict(
-            user_id=user_id, offset=offset, limit=limit), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(
+            self._url + 'getUserProfilePhotos',
+            data=data,
+            timeout=self.TIMEOUT
+        )
 
     async def get_file(self, file_id):
-        return await self._request(self._url + 'getFile', data=dict(file_id=file_id), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'getFile', data=data, timeout=self.TIMEOUT)
 
     async def ban_chat_member(self, chat_id, user_id, until_date=None, revoke_messages=None):
-        return await self._request(self._url + 'banChatMember', data=dict(
-            chat_id=chat_id,
-            user_id=user_id,
-            until_date=until_date,
-            revoke_messages=revoke_messages
-        ), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'banChatMember', data=data, timeout=self.TIMEOUT)
 
     async def unban_chat_member(self, chat_id, user_id, only_if_banned=None):
-        return await self._request(self._url + 'unbanChatMember', data=dict(
-            chat_id=chat_id,
-            user_id=user_id,
-            only_if_banned=only_if_banned), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'unbanChatMember', data=data, timeout=self.TIMEOUT)
 
     async def restrict_chat_member(self, chat_id, user_id, permissions, until_date=None):
-        return await self._request(self._url + 'restrictChatMember', data=dict(
-            chat_id=chat_id,
-            user_id=user_id,
-            permissions=permissions,
-            until_date=until_date
-        ), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'restrictChatMember', data=data, timeout=self.TIMEOUT)
 
     async def promote_chat_member(self,
                                   chat_id,
@@ -701,34 +638,25 @@ class Sender:
                                   can_restrict_members=None,
                                   can_pin_messages=None,
                                   can_promote_members=None):
-        return await self._request(self._url + 'promoteChatMember', data=dict(
-            chat_id=chat_id,
-            user_id=user_id,
-            is_anonymous=is_anonymous,
-            can_manage_chat=can_manage_chat,
-            can_change_info=can_change_info,
-            can_post_messages=can_post_messages,
-            can_edit_messages=can_edit_messages,
-            can_delete_messages=can_delete_messages,
-            can_manage_voice_chats=can_manage_voice_chats,
-            can_invite_users=can_invite_users,
-            can_restrict_members=can_restrict_members,
-            can_pin_messages=can_pin_messages,
-            can_promote_members=can_promote_members), timeout=self.TIMEOUT)
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'promoteChatMember', data=data, timeout=self.TIMEOUT)
 
     async def set_chat_administrator_custom_title(self, chat_id, user_id, custom_title):
-        return await self._request(self._url + 'setChatAdministratorCustomTitle', data=dict(
-            chat_id=chat_id,
-            user_id=user_id,
-            custom_title=custom_title), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'setChatAdministratorCustomTitle', data=data, timeout=self.TIMEOUT)
 
     async def set_chat_permissions(self, chat_id, permissions):
-        return await self._request(self._url + 'setChatPermissions', data=dict(
-            chat_id=chat_id,
-            permissions=permissions), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(
+            self._url + 'setChatPermissions',
+            data=data,
+            timeout=self.TIMEOUT
+        )
 
     async def export_chat_invite_link(self, chat_id):
-        return await self._request(self._url + 'exportChatInviteLink', data=dict(chat_id=chat_id), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'exportChatInviteLink', data=data, timeout=self.TIMEOUT)
 
     async def create_chat_invite_link(self,
                                       chat_id,
@@ -736,13 +664,9 @@ class Sender:
                                       expire_date=None,
                                       member_limit=None,
                                       creates_join_request=None):
-        return await self._request(self._url + 'createChatInviteLink', data=dict(
-            chat_id=chat_id,
-            name=name,
-            expire_date=expire_date,
-            member_limit=member_limit,
-            creates_join_request=creates_join_request
-        ), timeout=self.TIMEOUT)
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'createChatInviteLink', data=data, timeout=self.TIMEOUT)
 
     async def edit_chat_invite_link(self,
                                     chat_id,
@@ -751,34 +675,32 @@ class Sender:
                                     expire_date=None,
                                     member_limit=None,
                                     creates_join_request=None):
-        return await self._request(self._url + 'editChatInviteLink', data=dict(
-            chat_id=chat_id,
-            invite_link=invite_link,
-            name=name,
-            expire_date=expire_date,
-            member_limit=member_limit,
-            creates_join_request=creates_join_request
-        ), timeout=self.TIMEOUT)
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'editChatInviteLink', data=data, timeout=self.TIMEOUT)
 
     async def revoke_chat_invite_link(self, chat_id, invite_link):
-        return await self._request(self._url + 'revokeChatInviteLink', data=dict(
-            chat_id=chat_id,
-            invite_link=invite_link
-        ), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(
+            self._url + 'revokeChatInviteLink',
+            data=data,
+            timeout=self.TIMEOUT
+        )
 
     async def approve_chat_join_request(self, chat_id, user_id):
-        return await self._request(self._url + 'approveChatJoinRequest', data=dict(
-            chat_id=chat_id,
-            user_id=user_id
-        ), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(
+            self._url + 'approveChatJoinRequest',
+            data=data,
+            timeout=self.TIMEOUT
+        )
 
     async def decline_chat_join_request(self, chat_id, user_id):
-        return await self._request(self._url + 'declineChatJoinRequest', data=dict(
-            chat_id=chat_id,
-            user_id=user_id
-        ), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'declineChatJoinRequest', data=data, timeout=self.TIMEOUT)
 
     async def set_chat_photo(self, chat_id, photo):
+        raise NotImplemented
         kwargs = dict(chat_id=chat_id)
         files_kwargs = dict()
         file_id = photo.get('file_id')
@@ -797,54 +719,63 @@ class Sender:
         return await self._request(self._url + 'setChatPhoto', data=kwargs, files=files_kwargs, timeout=self.TIMEOUT)
 
     async def delete_chat_photo(self, chat_id):
-        return await self._request(self._url + 'deleteChatPhoto', data=dict(chat_id=chat_id), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'deleteChatPhoto', data=data, timeout=self.TIMEOUT)
 
     async def set_chat_title(self, chat_id, title):
-        return await self._request(self._url + 'setChatTitle', data=dict(chat_id=chat_id, title=title),
-                                   timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'setChatTitle', data=data, timeout=self.TIMEOUT)
 
     async def set_chat_description(self, chat_id, description=None):
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
         return await self._request(self._url + 'setChatDescription',
-                                   data=dict(chat_id=chat_id, description=description),
+                                   data=data,
                                    timeout=self.TIMEOUT)
 
     async def pin_chat_message(self, chat_id, message_id, disable_notification=None):
-        return await self._request(self._url + 'pinChatMessage', data=dict(
-            chat_id=chat_id, message_id=message_id, disable_notification=disable_notification), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'pinChatMessage', data=data, timeout=self.TIMEOUT)
 
     async def unpin_chat_message(self, chat_id, message_id=None):
-        return await self._request(self._url + 'unpinChatMessage', data=dict(
-            chat_id=chat_id,
-            message_id=message_id), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'unpinChatMessage', data=data, timeout=self.TIMEOUT)
 
     async def unpin_all_chat_messages(self, chat_id):
-        return await self._request(self._url + 'unpinAllChatMessages', data=dict(chat_id=chat_id), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'unpinAllChatMessages', data=data, timeout=self.TIMEOUT)
 
     async def leave_chat(self, chat_id):
-        return await self._request(self._url + 'leaveChat', data=dict(chat_id=chat_id), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'leaveChat', data=data, timeout=self.TIMEOUT)
 
     async def get_chat(self, chat_id):
-        return await self._request(self._url + 'getChat', data=dict(chat_id=chat_id), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'getChat', data=data, timeout=self.TIMEOUT)
 
     async def get_chat_administrators(self, chat_id):
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
         return await self._request(
             self._url + 'getChatAdministrators',
-            data=dict(chat_id=chat_id), timeout=self.TIMEOUT
+            data=data, timeout=self.TIMEOUT
         )
 
     async def get_chat_member_count(self, chat_id):
-        return await self._request(self._url + 'getChatMemberCount', data=dict(chat_id=chat_id), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'getChatMemberCount', data=data, timeout=self.TIMEOUT)
 
     async def get_chat_member(self, chat_id, user_id):
-        return await self._request(self._url + 'getChatMember', data=dict(chat_id=chat_id, user_id=user_id),
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'getChatMember', data=data,
                                    timeout=self.TIMEOUT)
 
     async def set_chat_sticker_set(self, chat_id, sticker_set_name):
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
         return await self._request(self._url + 'setChatStickerSet',
-                                   data=dict(chat_id=chat_id, sticker_set_name=sticker_set_name), timeout=self.TIMEOUT)
+                                   data=data, timeout=self.TIMEOUT)
 
     async def delete_chat_sticker_set(self, chat_id):
-        return await self._request(self._url + 'deleteChatStickerSet', data=dict(chat_id=chat_id), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'deleteChatStickerSet', data=data, timeout=self.TIMEOUT)
 
     async def answer_callback_query(self,
                                     callback_query_id,
@@ -852,31 +783,20 @@ class Sender:
                                     show_alert=None,
                                     url=None,
                                     cache_time=None):
-        return await self._request(self._url + 'answerCallbackQuery', data=dict(
-            callback_query_id=callback_query_id,
-            text=text,
-            show_alert=show_alert,
-            url=url,
-            cache_time=cache_time), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'answerCallbackQuery', data=data, timeout=self.TIMEOUT)
 
     async def set_my_commands(self, commands, scope=None, language_code=None):
-        return await self._request(self._url + 'setMyCommands', data=dict(
-            commands=json.dumps(commands),
-            scope=scope,
-            language_code=language_code
-        ), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'setMyCommands', data=data, timeout=self.TIMEOUT)
 
     async def delete_my_commands(self, scope=None, language_code=None):
-        return await self._request(self._url + 'deleteMyCommands', data=dict(
-            scope=scope,
-            language_code=language_code
-        ), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'deleteMyCommands', data=data, timeout=self.TIMEOUT)
 
     async def get_my_commands(self, scope=None, language_code=None):
-        return await self._request(self._url + 'getMyCommands', data=dict(
-            scope=scope,
-            language_code=language_code
-        ), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'getMyCommands', data=data, timeout=self.TIMEOUT)
 
     async def edit_message_text(self,
                                 text,
@@ -887,15 +807,8 @@ class Sender:
                                 entities=None,
                                 disable_web_page_preview=None,
                                 reply_markup=None):
-        return await self._request(self._url + 'editMessageText', data=dict(
-            text=text,
-            chat_id=chat_id,
-            message_id=message_id,
-            inline_message_id=inline_message_id,
-            parse_mode=parse_mode,
-            entities=entities,
-            disable_web_page_preview=disable_web_page_preview,
-            reply_markup=reply_markup), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'editMessageText', data=data, timeout=self.TIMEOUT)
 
     async def edit_message_caption(self,
                                    chat_id=None,
@@ -905,38 +818,24 @@ class Sender:
                                    parse_mode=None,
                                    caption_entities=None,
                                    reply_markup=None):
-        return await self._request(self._url + 'editMessageCaption', data=dict(
-            chat_id=chat_id,
-            message_id=message_id,
-            inline_message_id=inline_message_id,
-            caption=caption,
-            parse_mode=parse_mode,
-            caption_entities=caption_entities,
-            reply_markup=reply_markup), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'editMessageCaption', data=data, timeout=self.TIMEOUT)
 
     async def edit_message_media(self, media, chat_id=None, message_id=None, inline_message_id=None, reply_markup=None):
-        return await self._request(self._url + 'editMessageMedia', data=dict(
-            media=media,
-            chat_id=chat_id,
-            message_id=message_id,
-            inline_message_id=inline_message_id,
-            reply_markup=reply_markup), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'editMessageMedia', data=data, timeout=self.TIMEOUT)
 
     async def edit_message_reply_markup(self, chat_id=None, message_id=None, inline_message_id=None, reply_markup=None):
-        return await self._request(self._url + 'editMessageReplyMarkup', data=dict(
-            chat_id=chat_id,
-            message_id=message_id,
-            inline_message_id=inline_message_id,
-            reply_markup=reply_markup), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'editMessageReplyMarkup', data=data, timeout=self.TIMEOUT)
 
     async def stop_poll(self, chat_id, message_id, reply_markup=None):
-        return await self._request(self._url + 'stopPoll', data=dict(
-            chat_id=chat_id,
-            message_id=message_id,
-            reply_markup=reply_markup), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'stopPoll', data=data, timeout=self.TIMEOUT)
 
     async def delete_message(self, chat_id, message_id):
-        return await self._request(self._url + 'deleteMessage', data=dict(chat_id=chat_id, message_id=message_id),
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'deleteMessage', data=data,
                                    timeout=self.TIMEOUT)
 
     async def send_sticker(self,
@@ -946,6 +845,7 @@ class Sender:
                            reply_to_message_id=None,
                            allow_sending_without_reply=None,
                            reply_markup=None):
+        raise NotImplemented
         kwargs = dict(
             chat_id=chat_id,
             disable_notification=disable_notification,
@@ -969,9 +869,11 @@ class Sender:
         return await self._request(self._url + 'sendSticker', data=kwargs, files=files_kwargs, timeout=self.TIMEOUT)
 
     async def get_sticker_set(self, name):
-        return await self._request(self._url + 'getStickerSet', data=dict(name=name), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'getStickerSet', data=data, timeout=self.TIMEOUT)
 
     async def upload_sticker_file(self, user_id, png_sticker):
+        raise NotImplemented
         kwargs = dict(user_id=user_id)
         files_kwargs = dict()
         file_id = png_sticker.get('file_id')
@@ -1003,6 +905,7 @@ class Sender:
                                      tgs_sticker=None,
                                      contains_masks=None,
                                      mask_position=None):
+        raise NotImplemented
         if png_sticker and tgs_sticker:
             return self._error_response('You must use exactly one of the fields png_sticker or tgs_sticker')
         kwargs = dict(user_id=user_id, name=name, title=title, emojis=emojis, contains_masks=contains_masks)
@@ -1027,6 +930,7 @@ class Sender:
                                    timeout=self.TIMEOUT)
 
     async def add_sticker_to_set(self, user_id, name, emojis, png_sticker=None, tgs_sticker=None, mask_position=None):
+        raise NotImplemented
         if png_sticker and tgs_sticker:
             return self._error_response('You must use exactly one of the fields png_sticker or tgs_sticker')
         kwargs = dict(user_id=user_id, name=name, emojis=emojis)
@@ -1051,13 +955,16 @@ class Sender:
                                    timeout=self.TIMEOUT)
 
     async def set_sticker_position_in_set(self, sticker, position):
-        return await self._request(self._url + 'setStickerPositionInSet', data=dict(sticker=sticker, position=position),
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'setStickerPositionInSet', data=data,
                                    timeout=self.TIMEOUT)
 
     async def delete_sticker_from_set(self, sticker):
-        return await self._request(self._url + 'deleteStickerFromSet', data=dict(sticker=sticker), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'deleteStickerFromSet', data=data, timeout=self.TIMEOUT)
 
     async def set_sticker_set_thumb(self, name, user_id, thumb):
+        raise NotImplemented
         kwargs = dict(name=name, user_id=user_id)
         files_kwargs = dict()
         file_id = thumb.get('file_id')
@@ -1084,14 +991,9 @@ class Sender:
                                   next_offset=None,
                                   switch_pm_text=None,
                                   switch_pm_parameter=None):
-        return await self._request(self._url + 'answerInlineQuery', data=dict(
-            inline_query_id=inline_query_id,
-            results=json.dumps(results),
-            cache_time=cache_time,
-            is_personal=is_personal,
-            next_offset=next_offset,
-            switch_pm_text=switch_pm_text,
-            switch_pm_parameter=switch_pm_parameter), timeout=self.TIMEOUT)
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'answerInlineQuery', data=data, timeout=self.TIMEOUT)
 
     async def send_invoice(self,
                            chat_id,
@@ -1120,49 +1022,21 @@ class Sender:
                            reply_to_message_id=None,
                            allow_sending_without_reply=None,
                            reply_markup=None):
-        return await self._request(self._url + 'sendInvoice', data=dict(
-            chat_id=chat_id,
-            title=title,
-            description=description,
-            payload=payload,
-            provider_token=provider_token,
-            currency=currency,
-            prices=prices,
-            start_parameter=start_parameter,
-            max_tip_amount=max_tip_amount,
-            suggested_tip_amounts=suggested_tip_amounts,
-            provider_data=provider_data,
-            photo_url=photo_url,
-            photo_size=photo_size,
-            photo_width=photo_width,
-            photo_height=photo_height,
-            need_name=need_name,
-            need_phone_number=need_phone_number,
-            need_email=need_email,
-            need_shipping_address=need_shipping_address,
-            send_phone_number_to_provider=send_phone_number_to_provider,
-            send_email_to_provider=send_email_to_provider,
-            is_flexible=is_flexible,
-            disable_notification=disable_notification,
-            reply_to_message_id=reply_to_message_id,
-            allow_sending_without_reply=allow_sending_without_reply,
-            reply_markup=reply_markup), timeout=self.TIMEOUT)
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'sendInvoice', data=data, timeout=self.TIMEOUT)
 
     async def answer_shipping_query(self, shipping_query_id, ok, shipping_options=None, error_message=None):
-        return await self._request(self._url + 'answerShippingQuery', data=dict(
-            shipping_query_id=shipping_query_id,
-            ok=ok,
-            shipping_options=shipping_options,
-            error_message=error_message), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'answerShippingQuery', data=data, timeout=self.TIMEOUT)
 
     async def answer_pre_checkout_query(self, pre_checkout_query_id, ok, error_message=None):
-        return await self._request(self._url + 'answerPreCheckoutQuery', data=dict(
-            pre_checkout_query_id=pre_checkout_query_id,
-            ok=ok,
-            error_message=error_message), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'answerPreCheckoutQuery', data=data, timeout=self.TIMEOUT)
 
     async def set_passport_data_errors(self, user_id, errors):
-        return await self._request(self._url + 'setPassportDataErrors', data=dict(user_id=user_id, errors=errors),
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'setPassportDataErrors', data=data,
                                    timeout=self.TIMEOUT)
 
     async def send_game(self,
@@ -1172,13 +1046,8 @@ class Sender:
                         reply_to_message_id=None,
                         allow_sending_without_reply=None,
                         reply_markup=None):
-        return await self._request(self._url + 'sendGame', data=dict(
-            chat_id=chat_id,
-            game_short_name=game_short_name,
-            disable_notification=disable_notification,
-            reply_to_message_id=reply_to_message_id,
-            allow_sending_without_reply=allow_sending_without_reply,
-            reply_markup=reply_markup), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'sendGame', data=data, timeout=self.TIMEOUT)
 
     async def set_game_score(self,
                              user_id,
@@ -1188,18 +1057,9 @@ class Sender:
                              chat_id=None,
                              message_id=None,
                              inline_message_id=None):
-        return await self._request(self._url + 'setGameScore', data=dict(
-            user_id=user_id,
-            score=score,
-            force=force,
-            disable_edit_message=disable_edit_message,
-            chat_id=chat_id,
-            message_id=message_id,
-            inline_message_id=inline_message_id), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'setGameScore', data=data, timeout=self.TIMEOUT)
 
     async def get_game_high_scores(self, user_id, chat_id=None, message_id=None, inline_message_id=None):
-        return await self._request(self._url + 'getGameHighScores', data=dict(
-            user_id=user_id,
-            chat_id=chat_id,
-            message_id=message_id,
-            inline_message_id=inline_message_id), timeout=self.TIMEOUT)
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        return await self._request(self._url + 'getGameHighScores', data=data, timeout=self.TIMEOUT)

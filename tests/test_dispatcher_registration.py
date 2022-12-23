@@ -1,6 +1,6 @@
 import re
 
-from botup import handlers
+from core import handlers
 
 
 def middleware(u):
