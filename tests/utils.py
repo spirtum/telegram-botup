@@ -1,4 +1,4 @@
-from core.types import Update
+from botup.core.types import Update
 
 USER_FIRST_NAME = 'FirstName'
 USER_LAST_NAME = 'LastName'

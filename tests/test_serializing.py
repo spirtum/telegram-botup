@@ -1,4 +1,4 @@
-from core.types import InlineKeyboardMarkup
+from botup.core.types import InlineKeyboardMarkup
 
 
 def test_inline_keyboard_markup():

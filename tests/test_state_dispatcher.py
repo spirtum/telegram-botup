@@ -1,6 +1,6 @@
 import asyncio
 
-from core.dispatcher import DictStateManager, StateDispatcher, Dispatcher
+from botup.core.dispatcher import DictStateManager, StateDispatcher, Dispatcher
 
 from tests import utils
 

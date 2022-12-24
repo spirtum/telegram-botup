@@ -1,1897 +1,870 @@
+from __future__ import annotations
+import pathlib
+from dataclasses import dataclass, asdict, is_dataclass
+from typing import get_type_hints, get_origin, get_args, Optional, Union, List, Any
+
+from .constants import ChatType, MessageEntityType, PollType, ChatMemberStatus, CHAT_MEMBER_STATUS_CREATOR, \
+    CHAT_MEMBER_STATUS_ADMINISTRATOR, CHAT_MEMBER_STATUS_MEMBER, CHAT_MEMBER_STATUS_RESTRICTED, CHAT_MEMBER_STATUS_LEFT, \
+    CHAT_MEMBER_STATUS_KICKED, BotCommandScopeType, BOT_COMMAND_SCOPE_TYPE_DEFAULT, \
+    BOT_COMMAND_SCOPE_TYPE_ALL_PRIVATE_CHATS, BOT_COMMAND_SCOPE_TYPE_ALL_GROUP_CHATS, \
+    BOT_COMMAND_SCOPE_TYPE_ALL_CHAT_ADMINISTRATORS, BOT_COMMAND_SCOPE_TYPE_CHAT, \
+    BOT_COMMAND_SCOPE_TYPE_CHAT_ADMINISTRATORS, BOT_COMMAND_SCOPE_TYPE_CHAT_MEMBER, MenuButtonType, \
+    MENU_BUTTON_TYPE_COMMANDS, MENU_BUTTON_TYPE_WEB_APP, MENU_BUTTON_TYPE_DEFAULT, InputMediaType, \
+    INPUT_MEDIA_TYPE_PHOTO, INPUT_MEDIA_TYPE_VIDEO, INPUT_MEDIA_TYPE_ANIMATION, INPUT_MEDIA_TYPE_AUDIO, \
+    INPUT_MEDIA_TYPE_DOCUMENT, InputFileType, INPUT_FILE_TYPE_STORED, INPUT_FILE_TYPE_URL, INPUT_FILE_TYPE_PATH, \
+    StickerType, MaskPositionPoint
+
 try:
     import ujson as json
 except ImportError:
     import json
 
 
-def _simple_object(kwargs, key, t):
-    raw = kwargs.get(key)
-    return t(**raw) if raw is not None else None
+NoneType = type(None)
 
 
-def _objects_list(kwargs, key, t):
-    raw = kwargs.get(key)
-    return [t(**v) for v in raw] if raw is not None else list()
+_rename_key_mapping = {
+    'from_': 'from'
+}
 
 
-def _objects_matrix(kwargs, key, t):
-    raw = kwargs.get(key)
-    return [[t(**v) for v in line] for line in raw] if raw is not None else list()
+def _from_dict_helper(data: Any, class_: Any) -> Any:
+    if is_dataclass(class_):
+        assert isinstance(data, dict)
+        return class_.from_dict(data)
+
+    origin = get_origin(class_)
+    args = get_args(class_)
+
+    if origin is Union:
+        return _from_dict_helper(data, args[0])
+
+    if origin is list:
+        assert isinstance(data, list)
+        inner_type = get_args(class_)[0]
+        return [_from_dict_helper(v, inner_type) for v in data]
+
+    return data
 
 
-def _raw_representation(kwargs, key, t):
-    return kwargs
-
-
+@dataclass
 class BaseObject:
-    __slots__ = list()
-    NESTED = dict()
 
-    def __init__(self, **kwargs):
-        for field_name in self.__slots__:
-            if field_name not in self.NESTED:
-                setattr(self, field_name, kwargs.get(field_name))
-            else:
-                cfg = self.NESTED[field_name]
-                func = cfg[0]
-                _class = cfg[1]
-                key = cfg[2] if len(cfg) == 3 else field_name
-                setattr(self, field_name, func(kwargs, key, _class))
+    @classmethod
+    def from_dict(cls, data: dict):
+        kwargs = {}
+        hints = get_type_hints(cls)
+
+        for hint_key, hint_value in hints.items():
+            value = data.get(_rename_key_mapping.get(hint_key) or hint_key)
+            is_none_value = value is None
+            is_optional = NoneType in get_args(hint_value)
+
+            if is_none_value and is_optional:
+                continue
+
+            if not is_optional and is_none_value:
+                raise Exception(f'{hint_key} is required')
+
+            kwargs[hint_key] = _from_dict_helper(
+                data=value,
+                class_=hint_value
+            )
+
+        return cls(**kwargs)
 
     def as_dict(self):
-        result = dict()
-        for field_name in self.__slots__:
-            value = getattr(self, field_name, None)
-            if value is None:
-                continue
-            if field_name not in self.NESTED:
-                result[field_name] = value
-                continue
-            cfg = self.NESTED[field_name]
-            alias = cfg[2] if len(cfg) == 3 else field_name
-            if isinstance(value, list):
-                if value:
-                    result[alias] = [v.as_dict() for v in value]
-                continue
-            if cfg[0] is _raw_representation:
-                result[alias] = value
-                continue
-            result[alias] = value.as_dict()
-        return result
+        return asdict(self)
 
     def is_error(self):
         return isinstance(self, ErrorResponse)
 
 
+@dataclass
 class RawResponse(BaseObject):
-    __slots__ = [
-        'raw_data',
-        'ok',
-        'result',
-        'description'
-    ]
-    NESTED = {
-        'raw_data': (_raw_representation, None)
-    }
+    raw_data: dict
+    ok: bool
+    result: bool
+    description: str
 
 
-class PhotoSize(BaseObject):
-    __slots__ = [
-        'file_id',
-        'file_unique_id',
-        'width',
-        'height',
-        'file_size'
-    ]
-
-
-class ChatPhoto(BaseObject):
-    __slots__ = [
-        'small_file_id',
-        'small_file_unique_id',
-        'big_file_id',
-        'big_file_unique_id'
-    ]
-
-
-class Contact(BaseObject):
-    __slots__ = [
-        'phone_number',
-        'first_name',
-        'last_name',
-        'user_id',
-        'vcard'
-    ]
-
-
-class ErrorResponse(BaseObject):
-    __slots__ = [
-        'raw_data',
-        'ok',
-        'error_code',
-        'description'
-    ]
-    NESTED = {
-        'raw_data': (_raw_representation, None)
-    }
-
-
-class ForceReply(BaseObject):
-    __slots__ = [
-        'force_reply',
-        'input_field_placeholder',
-        'selective'
-    ]
-
-
-class LoginUrl(BaseObject):
-    __slots__ = [
-        'url',
-        'forward_text',
-        'bot_username',
-        'request_write_access'
-    ]
-
-
-class InlineKeyboardButton(BaseObject):
-    __slots__ = [
-        'text',
-        'url',
-        'login_url',
-        'callback_data',
-        'switch_inline_query',
-        'switch_inline_query_current_chat',
-        'callback_game',
-        'pay'
-    ]
-    NESTED = {
-        'login_url': (_simple_object, LoginUrl)
-    }
-
-
-class InlineKeyboardMarkup(BaseObject):
-    __slots__ = ['inline_keyboard']
-    NESTED = {
-        'inline_keyboard': (_objects_matrix, InlineKeyboardButton)
-    }
-
-    def line(self, *args):
-        self.inline_keyboard.append(args)
-
-    @staticmethod
-    def callback_data(text, callback_data):
-        return InlineKeyboardButton(text=text, callback_data=callback_data)
-
-    @staticmethod
-    def login_url(text, login_url):
-        return InlineKeyboardButton(text=text, login_url=login_url)
-
-    @staticmethod
-    def switch_inline_query(text, switch_inline_query):
-        return InlineKeyboardButton(text=text, switch_inline_query=switch_inline_query)
-
-    @staticmethod
-    def switch_inline_query_current_chat(text, switch_inline_query_current_chat):
-        return InlineKeyboardButton(text=text, switch_inline_query_current_chat=switch_inline_query_current_chat)
-
-    @staticmethod
-    def pay(text, pay=True):
-        return InlineKeyboardButton(text=text, pay=pay)
-
-    @staticmethod
-    def url(text, url):
-        return InlineKeyboardButton(text=text, url=url)
-
-    def clear(self):
-        self.inline_keyboard.clear()
-
-    def as_dict(self):
-        return {'inline_keyboard': [[b.as_dict() for b in line] for line in self.inline_keyboard]}
-
-    def as_json(self):
-        return json.dumps(self.as_dict())
-
-
-class KeyboardButtonPollType(BaseObject):
-    __slots__ = ['type']
-    REGULAR = {'type': 'regular'}
-    QUIZ = {'type': 'quiz'}
-
-
-class KeyboardButton(BaseObject):
-    __slots__ = ['text', 'request_contact', 'request_location', 'request_poll']
-    NESTED = {
-        'request_poll': (_simple_object, KeyboardButtonPollType)
-    }
-
-
-class ReplyKeyboardMarkup(BaseObject):
-    __slots__ = [
-        'keyboard',
-        'resize_keyboard',
-        'one_time_keyboard',
-        'input_field_placeholder',
-        'selective'
-    ]
-    NESTED = {
-        'keyboard': (_objects_matrix, KeyboardButton)
-    }
-
-    def line(self, *args):
-        self.keyboard.append(args)
-
-    @staticmethod
-    def button(text, request_contact=False, request_location=False, request_poll=None):
-        kwargs = dict(text=text, request_contact=request_contact, request_location=request_location)
-        if request_poll:
-            kwargs['request_poll'] = request_poll
-        return KeyboardButton(**kwargs)
-
-    def as_dict(self):
-        result = dict()
-        for key in self.__slots__:
-            value = getattr(self, key, None)
-            if value is None:
-                continue
-            if key == 'keyboard':
-                result[key] = [[b.as_dict() for b in line] for line in value]
-                continue
-            result[key] = value
-        return result
-
-    def as_json(self):
-        return json.dumps(self.as_dict())
-
-
-class ReplyKeyboardRemove(BaseObject):
-    __slots__ = [
-        'remove_keyboard',
-        'selective'
-    ]
-
-    def as_dict(self):
-        result = dict()
-        for key in self.__slots__:
-            value = getattr(self, key, None)
-            if value is None:
-                continue
-            result[key] = value
-        return result
-
-    def as_json(self):
-        return json.dumps(self.as_dict())
-
-
-class Location(BaseObject):
-    __slots__ = [
-        'longitude',
-        'latitude',
-        'horizontal_accuracy',
-        'live_period',
-        'heading',
-        'proximity_alert_radius'
-    ]
-
-
-class ChatLocation(BaseObject):
-    __slots__ = [
-        'location',
-        'address'
-    ]
-    NESTED = {
-        'location': (_simple_object, Location)
-    }
-
-
-class PollOption(BaseObject):
-    __slots__ = [
-        'text',
-        'voter_count'
-    ]
-
-
+@dataclass
 class User(BaseObject):
-    __slots__ = [
-        'id',
-        'is_bot',
-        'first_name',
-        'last_name',
-        'username',
-        'language_code',
-        'can_join_groups',
-        'can_read_all_group_messages',
-        'supports_inline_queries'
-    ]
+    id: int
+    is_bot: bool
+    first_name: str
+    last_name: Optional[str] = None
+    username: Optional[str] = None
+    language_code: Optional[str] = None
+    is_premium: Optional[bool] = None
+    added_to_attachment_menu: Optional[bool] = None
+    can_join_groups: Optional[bool] = None
+    can_read_all_group_messages: Optional[bool] = None
+    supports_inline_queries: Optional[bool] = None
 
 
-class ChatInviteLink(BaseObject):
-    __slots__ = [
-        'invite_link',
-        'creator',
-        'creates_join_request',
-        'is_primary',
-        'is_revoked',
-        'name',
-        'expire_date',
-        'member_limit',
-        'pending_join_request_count'
-    ]
-    NESTED = {
-        'creator': (_simple_object, User)
-    }
+@dataclass
+class Chat(BaseObject):
+    id: int
+    type: ChatType
+    title: Optional[str] = None
+    username: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    is_forum: Optional[bool] = None
+    photo: Optional[ChatPhoto] = None
+    active_usernames: Optional[List[str]] = None
+    emoji_status_custom_emoji_id: Optional[str] = None
+    bio: Optional[str] = None
+    has_private_forwards: Optional[bool] = None
+    has_restricted_voice_and_video_messages: Optional[bool] = None
+    join_to_send_messages: Optional[bool] = None
+    join_by_request: Optional[bool] = None
+    description: Optional[str] = None
+    invite_link: Optional[str] = None
+    pinned_message: Optional[Message] = None
+    permissions: Optional[ChatPermissions] = None
+    slow_mode_delay: Optional[int] = None
+    message_auto_delete_time: Optional[int] = None
+    has_protected_content: Optional[bool] = None
+    sticker_set_name: Optional[str] = None
+    can_set_sticker_set: Optional[bool] = None
+    linked_chat_id: Optional[int] = None
+    location: Optional[ChatLocation] = None
 
 
+@dataclass
+class Message(BaseObject):
+    message_id: int
+    date: int
+    chat: Chat
+    from_: Optional[User] = None
+    message_thread_id: Optional[int] = None
+    sender_chat: Optional[Chat] = None
+    forward_from: Optional[User] = None
+    forward_from_chat: Optional[Chat] = None
+    forward_from_message_id: Optional[int] = None
+    forward_signature: Optional[str] = None
+    forward_sender_name: Optional[str] = None
+    forward_date: Optional[int] = None
+    is_topic_message: Optional[bool] = None
+    is_automatic_forward: Optional[bool] = None
+    reply_to_message: Optional[Message] = None
+    via_bot: Optional[User] = None
+    edit_date: Optional[int] = None
+    has_protected_content: Optional[bool] = None
+    media_group_id: Optional[str] = None
+    author_signature: Optional[str] = None
+    text: Optional[str] = None
+    entities: Optional[List[MessageEntity]] = None
+    animation: Optional[Animation] = None
+    audio: Optional[Audio] = None
+    document: Optional[Document] = None
+    photo: Optional[List[PhotoSize]] = None
+    sticker: Optional[Sticker] = None
+    video: Optional[Video] = None
+    video_note: Optional[VideoNote] = None
+    voice: Optional[Voice] = None
+    caption: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    contact: Optional[Contact] = None
+    dice: Optional[Dice] = None
+    game: Optional[Game] = None
+    poll: Optional[Poll] = None
+    venue: Optional[Venue] = None
+    location: Optional[Location] = None
+    new_chat_members: Optional[List[User]] = None
+    left_chat_member: Optional[User] = None
+    new_chat_title: Optional[str] = None
+    new_chat_photo: Optional[List[PhotoSize]] = None
+    delete_chat_photo: Optional[bool] = None
+    group_chat_created: Optional[bool] = None
+    supergroup_chat_created: Optional[bool] = None
+    channel_chat_created: Optional[bool] = None
+    message_auto_delete_timer_changed: Optional[MessageAutoDeleteTimerChanged] = None
+    migrate_to_chat_id: Optional[int] = None
+    migrate_from_chat_id: Optional[int] = None
+    pinned_message: Optional[Message] = None
+    invoice: Optional[Invoice] = None
+    successful_payment: Optional[SuccessfulPayment] = None
+    connected_website: Optional[str] = None
+    passport_data: Optional[PassportData] = None
+    proximity_alert_triggered: Optional[ProximityAlertTriggered] = None
+    forum_topic_created: Optional[ForumTopicCreated] = None
+    forum_topic_closed: Optional[ForumTopicClosed] = None
+    forum_topic_reopened: Optional[ForumTopicReopened] = None
+    video_chat_scheduled: Optional[VideoChatScheduled] = None
+    video_chat_started: Optional[VideoChatStarted] = None
+    video_chat_ended: Optional[VideoChatEnded] = None
+    video_chat_participants_invited: Optional[VideoChatParticipantsInvited] = None
+    web_app_data: Optional[WebAppData] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+
+
+@dataclass
+class MessageId(BaseObject):
+    message_id: int
+
+
+@dataclass
 class MessageEntity(BaseObject):
-    __slots__ = [
-        'type',
-        'offset',
-        'length',
-        'url',
-        'user',
-        'language'
-    ]
-    NESTED = {
-        'user': (_simple_object, User)
-    }
+    type: MessageEntityType
+    offset: int
+    length: int
+    url: Optional[str] = None
+    user: Optional[User] = None
+    language: Optional[str] = None
+    custom_emoji_id: Optional[str] = None
 
 
-class PollAnswer(BaseObject):
-    __slots__ = [
-        'poll_id',
-        'user',
-        'option_ids'
-    ]
-    NESTED = {
-        'user': (_simple_object, User)
-    }
+@dataclass
+class PhotoSize(BaseObject):
+    file_id: str
+    file_unique_id: str
+    width: int
+    height: int
+    file_size: Optional[int] = None
 
 
-class Poll(BaseObject):
-    __slots__ = [
-        'id',
-        'question',
-        'options',
-        'total_voter_count',
-        'is_closed',
-        'is_anonymous',
-        'type',
-        'allows_multiple_answers',
-        'correct_option_id',
-        'explanation',
-        'explanation_entities',
-        'open_period',
-        'close_date'
-    ]
-    NESTED = {
-        'options': (_objects_list, PollOption),
-        'explanation_entities': (_objects_list, MessageEntity)
-    }
+@dataclass
+class Animation(BaseObject):
+    file_id: str
+    file_unique_id: str
+    width: int
+    height: int
+    duration: int
+    thumb: Optional[PhotoSize]
+    file_name: Optional[str] = None
+    mime_type: Optional[str] = None
+    file_size: Optional[int] = None
 
 
+@dataclass
+class Audio(BaseObject):
+    file_id: str
+    file_unique_id: str
+    duration: int
+    performer: Optional[str] = None
+    title: Optional[str] = None
+    file_name: Optional[str] = None
+    mime_type: Optional[str] = None
+    file_size: Optional[int] = None
+    thumb: Optional[PhotoSize] = None
+
+
+@dataclass
+class Document(BaseObject):
+    file_id: str
+    file_unique_id: str
+    thumb: Optional[PhotoSize] = None
+    file_name: Optional[str] = None
+    mime_type: Optional[str] = None
+    file_size: Optional[int] = None
+
+
+@dataclass
+class Video(BaseObject):
+    file_id: str
+    file_unique_id: str
+    width: int
+    height: int
+    duration: int
+    thumb: Optional[PhotoSize] = None
+    file_name: Optional[str] = None
+    mime_type: Optional[str] = None
+    file_size: Optional[int] = None
+
+
+@dataclass
+class VideoNote(BaseObject):
+    file_id: str
+    file_unique_id: str
+    length: int
+    duration: int
+    thumb: Optional[PhotoSize] = None
+    file_size: Optional[int] = None
+
+
+@dataclass
+class Voice(BaseObject):
+    file_id: str
+    file_unique_id: str
+    duration: int
+    mime_type: Optional[str] = None
+    file_size: Optional[int] = None
+
+
+@dataclass
+class Contact(BaseObject):
+    phone_number: str
+    first_name: str
+    last_name: Optional[str] = None
+    user_id: Optional[int] = None
+    vcard: Optional[str] = None
+
+
+@dataclass
 class Dice(BaseObject):
-    __slots__ = [
-        'emoji',
-        'value'
-    ]
+    emoji: str
+    value: int
 
 
-class ResponseParameters(BaseObject):
-    __slots__ = [
-        'migrate_to_chat_id',
-        'retry_after'
-    ]
+@dataclass
+class PollOption(BaseObject):
+    text: str
+    voter_count: int
 
 
+@dataclass
+class PollAnswer(BaseObject):
+    poll_id: str
+    user: User
+    option_ids: List[int]
+
+
+@dataclass
+class Poll(BaseObject):
+    id: str
+    question: str
+    options: List[PollOption]
+    total_voter_count: int
+    is_closed: bool
+    is_anonymous: bool
+    type: PollType
+    allows_multiple_answers: bool
+    correct_option_id: Optional[bool] = None
+    explanation: Optional[str] = None
+    explanation_entities: Optional[List[MessageEntity]] = None
+    open_period: Optional[int] = None
+    close_date: Optional[int] = None
+
+
+@dataclass
+class Location(BaseObject):
+    longitude: float
+    latitude: float
+    horizontal_accuracy: Optional[float] = None
+    live_period: Optional[int] = None
+    heading: Optional[int] = None
+    proximity_alert_radius: Optional[int] = None
+
+
+@dataclass
+class Venue(BaseObject):
+    location: Location
+    title: str
+    address: str
+    foursquare_id: Optional[str] = None
+    foursquare_type: Optional[str] = None
+    google_place_id: Optional[str] = None
+    google_place_type: Optional[str] = None
+
+
+@dataclass
+class WebAppData(BaseObject):
+    data: str
+    button_text: str
+
+
+@dataclass
 class ProximityAlertTriggered(BaseObject):
-    __slots__ = [
-        'traveler',
-        'watcher',
-        'distance'
-    ]
-    NESTED = {
-        'traveler': (_simple_object, User),
-        'watcher': (_simple_object, User)
-    }
+    traveler: User
+    watcher: User
+    distance: int
 
 
+@dataclass
 class MessageAutoDeleteTimerChanged(BaseObject):
-    __slots__ = [
-        'message_auto_delete_time'
-    ]
+    message_auto_delete_time: int
 
 
-class VoiceChatScheduled(BaseObject):
-    __slots__ = [
-        'start_date'
-    ]
+@dataclass
+class ForumTopicCreated(BaseObject):
+    name: str
+    icon_color: int
+    icon_custom_emoji_id: Optional[str] = None
 
 
-class VoiceChatStarted(BaseObject):
+@dataclass
+class ForumTopicClosed(BaseObject):
     pass
 
 
-class VoiceChatEnded(BaseObject):
-    __slots__ = [
-        'duration'
-    ]
+@dataclass
+class ForumTopicReopened(BaseObject):
+    pass
 
 
-class VoiceChatParticipantsInvited(BaseObject):
-    __slots__ = [
-        'users'
-    ]
-    NESTED = {
-        'users': (_objects_list, User)
-    }
+@dataclass
+class VideoChatScheduled(BaseObject):
+    start_date: int
 
 
+@dataclass
+class VideoChatStarted(BaseObject):
+    pass
+
+
+@dataclass
+class VideoChatEnded(BaseObject):
+    duration: int
+
+
+@dataclass
+class VideoChatParticipantsInvited(BaseObject):
+    users: List[User]
+
+
+@dataclass
 class UserProfilePhotos(BaseObject):
-    __slots__ = [
-        'total_count',
-        'photos'
-    ]
-    NESTED = {
-        'photos': (_objects_list, PhotoSize)
-    }
+    total_count: int
+    photos: List[List[PhotoSize]]
 
 
-class Venue(BaseObject):
-    __slots__ = [
-        'location',
-        'title',
-        'address',
-        'foursquare_id',
-        'foursquare_type',
-        'google_place_id',
-        'google_place_type'
-    ]
-    NESTED = {
-        'location': (_simple_object, Location)
-    }
-
-
-class Video(BaseObject):
-    __slots__ = [
-        'file_id',
-        'file_unique_id',
-        'width',
-        'height',
-        'duration',
-        'thumb',
-        'file_name',
-        'mime_type',
-        'file_size'
-    ]
-    NESTED = {
-        'thumb': (_simple_object, PhotoSize)
-    }
-
-
-class VideoNote(BaseObject):
-    __slots__ = [
-        'file_id',
-        'file_unique_id',
-        'length',
-        'duration',
-        'thumb',
-        'file_size'
-    ]
-    NESTED = {
-        'thumb': (_simple_object, PhotoSize)
-    }
-
-
-class Voice(BaseObject):
-    __slots__ = [
-        'file_id',
-        'file_unique_id',
-        'duration',
-        'mime_type',
-        'file_size'
-    ]
-
-
-class WebhookInfo(BaseObject):
-    __slots__ = [
-        'url',
-        'has_custom_certificate',
-        'pending_update_count',
-        'ip_address',
-        'last_error_date',
-        'last_error_message',
-        'max_connections',
-        'allowed_updates'
-    ]
-
-
-class Animation(BaseObject):
-    __slots__ = [
-        'file_id',
-        'file_unique_id',
-        'width',
-        'height',
-        'duration',
-        'thumb',
-        'file_name',
-        'mime_type',
-        'file_size'
-    ]
-    NESTED = {
-        'thumb': (_simple_object, PhotoSize)
-    }
-
-
-class Audio(BaseObject):
-    __slots__ = [
-        'file_id',
-        'file_unique_id',
-        'duration',
-        'performer',
-        'title',
-        'file_name',
-        'mime_type',
-        'file_size',
-        'thumb'
-    ]
-    NESTED = {
-        'thumb': (_simple_object, PhotoSize)
-    }
-
-
-class ChatMemberOwner(BaseObject):
-    __slots__ = [
-        'status',
-        'user',
-        'is_anonymous',
-        'custom_title'
-    ]
-    NESTED = {
-        'user': (_simple_object, User)
-    }
-
-
-class ChatMemberAdministrator(BaseObject):
-    __slots__ = [
-        'status',
-        'user',
-        'can_be_edited',
-        'is_anonymous',
-        'can_manage_chat',
-        'can_delete_messages',
-        'can_manage_voice_chats',
-        'can_restrict_members',
-        'can_promote_members',
-        'can_change_info',
-        'can_invite_users',
-        'can_post_messages',
-        'can_edit_messages',
-        'can_pin_messages',
-        'custom_title'
-    ]
-    NESTED = {
-        'user': (_simple_object, User)
-    }
-
-
-class ChatMemberMember(BaseObject):
-    __slots__ = [
-        'status',
-        'user'
-    ]
-    NESTED = {
-        'user': (_simple_object, User)
-    }
-
-
-class ChatMemberRestricted(BaseObject):
-    __slots__ = [
-        'status',
-        'user',
-        'is_member',
-        'can_change_info',
-        'can_invite_users',
-        'can_pin_messages',
-        'can_send_messages',
-        'can_send_media_messages',
-        'can_send_polls',
-        'can_send_other_messages',
-        'can_add_web_page_previews',
-        'until_date'
-    ]
-    NESTED = {
-        'user': (_simple_object, User)
-    }
-
-
-class ChatMemberLeft(BaseObject):
-    __slots__ = [
-        'status',
-        'user'
-    ]
-    NESTED = {
-        'user': (_simple_object, User)
-    }
-
-
-class ChatMemberBanned(BaseObject):
-    __slots__ = [
-        'status',
-        'user',
-        'until_date'
-    ]
-    NESTED = {
-        'user': (_simple_object, User)
-    }
-
-
-class ChatMember:
-
-    _dispatch_map = {
-        'creator': ChatMemberOwner,
-        'administrator': ChatMemberAdministrator,
-        'member': ChatMemberMember,
-        'restricted': ChatMemberRestricted,
-        'left': ChatMemberLeft,
-        'kicked': ChatMemberBanned
-    }
-
-    def __new__(cls, **kwargs):
-        _class = cls._dispatch_map[kwargs['status']]
-        return _class(**kwargs)
-
-
-class Document(BaseObject):
-    __slots__ = [
-        'file_id',
-        'file_unique_id',
-        'thumb',
-        'file_name',
-        'mime_type',
-        'file_size'
-    ]
-    NESTED = {
-        'thumb': (_simple_object, PhotoSize)
-    }
-
-
+@dataclass
 class File(BaseObject):
-    __slots__ = [
-        'file_id',
-        'file_unique_id',
-        'file_size',
-        'file_path'
-    ]
+    file_id: str
+    file_unique_id: str
+    file_size: Optional[int]
+    file_path: Optional[str]
 
 
-class InputFile(BaseObject):
-    __slots__ = [
-        'file_id',
-        'url',
-        'path',
-        'caption',
-        'parse_mode'
-    ]
+@dataclass
+class WebAppInfo(BaseObject):
+    url: str
 
 
+@dataclass
+class ReplyKeyboardMarkup(BaseObject):
+    keyboard: List[List[KeyboardButton]]
+    resize_keyboard: Optional[bool]
+    one_time_keyboard: Optional[bool]
+    input_field_placeholder: Optional[str]
+    selective: Optional[bool]
+
+
+@dataclass
+class KeyboardButton(BaseObject):
+    text: str
+    request_contact: Optional[bool]
+    request_location: Optional[bool]
+    request_poll: Optional[KeyboardButtonPollType]
+    web_app: Optional[WebAppInfo]
+
+
+@dataclass
+class KeyboardButtonPollType(BaseObject):
+    type: PollType
+
+
+@dataclass
+class ReplyKeyboardRemove(BaseObject):
+    remove_keyboard: bool = True
+    selective: Optional[bool] = None
+
+
+@dataclass
+class InlineKeyboardMarkup(BaseObject):
+    inline_keyboard: List[List[InlineKeyboardButton]]
+
+
+@dataclass
+class InlineKeyboardButton(BaseObject):
+    text: str
+    url: Optional[str]
+    callback_data: Optional[str]
+    web_app: Optional[WebAppInfo]
+    login_url: Optional[LoginUrl]
+    switch_inline_query: Optional[str]
+    switch_inline_query_current_chat: Optional[str]
+    callback_game: Optional[CallbackGame]
+    pay: Optional[bool]
+
+
+@dataclass
+class LoginUrl(BaseObject):
+    url: str
+    forward_text: Optional[str]
+    bot_username: Optional[str]
+    request_write_access: Optional[bool]
+
+
+@dataclass
+class CallbackQuery(BaseObject):
+    id: str
+    from_: User
+    message: Optional[Message]
+    inline_message_id: Optional[str]
+    chat_instance: Optional[str]
+    data: Optional[str]
+    game_short_name: Optional[str]
+
+
+@dataclass
+class ForceReply(BaseObject):
+    force_reply: bool = True
+    input_field_placeholder: Optional[str] = None
+    selective: Optional[bool] = None
+
+
+@dataclass
+class ChatPhoto(BaseObject):
+    small_file_id: str
+    small_file_unique_id: str
+    big_file_id: str
+    big_file_unique_id: str
+
+
+@dataclass
+class ChatInviteLink(BaseObject):
+    invite_link: str
+    creator: User
+    creates_join_request: bool
+    is_primary: bool
+    is_revoked: bool
+    name: Optional[str]
+    expire_date: Optional[int]
+    member_limit: Optional[int]
+    pending_join_request_count: Optional[int]
+
+
+@dataclass
+class ChatAdministratorRights(BaseObject):
+    is_anonymous: bool
+    can_manage_chat: bool
+    can_delete_messages: bool
+    can_manage_video_chats: bool
+    can_restrict_members: bool
+    can_promote_members: bool
+    can_change_info: bool
+    can_invite_users: bool
+    can_post_messages: Optional[bool]
+    can_edit_messages: Optional[bool]
+    can_pin_messages: Optional[bool]
+    can_manage_topics: Optional[bool]
+
+
+@dataclass
+class ChatMember(BaseObject):
+    pass
+
+
+@dataclass
+class ChatMemberOwner(ChatMember):
+    user: User
+    is_anonymous: bool
+    status: ChatMemberStatus = CHAT_MEMBER_STATUS_CREATOR
+    custom_title: Optional[str] = None
+
+
+@dataclass
+class ChatMemberAdministrator(ChatMember):
+    user: User
+    can_be_edited: bool
+    is_anonymous: bool
+    can_manage_chat: bool
+    can_delete_messages: bool
+    can_manage_video_chats: bool
+    can_restrict_members: bool
+    can_promote_members: bool
+    can_change_info: bool
+    can_invite_users: bool
+    status: ChatMemberStatus = CHAT_MEMBER_STATUS_ADMINISTRATOR
+    can_post_messages: Optional[bool] = None
+    can_edit_messages: Optional[bool] = None
+    can_pin_messages: Optional[bool] = None
+    can_manage_topics: Optional[bool] = None
+    custom_title: Optional[str] = None
+
+
+@dataclass
+class ChatMemberMember(ChatMember):
+    user: User
+    status: ChatMemberStatus = CHAT_MEMBER_STATUS_MEMBER
+
+
+@dataclass
+class ChatMemberRestricted(ChatMember):
+    user: User
+    is_member: bool
+    can_change_info: bool
+    can_invite_users: bool
+    can_pin_messages: bool
+    can_manage_topics: bool
+    can_send_messages: bool
+    can_send_media_messages: bool
+    can_send_polls: bool
+    can_send_other_messages: bool
+    can_add_web_page_previews: bool
+    until_date: int
+    status: ChatMemberStatus = CHAT_MEMBER_STATUS_RESTRICTED
+
+
+@dataclass
+class ChatMemberLeft(ChatMember):
+    user: User
+    status: ChatMemberStatus = CHAT_MEMBER_STATUS_LEFT
+
+
+@dataclass
+class ChatMemberBanned(ChatMember):
+    user: User
+    until_date: int
+    status: ChatMemberStatus = CHAT_MEMBER_STATUS_KICKED
+
+
+@dataclass
+class ChatMemberUpdated(BaseObject):
+    chat: Chat
+    from_: User
+    date: int
+    old_chat_member: ChatMember
+    new_chat_member: ChatMember
+    invite_link: Optional[ChatInviteLink]
+
+
+@dataclass
+class ChatJoinRequest(BaseObject):
+    chat: Chat
+    from_: User
+    date: int
+    bio: Optional[str]
+    invite_link: Optional[ChatInviteLink]
+
+
+@dataclass
+class ChatPermissions(BaseObject):
+    can_send_messages: Optional[bool]
+    can_send_media_messages: Optional[bool]
+    can_send_polls: Optional[bool]
+    can_send_other_messages: Optional[bool]
+    can_add_web_page_previews: Optional[bool]
+    can_change_info: Optional[bool]
+    can_invite_users: Optional[bool]
+    can_pin_messages: Optional[bool]
+    can_manage_topics: Optional[bool]
+
+
+@dataclass
+class ChatLocation(BaseObject):
+    location: Location
+    address: str
+
+
+@dataclass
+class ForumTopic(BaseObject):
+    message_thread_id: int
+    name: str
+    icon_color: int
+    icon_custom_emoji_id: Optional[str]
+
+
+@dataclass
+class BotCommand(BaseObject):
+    command: str
+    description: str
+
+
+@dataclass
+class BotCommandScope(BaseObject):
+    pass
+
+
+@dataclass
+class BotCommandScoreDefault(BotCommandScope):
+    type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_DEFAULT
+
+
+@dataclass
+class BotCommandScopeAllPrivateChats(BotCommandScope):
+    type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_ALL_PRIVATE_CHATS
+
+
+@dataclass
+class BotCommandScopeAllGroupChats(BotCommandScope):
+    type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_ALL_GROUP_CHATS
+
+
+@dataclass
+class BotCommandScopeAllChatAdministrators(BotCommandScope):
+    type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_ALL_CHAT_ADMINISTRATORS
+
+
+@dataclass
+class BotCommandScopeChat(BotCommandScope):
+    chat_id: str
+    type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_CHAT
+
+
+@dataclass
+class BotCommandScopeChatAdministrators(BotCommandScope):
+    chat_id: str
+    type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_CHAT_ADMINISTRATORS
+
+
+@dataclass
+class BotCommandScopeChatMember(BotCommandScope):
+    chat_id: str
+    user_id: str
+    type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_CHAT_MEMBER
+
+
+@dataclass
+class MenuButton(BaseObject):
+    pass
+
+
+@dataclass
+class MenuButtonCommands(MenuButton):
+    type: MenuButtonType = MENU_BUTTON_TYPE_COMMANDS
+
+
+@dataclass
+class MenuButtonWebApp(MenuButton):
+    text: str
+    web_app: WebAppInfo
+    type: MenuButtonType = MENU_BUTTON_TYPE_WEB_APP
+
+
+@dataclass
+class MenuButtonDefault(MenuButton):
+    type: MenuButtonType = MENU_BUTTON_TYPE_DEFAULT
+
+
+@dataclass
+class ResponseParameters(BaseObject):
+    migrate_to_chat_id: Optional[int]
+    retry_after: Optional[int]
+
+
+@dataclass
 class InputMedia(BaseObject):
     pass
 
 
-class InputMediaAnimation(InputMedia):
-    __slots__ = [
-        'type',
-        'media',
-        'caption',
-        'parse_mode',
-        'caption_entities',
-        'thumb',
-        'width',
-        'height',
-        'duration'
-    ]
-    NESTED = {
-        'thumb': (_simple_object, InputFile),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
-class InputMediaAudio(InputMedia):
-    __slots__ = [
-        'type',
-        'media',
-        'caption',
-        'parse_mode',
-        'caption_entities',
-        'thumb',
-        'duration',
-        'performer',
-        'title'
-    ]
-    NESTED = {
-        'thumb': (_simple_object, InputFile),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
-class InputMediaDocument(InputMedia):
-    __slots__ = [
-        'type',
-        'media',
-        'caption',
-        'parse_mode',
-        'caption_entities',
-        'thumb',
-        'disable_content_type_detection'
-    ]
-    NESTED = {
-        'thumb': (_simple_object, InputFile),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
+@dataclass
 class InputMediaPhoto(InputMedia):
-    __slots__ = [
-        'type',
-        'media',
-        'caption',
-        'parse_mode',
-        'caption_entities'
-    ]
-    NESTED = {
-        'caption_entities': (_objects_list, MessageEntity)
-    }
+    media: str
+    type: InputMediaType = INPUT_MEDIA_TYPE_PHOTO
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
 
 
+@dataclass
 class InputMediaVideo(InputMedia):
-    __slots__ = [
-        'type',
-        'media',
-        'caption',
-        'parse_mode',
-        'caption_entities',
-        'thumb',
-        'width',
-        'height',
-        'duration',
-        'supports_streaming'
-    ]
-    NESTED = {
-        'thumb': (_simple_object, InputFile),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
+    media: str
+    type: InputMediaType = INPUT_MEDIA_TYPE_VIDEO
+    thumb: Optional[Union[InputFile, str]] = None
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    width: Optional[int] = None
+    height: Optional[int] = None
+    duration: Optional[int] = None
+    supports_streaming: Optional[bool] = None
 
 
-class Game(BaseObject):
-    __slots__ = [
-        'title',
-        'description',
-        'photo',
-        'text',
-        'text_entities',
-        'animation'
-    ]
-    NESTED = {
-        'photo': (_objects_list, PhotoSize),
-        'text_entities': (_objects_list, MessageEntity),
-        'animation': (_simple_object, Animation)
-    }
+@dataclass
+class InputMediaAnimation(InputMedia):
+    media: str
+    type: InputMediaType = INPUT_MEDIA_TYPE_ANIMATION
+    thumb: Optional[Union[InputFile, str]] = None
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    width: Optional[int] = None
+    height: Optional[int] = None
+    duration: Optional[int] = None
 
 
-class GameHighScore(BaseObject):
-    __slots__ = [
-        'position',
-        'user',
-        'score'
-    ]
-    NESTED = {
-        'user': (_simple_object, User)
-    }
+@dataclass
+class InputMediaAudio(InputMedia):
+    media: str
+    type: InputMediaType = INPUT_MEDIA_TYPE_AUDIO
+    thumb: Optional[Union[InputFile, str]] = None
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    duration: Optional[int] = None
+    performer: Optional[str] = None
+    title: Optional[str] = None
 
 
-class LabeledPrice(BaseObject):
-    __slots__ = [
-        'label',
-        'amount'
-    ]
+@dataclass
+class InputMediaDocument(InputMedia):
+    media: str
+    type: InputMediaType = INPUT_MEDIA_TYPE_DOCUMENT
+    thumb: Optional[Union[InputFile, str]] = None
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    disable_content_type_detection: Optional[bool] = None
 
 
-class InputMessageContent:
-
-    def __new__(cls, **kwargs):
-        if not kwargs:
-            return
-        if 'phone_number' in kwargs:
-            return InputContactMessageContent(**kwargs)
-        elif 'latitude' in kwargs and 'address' in kwargs:
-            return InputVenueMessageContent(**kwargs)
-        elif 'latitude' in kwargs:
-            return InputLocationMessageContent(**kwargs)
-        elif 'message_text' in kwargs:
-            return InputTextMessageContent(**kwargs)
-        elif 'currency' in kwargs:
-            return InputInvoiceMessageContent(**kwargs)
-
-
-class InputContactMessageContent(BaseObject):
-    __slots__ = [
-        'phone_number',
-        'first_name',
-        'last_name',
-        'vcard'
-    ]
-
-
-class InputLocationMessageContent(BaseObject):
-    __slots__ = [
-        'latitude',
-        'longitude',
-        'live_period',
-        'horizontal_accuracy',
-        'heading',
-        'proximity_alert_radius'
-    ]
-
-
-class InputTextMessageContent(BaseObject):
-    __slots__ = [
-        'message_text',
-        'parse_mode',
-        'disable_web_page_preview'
-    ]
-
-
-class InputVenueMessageContent(BaseObject):
-    __slots__ = [
-        'latitude',
-        'longitude',
-        'title',
-        'address',
-        'foursquare_id',
-        'foursquare_type',
-        'google_place_id',
-        'google_place_type'
-    ]
-
-
-class InputInvoiceMessageContent(BaseObject):
-    __slots__ = [
-        'title',
-        'description',
-        'payload',
-        'provider_token',
-        'currency',
-        'prices',
-        'max_tip_amount',
-        'suggested_tip_amounts',
-        'provider_data',
-        'photo_url',
-        'photo_size',
-        'photo_width',
-        'photo_height',
-        'need_name',
-        'need_phone_number',
-        'need_email',
-        'need_shipping_address',
-        'send_phone_number_to_provider',
-        'send_email_to_provider',
-        'is_flexible'
-    ]
-    NESTED = {
-        'prices': (_objects_list, LabeledPrice)
-    }
-
-
-class ChosenInlineResult(BaseObject):
-    __slots__ = [
-        'result_id',
-        'from_',
-        'location',
-        'inline_message_id',
-        'query'
-    ]
-    NESTED = {
-        'from_': (_simple_object, User, 'from'),
-        'location': (_simple_object, Location)
-    }
-
-
-class InlineQuery(BaseObject):
-    __slots__ = [
-        'id',
-        'from_',
-        'location',
-        'query',
-        'offset',
-        'chat_type'
-    ]
-    NESTED = {
-        'from_': (_simple_object, User, 'from'),
-        'location': (_simple_object, Location)
-    }
-
-
-class InlineQueryResult(BaseObject):
+@dataclass
+class InputFile(BaseObject):
     pass
 
 
-class InlineQueryResultArticle(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'title',
-        'url',
-        'hide_url',
-        'description',
-        'thumb_url',
-        'thumb_width',
-        'thumb_height'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent)
-    }
+@dataclass
+class InputFileStored(InputFile):
+    file_id: str
+    type: InputFileType = INPUT_FILE_TYPE_STORED
 
 
-class InlineQueryResultAudio(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'audio_url',
-        'parse_mode',
-        'title',
-        'caption',
-        'performer',
-        'audio_duration',
-        'caption_entities'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
+@dataclass
+class InputFileUrl(InputFile):
+    url: str
+    type: InputFileType = INPUT_FILE_TYPE_URL
 
 
-class InlineQueryResultCachedAudio(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'audio_file_id',
-        'caption',
-        'parse_mode',
-        'caption_entities'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
+@dataclass
+class InputFilePath(InputFile):
+    path: pathlib.Path
+    type: InputFileType = INPUT_FILE_TYPE_PATH
 
 
-class InlineQueryResultCachedDocument(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'caption_entities',
-        'title',
-        'document_file_id',
-        'description',
-        'caption',
-        'parse_mode'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
-class InlineQueryResultCachedGif(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'gif_file_id',
-        'title', 'caption',
-        'parse_mode',
-        'caption_entities'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
-class InlineQueryResultCachedMpeg4Gif(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'mpeg4_file_id',
-        'title',
-        'caption',
-        'parse_mode',
-        'caption_entities'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
-class InlineQueryResultCachedPhoto(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'caption_entities',
-        'photo_file_id',
-        'title',
-        'description',
-        'caption',
-        'parse_mode'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
-class InlineQueryResultCachedSticker(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'sticker_file_id'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent)
-    }
-
-
-class InlineQueryResultCachedVideo(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'video_file_id',
-        'title',
-        'description',
-        'caption',
-        'parse_mode',
-        'caption_entities'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
-class InlineQueryResultCachedVoice(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'voice_file_id',
-        'title',
-        'caption',
-        'parse_mode',
-        'caption_entities'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
-class InlineQueryResultContact(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'phone_number',
-        'first_name',
-        'last_name',
-        'vcard',
-        'thumb_url',
-        'thumb_width',
-        'thumb_height'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent)
-    }
-
-
-class InlineQueryResultDocument(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'title',
-        'caption',
-        'parse_mode',
-        'document_url',
-        'mime_type',
-        'description',
-        'thumb_url',
-        'thumb_width',
-        'thumb_height',
-        'caption_entities'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
-class InlineQueryResultGame(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'game_short_name'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup)
-    }
-
-
-class InlineQueryResultGif(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'gif_url',
-        'gif_width',
-        'gif_height',
-        'gif_duration',
-        'thumb_url',
-        'thumb_mime_type',
-        'title',
-        'caption',
-        'parse_mode',
-        'caption_entities'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
-class InlineQueryResultLocation(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'latitude',
-        'longitude',
-        'title',
-        'live_period',
-        'thumb_url',
-        'thumb_width',
-        'thumb_height',
-        'horizontal_accuracy',
-        'heading',
-        'proximity_alert_radius'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent)
-    }
-
-
-class InlineQueryResultMpeg4Gif(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'mpeg4_url',
-        'mpeg4_width',
-        'mpeg4_height',
-        'mpeg4_duration',
-        'thumb_url',
-        'thumb_mime_type',
-        'title',
-        'caption',
-        'parse_mode',
-        'caption_entities'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
-class InlineQueryResultPhoto(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'photo_url',
-        'thumb_url',
-        'photo_width',
-        'photo_height',
-        'title',
-        'description',
-        'caption',
-        'parse_mode',
-        'caption_entities'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
-class InlineQueryResultVenue(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'latitude',
-        'longitude',
-        'title',
-        'address',
-        'foursquare_id',
-        'foursquare_type',
-        'thumb_url',
-        'thumb_width',
-        'thumb_height',
-        'google_place_id',
-        'google_place_type'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent)
-    }
-
-
-class InlineQueryResultVideo(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'video_url',
-        'mime_type',
-        'thumb_url',
-        'title',
-        'caption',
-        'parse_mode',
-        'video_width',
-        'video_height',
-        'video_duration',
-        'description',
-        'caption_entities'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
-class InlineQueryResultVoice(InlineQueryResult):
-    __slots__ = [
-        'type',
-        'id',
-        'reply_markup',
-        'input_message_content',
-        'voice_url',
-        'title',
-        'caption',
-        'parse_mode',
-        'voice_duration',
-        'caption_entities'
-    ]
-    NESTED = {
-        'reply_markup': (_simple_object, InlineKeyboardMarkup),
-        'input_message_content': (_simple_object, InputMessageContent),
-        'caption_entities': (_objects_list, MessageEntity)
-    }
-
-
-class PassportElementError(BaseObject):
+@dataclass
+class CallbackGame(BaseObject):
     pass
 
 
-class PassportElementErrorDataField(PassportElementError):
-    __slots__ = [
-        'source',
-        'type',
-        'message',
-        'field_name',
-        'data_hash'
-    ]
-
-
-class PassportElementErrorFile(PassportElementError):
-    __slots__ = [
-        'source',
-        'type',
-        'message',
-        'file_hash'
-    ]
-
-
-class PassportElementErrorFiles(PassportElementError):
-    __slots__ = [
-        'source',
-        'type',
-        'message',
-        'file_hashes'
-    ]
-
-
-class PassportElementErrorFrontSide(PassportElementError):
-    __slots__ = [
-        'source',
-        'type',
-        'message',
-        'file_hash'
-    ]
-
-
-class PassportElementErrorReverseSide(PassportElementError):
-    __slots__ = [
-        'source',
-        'type',
-        'message',
-        'file_hash'
-    ]
-
-
-class PassportElementErrorSelfie(PassportElementError):
-    __slots__ = [
-        'source',
-        'type',
-        'message',
-        'file_hash'
-    ]
-
-
-class PassportElementErrorTranslationFile(PassportElementError):
-    __slots__ = [
-        'source',
-        'type',
-        'message',
-        'file_hash'
-    ]
-
-
-class PassportElementErrorTranslationFiles(PassportElementError):
-    __slots__ = [
-        'source',
-        'type',
-        'message',
-        'file_hashes'
-    ]
-
-
-class PassportElementErrorUnspecified(PassportElementError):
-    __slots__ = [
-        'source',
-        'type',
-        'message',
-        'element_hash'
-    ]
-
-
-class EncryptedCredentials(BaseObject):
-    __slots__ = [
-        'data',
-        'hash',
-        'secret'
-    ]
-
-
-class PassportFile(BaseObject):
-    __slots__ = [
-        'file_id',
-        'file_unique_id',
-        'file_size',
-        'file_date'
-    ]
-
-
-class EncryptedPassportElement(BaseObject):
-    __slots__ = [
-        'type',
-        'data',
-        'phone_number',
-        'email',
-        'files',
-        'front_side',
-        'reverse_side',
-        'selfie',
-        'translation',
-        'hash'
-    ]
-    NESTED = {
-        'files': (_objects_list, PassportFile),
-        'front_side': (_simple_object, PassportFile),
-        'reverse_side': (_simple_object, PassportFile),
-        'selfie': (_simple_object, PassportFile),
-        'translation': (_objects_list, PassportFile)
-    }
-
-
-class PassportData(BaseObject):
-    __slots__ = [
-        'data',
-        'credentials'
-    ]
-    NESTED = {
-        'data': (_objects_list, EncryptedPassportElement),
-        'credentials': (_simple_object, EncryptedCredentials)
-    }
-
-
-class Invoice(BaseObject):
-    __slots__ = [
-        'title',
-        'description',
-        'start_parameter',
-        'currency',
-        'total_amount'
-    ]
-
-
-class ShippingAddress(BaseObject):
-    __slots__ = [
-        'country_code',
-        'state',
-        'city',
-        'street_line1',
-        'street_line2',
-        'post_code'
-    ]
-
-
-class OrderInfo(BaseObject):
-    __slots__ = [
-        'name',
-        'phone_number',
-        'email',
-        'shipping_address'
-    ]
-    NESTED = {
-        'shipping_address': (_simple_object, ShippingAddress)
-    }
-
-
-class PreCheckoutQuery(BaseObject):
-    __slots__ = [
-        'id',
-        'from_',
-        'currency',
-        'total_amount',
-        'invoice_payload',
-        'shipping_option_id',
-        'order_info'
-    ]
-    NESTED = {
-        'from_': (_simple_object, User, 'from'),
-        'order_info': (_simple_object, OrderInfo)
-    }
-
-
-class ShippingOption(BaseObject):
-    __slots__ = [
-        'id',
-        'title',
-        'prices'
-    ]
-    NESTED = {
-        'prices': (_objects_list, LabeledPrice)
-    }
-
-
-class ShippingQuery(BaseObject):
-    __slots__ = [
-        'id',
-        'from_',
-        'invoice_payload',
-        'shipping_address'
-    ]
-    NESTED = {
-        'from_': (_simple_object, User, 'from'),
-        'shipping_address': (_simple_object, ShippingAddress)
-    }
-
-
-class SuccessfulPayment(BaseObject):
-    __slots__ = [
-        'currency',
-        'total_amount',
-        'invoice_payload',
-        'shipping_option_id',
-        'order_info',
-        'telegram_payment_charge_id',
-        'provider_payment_charge_id'
-    ]
-    NESTED = {
-        'order_info': (_simple_object, OrderInfo)
-    }
-
-
-class MaskPosition(BaseObject):
-    __slots__ = [
-        'point',
-        'x_shift',
-        'y_shift',
-        'scale'
-    ]
-
-
+@dataclass
 class Sticker(BaseObject):
-    __slots__ = [
-        'file_id',
-        'file_unique_id',
-        'width',
-        'height',
-        'is_animated',
-        'thumb',
-        'emoji',
-        'set_name',
-        'mask_position',
-        'file_size'
-    ]
-    NESTED = {
-        'thumb': (_simple_object, PhotoSize),
-        'mask_position': (_simple_object, MaskPosition)
-    }
+    file_id: str
+    file_unique_id: str
+    type: StickerType
+    width: int
+    height: int
+    is_animated: bool
+    is_video: bool
+    thumb: Optional[PhotoSize]
+    emoji: Optional[str]
+    set_name: Optional[str]
+    premium_animation: Optional[File]
+    mask_position: Optional[MaskPosition]
+    custom_emoji_id: Optional[str]
+    file_size: Optional[int]
 
 
+@dataclass
 class StickerSet(BaseObject):
-    __slots__ = [
-        'name',
-        'title',
-        'is_animated',
-        'contains_masks',
-        'stickers',
-        'thumb'
-    ]
-    NESTED = {
-        'stickers': (_objects_list, Sticker),
-        'thumb': (_simple_object, PhotoSize)
-    }
+    name: str
+    title: str
+    type: StickerType
+    is_animated: bool
+    is_video: bool
+    stickers: List[Sticker]
+    thumb: Optional[PhotoSize]
 
 
-class ChatPermissions(BaseObject):
-    __slots__ = [
-        'can_send_messages',
-        'can_send_media_messages',
-        'can_send_polls',
-        'can_send_other_messages',
-        'can_add_web_page_previews',
-        'can_change_info',
-        'can_invite_users',
-        'can_pin_messages'
-    ]
-
-
-class BotCommand(BaseObject):
-    __slots__ = [
-        'command',
-        'description'
-    ]
-
-
-
-
-
-class BotCommandScopeDefault(BaseObject):
-    __slots__ = [
-        'type'
-    ]
-
-
-class BotCommandScopeAllPrivateChats(BaseObject):
-    __slots__ = [
-        'type'
-    ]
-
-
-class BotCommandScopeAllGroupChats(BaseObject):
-    __slots__ = [
-        'type'
-    ]
-
-
-class BotCommandScopeAllChatAdministrators(BaseObject):
-    __slots__ = [
-        'type'
-    ]
-
-
-class BotCommandScopeChat(BaseObject):
-    __slots__ = [
-        'type',
-        'chat_id'
-    ]
-
-
-class BotCommandScopeChatAdministrators(BaseObject):
-    __slots__ = [
-        'type',
-        'chat_id'
-    ]
-
-
-class BotCommandScopeChatMember(BaseObject):
-    __slots__ = [
-        'type',
-        'chat_id',
-        'user_id'
-    ]
-
-
-class BotCommandScope:
-
-    _dispatch_map = {
-        'default': BotCommandScopeDefault,
-        'all_private_chats': BotCommandScopeAllPrivateChats,
-        'all_group_chats': BotCommandScopeAllGroupChats,
-        'all_chat_administrators': BotCommandScopeAllChatAdministrators,
-        'chat': BotCommandScopeChat,
-        'chat_administrators': BotCommandScopeChatAdministrators,
-        'chat_member': BotCommandScopeChatMember
-    }
-
-    def __new__(cls, **kwargs):
-        _class = cls._dispatch_map[kwargs['type']]
-        return _class(**kwargs)
-
-
-class Chat(BaseObject):
-    __slots__ = [
-        'id',
-        'type',
-        'title',
-        'username',
-        'first_name',
-        'last_name',
-        'photo',
-        'description',
-        'invite_link',
-        'pinned_message',
-        'permissions',
-        'slow_mode_delay',
-        'sticker_set_name',
-        'can_set_sticker_set',
-        'location'
-    ]
-    NESTED = {
-        'photo': (_simple_object, ChatPhoto),
-        'pinned_message': (_raw_representation, None),
-        'permissions': (_simple_object, ChatPermissions),
-        'location': (_simple_object, ChatLocation)
-    }
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.pinned_message = Message(**kwargs['pinned_message']) if 'pinned_message' in kwargs else None
-
-
-class ChatMemberUpdated(BaseObject):
-    __slots__ = [
-        'chat',
-        'from_',
-        'date',
-        'old_chat_member',
-        'new_chat_member',
-        'invite_link'
-    ]
-    NESTED = {
-        'chat': (_simple_object, Chat),
-        'from_': (_simple_object, User, 'from'),
-        'old_chat_member': (_simple_object, ChatMember),
-        'new_chat_member': (_simple_object, ChatMember),
-        'invite_link': (_simple_object, ChatInviteLink)
-    }
-
-
-class ChatJoinRequest(BaseObject):
-    __slots__ = [
-        'chat',
-        'from_',
-        'date',
-        'bio',
-        'invite_link'
-    ]
-    NESTED = {
-        'chat': (_simple_object, Chat),
-        'from_': (_simple_object, User, 'from'),
-        'invite_link': (_simple_object, ChatInviteLink)
-    }
-
-
-class Message(BaseObject):
-    __slots__ = [
-        'message_id',
-        'from_',
-        'sender_chat',
-        'date',
-        'chat',
-        'forward_from_chat',
-        'forward_from',
-        'forward_signature',
-        'forward_sender_name',
-        'forward_date',
-        'reply_to_message',
-        'via_bot',
-        'edit_date',
-        'media_group_id',
-        'author_signature',
-        'text',
-        'entities',
-        'caption_entities',
-        'audio',
-        'document',
-        'animation',
-        'game',
-        'photo',
-        'sticker',
-        'video',
-        'voice',
-        'video_note',
-        'caption',
-        'contact',
-        'location',
-        'venue',
-        'poll',
-        'dice',
-        'new_chat_members',
-        'left_chat_member',
-        'new_chat_title',
-        'new_chat_photo',
-        'delete_chat_photo',
-        'group_chat_created',
-        'supergroup_chat_created',
-        'channel_chat_created',
-        'message_auto_delete_timer_changed',
-        'migrate_to_chat_id',
-        'migrate_from_chat_id',
-        'pinned_message',
-        'invoice',
-        'successful_payment',
-        'connected_website',
-        'passport_data',
-        'proximity_alert_triggered',
-        'voice_chat_scheduled',
-        'voice_chat_started',
-        'voice_chat_ended',
-        'voice_chat_participants_invited',
-        'reply_markup'
-    ]
-    NESTED = {
-        'from_': (_simple_object, User, 'from'),
-        'sender_chat': (_simple_object, Chat),
-        'chat': (_simple_object, Chat),
-        'forward_from_chat': (_simple_object, Chat),
-        'forward_from': (_simple_object, User),
-        'reply_to_message': (_raw_representation, None),
-        'via_bot': (_simple_object, User),
-        'entities': (_objects_list, MessageEntity),
-        'caption_entities': (_objects_list, MessageEntity),
-        'audio': (_simple_object, Audio),
-        'document': (_simple_object, Document),
-        'animation': (_simple_object, Animation),
-        'game': (_simple_object, Game),
-        'photo': (_objects_list, PhotoSize),
-        'sticker': (_simple_object, Sticker),
-        'video': (_simple_object, Video),
-        'voice': (_simple_object, Voice),
-        'video_note': (_simple_object, VideoNote),
-        'contact': (_simple_object, Contact),
-        'location': (_simple_object, Location),
-        'venue': (_simple_object, Venue),
-        'poll': (_simple_object, Poll),
-        'dice': (_simple_object, Dice),
-        'new_chat_members': (_objects_list, User),
-        'left_chat_member': (_simple_object, User),
-        'new_chat_photo': (_objects_list, PhotoSize),
-        'message_auto_delete_timer_changed': (_simple_object, MessageAutoDeleteTimerChanged),
-        'pinned_message': (_raw_representation, None),
-        'invoice': (_simple_object, Invoice),
-        'successful_payment': (_simple_object, SuccessfulPayment),
-        'passport_data': (_simple_object, PassportData),
-        'proximity_alert_triggered': (_simple_object, ProximityAlertTriggered),
-        'voice_chat_scheduled': (_simple_object, VoiceChatScheduled),
-        'voice_chat_started': (_simple_object, VoiceChatStarted),
-        'voice_chat_ended': (_simple_object, VoiceChatEnded),
-        'voice_chat_participants_invited': (_simple_object, VoiceChatParticipantsInvited),
-        'reply_markup': (_simple_object, InlineKeyboardMarkup)
-    }
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.reply_to_message = Message(**kwargs['reply_to_message']) if 'reply_to_message' in kwargs else None
-        self.pinned_message = Message(**kwargs['pinned_message']) if 'pinned_message' in kwargs else None
-
-
-class CallbackQuery(BaseObject):
-    __slots__ = [
-        'id',
-        'from_',
-        'message',
-        'inline_message_id',
-        'chat_instance',
-        'data',
-        'game_short_name'
-    ]
-    NESTED = {
-        'from_': (_simple_object, User, 'from'),
-        'message': (_simple_object, Message)
-    }
-
-
-class Update(BaseObject):
-    __slots__ = [
-        'update_id',
-        'message',
-        'edited_message',
-        'channel_post',
-        'edited_channel_post',
-        'inline_query',
-        'chosen_inline_result',
-        'callback_query',
-        'shipping_query',
-        'pre_checkout_query',
-        'poll',
-        'poll_answer',
-        'my_chat_member',
-        'chat_member',
-        'chat_join_request'
-    ]
-    NESTED = {
-        'message': (_simple_object, Message),
-        'edited_message': (_simple_object, Message),
-        'channel_post': (_simple_object, Message),
-        'edited_channel_post': (_simple_object, Message),
-        'inline_query': (_simple_object, InlineQuery),
-        'chosen_inline_result': (_simple_object, ChosenInlineResult),
-        'callback_query': (_simple_object, CallbackQuery),
-        'shipping_query': (_simple_object, ShippingQuery),
-        'pre_checkout_query': (_simple_object, PreCheckoutQuery),
-        'poll': (_simple_object, Poll),
-        'poll_answer': (_simple_object, PollAnswer),
-        'my_chat_member': (_simple_object, ChatMemberUpdated),
-        'chat_member': (_simple_object, ChatMemberUpdated),
-        'chat_join_request': (_simple_object, ChatJoinRequest)
-    }
+@dataclass
+class MaskPosition(BaseObject):
+    point: MaskPositionPoint
+    x_shift: float
+    y_shift: float
+    scale: float
 
 
 class TelegramResponse:
