@@ -3,6 +3,10 @@ class StringConstant(str):
         return str.__new__(cls, *args, **kw)
 
 
+class ApiMethod(StringConstant):
+    pass
+
+
 class ChatType(StringConstant):
     pass
 
@@ -57,6 +61,31 @@ class EncryptedPassportElementType(StringConstant):
 
 class PassportElementErrorSource(StringConstant):
     pass
+
+
+API_METHOD_GET_UPDATES = ApiMethod('getUpdates')
+API_METHOD_SET_WEBHOOK = ApiMethod('setWebhook')
+API_METHOD_DELETE_WEBHOOK = ApiMethod('deleteWebhook')
+API_METHOD_GET_WEBHOOK_INFO = ApiMethod('getWebhookInfo')
+API_METHOD_GET_ME = ApiMethod('getMe')
+API_METHOD_LOGOUT = ApiMethod('logOut')
+API_METHOD_CLOSE = ApiMethod('close')
+API_METHOD_SEND_MESSAGE = ApiMethod('sendMessage')
+API_METHOD_FORWARD_MESSAGE = ApiMethod('forwardMessage')
+API_METHOD_COPY_MESSAGE = ApiMethod('copyMessage')
+API_METHOD_SEND_LOCATION = ApiMethod('sendLocation')
+API_METHOD_SEND_PHOTO = ApiMethod('sendPhoto')
+API_METHOD_SEND_AUDIO = ApiMethod('sendAudio')
+API_METHOD_SEND_DOCUMENT = ApiMethod('sendDocument')
+API_METHOD_SEND_VIDEO = ApiMethod('sendVideo')
+API_METHOD_SEND_ANIMATION = ApiMethod('sendAnimation')
+API_METHOD_SEND_VOICE = ApiMethod('sendVoice')
+API_METHOD_SEND_VIDEO_NOTE = ApiMethod('sendVideoNote')
+API_METHOD_SEND_MEDIA_GROUP = ApiMethod('sendMediaGroup')
+API_METHOD_EDIT_MESSAGE_LIVE_LOCATION = ApiMethod('editMessageLiveLocation')
+API_METHOD_STOP_MESSAGE_LIVE_LOCATION = ApiMethod('stopMessageLiveLocation')
+API_METHOD_SEND_VENUE = ApiMethod('sendVenue')
+API_METHOD_SEND_CONTACT = ApiMethod('sendContact')
 
 
 CHAT_TYPE_PRIVATE = ChatType('private')

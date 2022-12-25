@@ -123,7 +123,6 @@ class WebhookInfo(BaseObject):
 
 @dataclass
 class RawResponse(BaseObject):
-    raw_data: dict
     ok: bool
     result: bool
     description: str
@@ -131,9 +130,8 @@ class RawResponse(BaseObject):
 
 @dataclass
 class ErrorResponse(BaseObject):
-    raw_data: dict
     ok: bool
-    error_code: str
+    error_code: int
     description: str
 
 
