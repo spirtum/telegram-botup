@@ -4,6 +4,8 @@ from typing import Optional, List, Any, Union, Type
 
 from aiohttp import ClientSession, ClientError
 
+from botup.core.constants import ChatAction, StickerType
+
 try:
     import ujson as json
 except ImportError:
@@ -12,7 +14,9 @@ except ImportError:
 from . import constants
 from .types import ErrorResponse, TelegramResponse, BaseObject, Update, InputFile, RawResponse, WebhookInfo, User, \
     Message, MessageEntity, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, MessageId, \
-    InputMediaAudio, InputMediaDocument, InputMediaPhoto, InputMediaVideo
+    InputMediaAudio, InputMediaDocument, InputMediaPhoto, InputMediaVideo, UserProfilePhotos, File, ChatPermissions, \
+    ChatInviteLink, Chat, ChatMember, Sticker, ForumTopic, BotCommand, BotCommandScope, MenuButton, \
+    ChatAdministratorRights, InputMedia, Poll, StickerSet, MaskPosition
 from .utils import get_logger
 
 logger = get_logger()
@@ -441,431 +445,640 @@ class Api:
         response = await self._request(constants.API_METHOD_SEND_CONTACT, data=data)
         return Message.from_dict(response['result'])
 
-    async def send_poll(self,
-                        chat_id,
-                        question,
-                        options,
-                        is_anonymous=None,
-                        type_=None,
-                        allows_multiple_answers=None,
-                        correct_option_id=None,
-                        explanation=None,
-                        explanation_parse_mode=None,
-                        explanation_entities=None,
-                        open_period=None,
-                        close_date=None,
-                        is_closed=None,
-                        disable_notification=None,
-                        reply_to_message_id=None,
-                        allow_sending_without_reply=None,
-                        reply_markup=None):
-        if isinstance(options, list):
-            options = json.dumps(options)
+    async def send_poll(
+            self,
+            chat_id: Union[int, str],
+            question: str,
+            options: List[str],
+            message_thread_id: Optional[int] = None,
+            is_anonymous: Optional[bool] = None,
+            type: Optional[str] = None,
+            allows_multiple_answers: Optional[bool] = None,
+            correct_option_id: Optional[int] = None,
+            explanation: Optional[str] = None,
+            explanation_parse_mode: Optional[str] = None,
+            explanation_entities: Optional[List[MessageEntity]] = None,
+            open_period: Optional[int] = None,
+            close_date: Optional[int] = None,
+            is_closed: Optional[bool] = None,
+            disable_notification: Optional[bool] = None,
+            protect_content: Optional[bool] = None,
+            reply_to_message_id: Optional[int] = None,
+            allow_sending_without_reply: Optional[bool] = None,
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+    ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'sendPoll', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_SEND_POLL, data=data)
+        return Message.from_dict(response)
 
-    async def send_dice(self,
-                        chat_id,
-                        emoji=None,
-                        disable_notification=None,
-                        reply_to_message_id=None,
-                        allow_sending_without_reply=None,
-                        reply_markup=None):
-
-        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'sendDice', data=data, timeout=self.TIMEOUT)
-
-    async def send_chat_action(self, chat_id, action):
-        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(
-            self._url + 'sendChatAction',
-            data=data,
-            timeout=self.TIMEOUT
-        )
-
-    async def get_user_profile_photos(self, user_id, offset=None, limit=None):
-        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(
-            self._url + 'getUserProfilePhotos',
-            data=data,
-            timeout=self.TIMEOUT
-        )
-
-    async def get_file(self, file_id):
-        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'getFile', data=data, timeout=self.TIMEOUT)
-
-    async def ban_chat_member(self, chat_id, user_id, until_date=None, revoke_messages=None):
-        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'banChatMember', data=data, timeout=self.TIMEOUT)
-
-    async def unban_chat_member(self, chat_id, user_id, only_if_banned=None):
-        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'unbanChatMember', data=data, timeout=self.TIMEOUT)
-
-    async def restrict_chat_member(self, chat_id, user_id, permissions, until_date=None):
-        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'restrictChatMember', data=data, timeout=self.TIMEOUT)
-
-    async def promote_chat_member(self,
-                                  chat_id,
-                                  user_id,
-                                  is_anonymous=None,
-                                  can_manage_chat=None,
-                                  can_change_info=None,
-                                  can_post_messages=None,
-                                  can_edit_messages=None,
-                                  can_delete_messages=None,
-                                  can_manage_voice_chats=None,
-                                  can_invite_users=None,
-                                  can_restrict_members=None,
-                                  can_pin_messages=None,
-                                  can_promote_members=None):
+    async def send_dice(
+            self,
+            chat_id: Union[int, str],
+            message_thread_id: Optional[int] = None,
+            emoji: Optional[str] = None,
+            disable_notification: Optional[bool] = None,
+            protect_content: Optional[bool] = None,
+            reply_to_message_id: Optional[int] = None,
+            allow_sending_without_reply: Optional[bool] = None,
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+    ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'promoteChatMember', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_SEND_DICE, data=data)
+        return Message.from_dict(response)
 
-    async def set_chat_administrator_custom_title(self, chat_id, user_id, custom_title):
+    async def send_chat_action(self, chat_id: Union[int, str], action: ChatAction) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'setChatAdministratorCustomTitle', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_SEND_CHAT_ACTION, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def set_chat_permissions(self, chat_id, permissions):
-        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(
-            self._url + 'setChatPermissions',
-            data=data,
-            timeout=self.TIMEOUT
-        )
-
-    async def export_chat_invite_link(self, chat_id):
-        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'exportChatInviteLink', data=data, timeout=self.TIMEOUT)
-
-    async def create_chat_invite_link(self,
-                                      chat_id,
-                                      name=None,
-                                      expire_date=None,
-                                      member_limit=None,
-                                      creates_join_request=None):
+    async def get_user_profile_photos(
+            self,
+            user_id: int,
+            offset: Optional[int] = None,
+            limit: Optional[int] = None
+    ) -> UserProfilePhotos:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'createChatInviteLink', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_GET_USER_PROFILE_PHOTOS, data=data)
+        return UserProfilePhotos.from_dict(response)
 
-    async def edit_chat_invite_link(self,
-                                    chat_id,
-                                    invite_link,
-                                    name=None,
-                                    expire_date=None,
-                                    member_limit=None,
-                                    creates_join_request=None):
+    async def get_file(self, file_id: str) -> File:
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_GET_FILE, data=data)
+        return File.from_dict(response)
+
+    async def ban_chat_member(
+            self,
+            chat_id: Union[int, str],
+            user_id: int,
+            until_date: Optional[int] = None,
+            revoke_messages: Optional[bool] = None
+    ) -> bool:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'editChatInviteLink', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_BAN_CHAT_MEMBER, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def revoke_chat_invite_link(self, chat_id, invite_link):
+    async def unban_chat_member(
+            self,
+            chat_id: Union[int, str],
+            user_id: int,
+            only_if_banned: Optional[bool] = None
+    ) -> bool:
+
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(
-            self._url + 'revokeChatInviteLink',
-            data=data,
-            timeout=self.TIMEOUT
-        )
+        response = await self._request(constants.API_METHOD_UNBAN_CHAT_MEMBER, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def approve_chat_join_request(self, chat_id, user_id):
+    async def restrict_chat_member(
+            self,
+            chat_id: Union[int, str],
+            user_id: int,
+            permissions: ChatPermissions,
+            until_date: Optional[int] = None
+    ) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(
-            self._url + 'approveChatJoinRequest',
-            data=data,
-            timeout=self.TIMEOUT
-        )
+        response = await self._request(constants.API_METHOD_RESTRICT_CHAT_MEMBER, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def decline_chat_join_request(self, chat_id, user_id):
+    async def promote_chat_member(
+            self,
+            chat_id: Union[int, str],
+            user_id: int,
+            is_anonymous: Optional[bool] = None,
+            can_manage_chat: Optional[bool] = None,
+            can_post_messages: Optional[bool] = None,
+            can_edit_messages: Optional[bool] = None,
+            can_delete_messages: Optional[bool] = None,
+            can_manage_video_chats: Optional[bool] = None,
+            can_restrict_members: Optional[bool] = None,
+            can_promote_members: Optional[bool] = None,
+            can_change_info: Optional[bool] = None,
+            can_invite_users: Optional[bool] = None,
+            can_pin_messages: Optional[bool] = None,
+            can_manage_topics: Optional[bool] = None
+    ) -> bool:
+
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'declineChatJoinRequest', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_PROMOTE_CHAT_MEMBER, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def set_chat_photo(self, chat_id, photo):
-        raise NotImplemented
-        kwargs = dict(chat_id=chat_id)
-        files_kwargs = dict()
-        file_id = photo.get('file_id')
-        url = photo.get('url')
-        path = photo.get('path')
-        if file_id:
-            kwargs['photo'] = file_id
-        elif url:
-            kwargs['photo'] = url
-        elif path:
-            if not os.path.isfile(path):
-                return self._error_response('File not found')
-            files_kwargs['photo'] = open(path, 'rb')
-        else:
-            return self._error_response('Location not found')
-        return await self._request(self._url + 'setChatPhoto', data=kwargs, files=files_kwargs, timeout=self.TIMEOUT)
+    async def set_chat_administrator_custom_title(
+            self,
+            chat_id: Union[int, str],
+            user_id: int,
+            custom_title: str
+    ) -> bool:
 
-    async def delete_chat_photo(self, chat_id):
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'deleteChatPhoto', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_SET_CHAT_ADMINISTRATOR_CUSTOM_TITLE, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def set_chat_title(self, chat_id, title):
+    async def ban_chat_sender_chat(self, chat_id: Union[int, str], sender_chat_id: int) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'setChatTitle', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_BAN_CHAT_SENDER_CHAT, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def set_chat_description(self, chat_id, description=None):
+    async def unban_chat_sender_chat(self, chat_id: Union[int, str], sender_chat_id: int) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'setChatDescription',
-                                   data=data,
-                                   timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_UNBAN_CHAT_SENDER_CHAT, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def pin_chat_message(self, chat_id, message_id, disable_notification=None):
+    async def set_chat_permissions(self, chat_id: Union[int, str], permissions: ChatPermissions) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'pinChatMessage', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_SET_CHAT_PERMISSIONS, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def unpin_chat_message(self, chat_id, message_id=None):
+    async def export_chat_invite_link(self, chat_id: Union[int, str]) -> str:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'unpinChatMessage', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_EXPORT_CHAT_INVITE_LINK, data=data)
+        assert isinstance(response['result'], str)
+        return response['result']
 
-    async def unpin_all_chat_messages(self, chat_id):
+    async def create_chat_invite_link(
+            self,
+            chat_id: Union[int, str],
+            name: Optional[str] = None,
+            expire_date: Optional[int] = None,
+            member_limit: Optional[int] = None,
+            creates_join_request: Optional[bool] = None
+    ) -> ChatInviteLink:
+
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'unpinAllChatMessages', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_CREATE_CHAT_INVITE_LINK, data=data)
+        return ChatInviteLink.from_dict(response)
 
-    async def leave_chat(self, chat_id):
+    async def edit_chat_invite_link(
+            self,
+            chat_id: Union[int, str],
+            invite_link: str,
+            name: Optional[str] = None,
+            expire_date: Optional[int] = None,
+            member_limit: Optional[int] = None,
+            creates_join_request: Optional[bool] = None
+    ) -> ChatInviteLink:
+
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'leaveChat', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_EDIT_CHAT_INVITE_LINK, data=data)
+        return ChatInviteLink.from_dict(response)
 
-    async def get_chat(self, chat_id):
+    async def revoke_chat_invite_link(self, chat_id: Union[int, str], invite_link: str) -> ChatInviteLink:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'getChat', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_REVOKE_CHAT_INVITE_LINK, data=data)
+        return ChatInviteLink.from_dict(response)
 
-    async def get_chat_administrators(self, chat_id):
+    async def approve_chat_join_request(self, chat_id: Union[int, str], user_id: int) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(
-            self._url + 'getChatAdministrators',
-            data=data, timeout=self.TIMEOUT
-        )
+        response = await self._request(constants.API_METHOD_APPROVE_CHAT_JOIN_REQUEST, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def get_chat_member_count(self, chat_id):
+    async def decline_chat_join_request(self, chat_id: Union[int, str], user_id: int) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'getChatMemberCount', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_DECLINE_CHAT_JOIN_REQUEST, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def get_chat_member(self, chat_id, user_id):
+    async def set_chat_photo(self, chat_id: Union[int, str], photo: InputFile) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'getChatMember', data=data,
-                                   timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_SET_CHAT_PHOTO, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def set_chat_sticker_set(self, chat_id, sticker_set_name):
+    async def delete_chat_photo(self, chat_id: Union[int, str]) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'setChatStickerSet',
-                                   data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_DELETE_CHAT_PHOTO, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def delete_chat_sticker_set(self, chat_id):
+    async def set_chat_title(self, chat_id: Union[int, str], title: str) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'deleteChatStickerSet', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_SET_CHAT_TITLE, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def answer_callback_query(self,
-                                    callback_query_id,
-                                    text=None,
-                                    show_alert=None,
-                                    url=None,
-                                    cache_time=None):
+    async def set_chat_description(self, chat_id: Union[int, str], description: Optional[str] = None) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'answerCallbackQuery', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_SET_CHAT_DESCRIPTION, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def set_my_commands(self, commands, scope=None, language_code=None):
+    async def pin_chat_message(
+            self,
+            chat_id: Union[int, str],
+            message_id: int,
+            disable_notification: Optional[bool] = None
+    ) -> bool:
+
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'setMyCommands', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_PIN_CHAT_MESSAGE, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def delete_my_commands(self, scope=None, language_code=None):
+    async def unpin_chat_message(self, chat_id: Union[int, str], message_id: Optional[int] = None) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'deleteMyCommands', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_UNPIN_CHAT_MESSAGE, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def get_my_commands(self, scope=None, language_code=None):
+    async def unpin_all_chat_messages(self, chat_id: Union[int, str]) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'getMyCommands', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_UNPIN_ALL_CHAT_MESSAGES, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def edit_message_text(self,
-                                text,
-                                chat_id=None,
-                                message_id=None,
-                                inline_message_id=None,
-                                parse_mode=None,
-                                entities=None,
-                                disable_web_page_preview=None,
-                                reply_markup=None):
+    async def leave_chat(self, chat_id: Union[int, str]) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'editMessageText', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_LEAVE_CHAT, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def edit_message_caption(self,
-                                   chat_id=None,
-                                   message_id=None,
-                                   inline_message_id=None,
-                                   caption=None,
-                                   parse_mode=None,
-                                   caption_entities=None,
-                                   reply_markup=None):
+    async def get_chat(self, chat_id: Union[int, str]) -> Chat:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'editMessageCaption', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_GET_CHAT, data=data)
+        return Chat.from_dict(response['result'])
 
-    async def edit_message_media(self, media, chat_id=None, message_id=None, inline_message_id=None, reply_markup=None):
+    async def get_chat_administrators(self, chat_id: Union[int, str]) -> List[ChatMember]:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'editMessageMedia', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_GET_CHAT_ADMINISTRATORS, data=data)
+        return [ChatMember.from_dict(r) for r in response['result']]
 
-    async def edit_message_reply_markup(self, chat_id=None, message_id=None, inline_message_id=None, reply_markup=None):
+    async def get_chat_member_count(self, chat_id: Union[int, str]) -> int:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'editMessageReplyMarkup', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_GET_CHAT_MEMBER_COUNT, data=data)
+        assert isinstance(response['result'], int)
+        return response['result']
 
-    async def stop_poll(self, chat_id, message_id, reply_markup=None):
+    async def get_chat_member(self, chat_id: Union[int, str], user_id: int) -> ChatMember:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'stopPoll', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_GET_CHAT_MEMBER, data=data)
+        return ChatMember.from_dict(response['result'])
 
-    async def delete_message(self, chat_id, message_id):
+    async def set_chat_sticker_set(self, chat_id: Union[int, str], sticker_set_name: str) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'deleteMessage', data=data,
-                                   timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_SET_CHAT_STICKER_SET, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def send_sticker(self,
-                           chat_id,
-                           sticker,
-                           disable_notification=None,
-                           reply_to_message_id=None,
-                           allow_sending_without_reply=None,
-                           reply_markup=None):
-        raise NotImplemented
-        kwargs = dict(
-            chat_id=chat_id,
-            disable_notification=disable_notification,
-            reply_to_message_id=reply_to_message_id,
-            allow_sending_without_reply=allow_sending_without_reply,
-            reply_markup=reply_markup)
-        files_kwargs = dict()
-        file_id = sticker.get('file_id')
-        url = sticker.get('url')
-        path = sticker.get('path')
-        if file_id:
-            kwargs['sticker'] = file_id
-        elif url:
-            kwargs['sticker'] = url
-        elif path:
-            if not os.path.isfile(path):
-                return self._error_response('File not found')
-            files_kwargs['sticker'] = open(path, 'rb')
-        else:
-            return self._error_response('Location not found')
-        return await self._request(self._url + 'sendSticker', data=kwargs, files=files_kwargs, timeout=self.TIMEOUT)
-
-    async def get_sticker_set(self, name):
+    async def delete_chat_sticker_set(self, chat_id: Union[int, str]) -> bool:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'getStickerSet', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_DELETE_CHAT_STICKER_SET, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
-    async def upload_sticker_file(self, user_id, png_sticker):
-        raise NotImplemented
-        kwargs = dict(user_id=user_id)
-        files_kwargs = dict()
-        file_id = png_sticker.get('file_id')
-        url = png_sticker.get('url')
-        path = png_sticker.get('path')
-        if file_id:
-            kwargs['png_sticker'] = file_id
-        elif url:
-            kwargs['png_sticker'] = url
-        elif path:
-            if not os.path.isfile(path):
-                return self._error_response('File not found')
-            files_kwargs['png_sticker'] = open(path, 'rb')
-        else:
-            return self._error_response('Location not found')
-        return await self._request(
-            self._url + 'uploadStickerFile',
-            data=kwargs,
-            files=files_kwargs,
-            timeout=self.TIMEOUT
-        )
-
-    async def create_new_sticker_set(self,
-                                     user_id,
-                                     name,
-                                     title,
-                                     emojis,
-                                     png_sticker=None,
-                                     tgs_sticker=None,
-                                     contains_masks=None,
-                                     mask_position=None):
-        raise NotImplemented
-        if png_sticker and tgs_sticker:
-            return self._error_response('You must use exactly one of the fields png_sticker or tgs_sticker')
-        kwargs = dict(user_id=user_id, name=name, title=title, emojis=emojis, contains_masks=contains_masks)
-        files_kwargs = dict()
-        sticker, sticker_key = (png_sticker, 'png_sticker') if png_sticker else (tgs_sticker, 'tgs_sticker')
-        file_id = sticker.get('file_id')
-        url = sticker.get('url')
-        path = sticker.get('path')
-        if file_id:
-            kwargs[sticker_key] = file_id
-        elif url:
-            kwargs[sticker_key] = url
-        elif path:
-            if not os.path.isfile(path):
-                return self._error_response('File not found')
-            files_kwargs[sticker_key] = open(path, 'rb')
-        else:
-            return self._error_response('Location not found')
-        if contains_masks:
-            kwargs['mask_position'] = json.dumps(mask_position)
-        return await self._request(self._url + 'createNewStickerSet', data=kwargs, files_kwargs=files_kwargs,
-                                   timeout=self.TIMEOUT)
-
-    async def add_sticker_to_set(self, user_id, name, emojis, png_sticker=None, tgs_sticker=None, mask_position=None):
-        raise NotImplemented
-        if png_sticker and tgs_sticker:
-            return self._error_response('You must use exactly one of the fields png_sticker or tgs_sticker')
-        kwargs = dict(user_id=user_id, name=name, emojis=emojis)
-        files_kwargs = dict()
-        sticker, sticker_key = (png_sticker, 'png_sticker') if png_sticker else (tgs_sticker, 'tgs_sticker')
-        file_id = sticker.get('file_id')
-        url = sticker.get('url')
-        path = sticker.get('path')
-        if file_id:
-            kwargs[sticker_key] = file_id
-        elif url:
-            kwargs[sticker_key] = url
-        elif path:
-            if not os.path.isfile(path):
-                return self._error_response('File not found')
-            files_kwargs[sticker_key] = open(path, 'rb')
-        else:
-            return self._error_response('Location not found')
-        if mask_position:
-            kwargs['mask_position'] = json.dumps(mask_position)
-        return await self._request(self._url + 'addStickerToSet', data=kwargs, files_kwargs=files_kwargs,
-                                   timeout=self.TIMEOUT)
-
-    async def set_sticker_position_in_set(self, sticker, position):
+    async def get_forum_topic_icon_stickers(self) -> List[Sticker]:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'setStickerPositionInSet', data=data,
-                                   timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_GET_FORUM_TOPIC_ICON_STICKERS, data=data)
+        return [Sticker.from_dict(r) for r in response['result']]
 
-    async def delete_sticker_from_set(self, sticker):
+    async def create_forum_topic(
+            self,
+            chat_id: Union[int, str],
+            name: str,
+            icon_color: Optional[int] = None,
+            icon_custom_emoji_id: Optional[str] = None
+    ) -> ForumTopic:
+
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
-        return await self._request(self._url + 'deleteStickerFromSet', data=data, timeout=self.TIMEOUT)
+        response = await self._request(constants.API_METHOD_CREATE_FORUM_TOPIC, data=data)
+        return ForumTopic.from_dict(response['result'])
 
-    async def set_sticker_set_thumb(self, name, user_id, thumb):
-        raise NotImplemented
-        kwargs = dict(name=name, user_id=user_id)
-        files_kwargs = dict()
-        file_id = thumb.get('file_id')
-        url = thumb.get('url')
-        path = thumb.get('path')
-        if file_id:
-            kwargs['thumb'] = file_id
-        elif url:
-            kwargs['thumb'] = url
-        elif path:
-            if not os.path.isfile(path):
-                return self._error_response('File not found')
-            files_kwargs['thumb'] = open(path, 'rb')
-        else:
-            return self._error_response('Location not found')
-        return await self._request(self._url + 'setStickerSetThumb', data=kwargs, files_kwargs=files_kwargs,
-                                   timeout=self.TIMEOUT)
+    async def edit_forum_topic(
+            self,
+            chat_id: Union[int, str],
+            message_thread_id: int,
+            name: str,
+            icon_custom_emoji_id: str
+    ) -> bool:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_EDIT_FORUM_TOPIC, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def close_forum_topic(
+            self,
+            chat_id: Union[int, str],
+            message_thread_id: int
+    ) -> bool:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_CLOSE_FORUM_TOPIC, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def reopen_forum_topic(
+            self,
+            chat_id: Union[int, str],
+            message_thread_id: int
+    ) -> bool:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_REOPEN_FORUM_TOPIC, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def delete_forum_topic(
+            self,
+            chat_id: Union[int, str],
+            message_thread_id: int
+    ):
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_DELETE_FORUM_TOPIC, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def unpin_all_forum_topic_messages(
+            self,
+            chat_id: Union[int, str],
+            message_thread_id: int
+    ):
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_UNPIN_ALL_FORUM_TOPIC_MESSAGES, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def answer_callback_query(
+            self,
+            callback_query_id: str,
+            text: Optional[str] = None,
+            show_alert: Optional[bool] = None,
+            url: Optional[str] = None,
+            cache_time: Optional[int] = None
+    ) -> bool:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_ANSWER_CALLBACK_QUERY, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def set_my_commands(
+            self,
+            commands: List[BotCommand],
+            scope: Optional[BotCommandScope] = None,
+            language_code: Optional[str] = None
+    ) -> bool:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_SET_MY_COMMANDS, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def delete_my_commands(
+            self,
+            scope: Optional[BotCommandScope] = None,
+            language_code: Optional[str] = None
+    ) -> bool:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_DELETE_MY_COMMANDS, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def get_my_commands(
+            self,
+            scope: Optional[BotCommandScope] = None,
+            language_code: Optional[str] = None
+    ) -> List[BotCommand]:
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_GET_MY_COMMANDS, data=data)
+        return [BotCommand.from_dict(r) for r in response['result']]
+
+    async def set_chat_menu_button(
+            self,
+            chat_id: Optional[int] = None,
+            menu_button: Optional[MenuButton] = None
+    ) -> bool:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_SET_CHAT_MENU_BUTTON, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def get_chat_menu_button(self, chat_id: Optional[int] = None) -> MenuButton:
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_GET_CHAT_MENU_BUTTON, data=data)
+        return MenuButton.from_dict(response['result'])
+
+    async def set_my_default_administrator_rights(
+            self,
+            rights: Optional[ChatAdministratorRights] = None,
+            for_channels: Optional[bool] = None
+    ) -> bool:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_SET_MY_DEFAULT_ADMINISTRATOR_RIGHTS, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def get_my_default_administrator_rights(
+            self,
+            for_channels: Optional[bool] = None
+    ) -> ChatAdministratorRights:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_GET_MY_DEFAULT_ADMINISTRATOR_RIGHTS, data=data)
+        return ChatAdministratorRights.from_dict(response['result'])
+
+    async def edit_message_text(
+            self,
+            text: str,
+            chat_id: Union[int, str, None] = None,
+            message_id: Optional[int] = None,
+            inline_message_id: Optional[str] = None,
+            parse_mode: Optional[str] = None,
+            entities: Optional[List[MessageEntity]] = None,
+            disable_web_page_preview: Optional[bool] = None,
+            reply_markup: Optional[InlineKeyboardMarkup] = None
+    ) -> Union[Message, bool]:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_EDIT_MESSAGE_TEXT, data=data)
+
+        if isinstance(response['result'], bool):
+            return response['result']
+
+        return Message.from_dict(response['result'])
+
+    async def edit_message_caption(
+            self,
+            chat_id: Union[int, str, None] = None,
+            message_id: Optional[int] = None,
+            inline_message_id: Optional[str] = None,
+            caption: Optional[str] = None,
+            parse_mode: Optional[str] = None,
+            caption_entities: Optional[List[MessageEntity]] = None,
+            reply_markup: Optional[InlineKeyboardMarkup] = None
+    ) -> Union[Message, bool]:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_EDIT_MESSAGE_CAPTION, data=data)
+
+        if isinstance(response['result'], bool):
+            return response['result']
+
+        return Message.from_dict(response['result'])
+
+    async def edit_message_media(
+            self,
+            media: InputMedia,
+            chat_id: Union[int, str, None] =None,
+            message_id: Optional[int] = None,
+            inline_message_id: Optional[str] = None,
+            reply_markup: Optional[InlineKeyboardMarkup] = None
+    ) -> Union[Message, bool]:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_EDIT_MESSAGE_MEDIA, data=data)
+
+        if isinstance(response['result'], bool):
+            return response['result']
+
+        return Message.from_dict(response['result'])
+
+    async def edit_message_reply_markup(
+            self,
+            chat_id: Union[int, str, None] =None,
+            message_id: Optional[int] = None,
+            inline_message_id: Optional[str] = None,
+            reply_markup: Optional[InlineKeyboardMarkup] =None
+    ) -> Union[Message, bool]:
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_EDIT_MESSAGE_REPLY_MARKUP, data=data)
+
+        if isinstance(response['result'], bool):
+            return response['result']
+
+        return Message.from_dict(response['result'])
+
+    async def stop_poll(
+            self,
+            chat_id: Union[int, str],
+            message_id: int,
+            reply_markup: Optional[InlineKeyboardMarkup] = None
+    ) -> Poll:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_STOP_POLL, data=data)
+        return Poll.from_dict(response['result'])
+
+    async def delete_message(
+            self,
+            chat_id: Union[int, str],
+            message_id: int
+    ) -> bool:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_DELETE_MESSAGE, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def send_sticker(
+            self,
+            chat_id: Union[int, str],
+            sticker: InputFile,
+            message_thread_id: Optional[int] = None,
+            disable_notification: Optional[bool] = None,
+            protect_content: Optional[bool] = None,
+            reply_to_message_id: Optional[int] = None,
+            allow_sending_without_reply: Optional[bool] = None,
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+    ) -> Message:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_SEND_STICKER, data=data)
+        return Message.from_dict(response['result'])
+
+    async def get_sticker_set(self, name: str) -> StickerSet:
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_GET_STICKER_SET, data=data)
+        return StickerSet.from_dict(response['result'])
+
+    async def get_custom_emoji_stickers(self, custom_emoji_ids: List[str]) -> List[Sticker]:
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_GET_CUSTOM_EMOJI_STICKERS, data=data)
+        return [Sticker.from_dict(r) for r in response['result']]
+
+    async def upload_sticker_file(self, user_id: int, png_sticker: InputFile) -> File:
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_UPLOAD_STICKER_FILE, data=data)
+        return File.from_dict(response['result'])
+
+    async def create_new_sticker_set(
+            self,
+            user_id: int,
+            name: str,
+            title: str,
+            emojis: str,
+            png_sticker: Optional[InputFile] = None,
+            tgs_sticker: Optional[InputFile] = None,
+            webm_sticker: Optional[InputFile] = None,
+            sticker_type: Optional[StickerType] = None,
+            mask_position: Optional[MaskPosition] = None
+    ) -> bool:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_CREATE_NEW_STICKER_SET, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def add_sticker_to_set(
+            self,
+            user_id: int,
+            name: str,
+            emojis: str,
+            png_sticker: Optional[InputFile] = None,
+            tgs_sticker: Optional[InputFile] = None,
+            webm_sticker: Optional[InputFile] = None,
+            mask_position: Optional[MaskPosition] = None
+    ) -> bool:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_ADD_STICKER_TO_SET, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def set_sticker_position_in_set(
+            self,
+            sticker: str,
+            position: int
+    ) -> bool:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_SET_STICKER_POSITION_IN_SET, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def delete_sticker_from_set(self, sticker: str) -> bool:
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_DELETE_STICKER_FROM_SET, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
+
+    async def set_sticker_set_thumb(
+            self,
+            name: str,
+            user_id: int,
+            thumb: Optional[InputFile] = None
+    ) -> bool:
+
+        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        response = await self._request(constants.API_METHOD_SET_STICKER_SET_THUMB, data=data)
+        assert isinstance(response['result'], bool)
+        return response['result']
 
     async def answer_inline_query(self,
                                   inline_query_id,

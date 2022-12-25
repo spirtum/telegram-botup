@@ -593,7 +593,19 @@ class ChatAdministratorRights(BaseObject):
 
 @dataclass
 class ChatMember(BaseObject):
-    pass
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        status_map = {
+            CHAT_MEMBER_STATUS_CREATOR: ChatMemberOwner,
+            CHAT_MEMBER_STATUS_ADMINISTRATOR: ChatMemberAdministrator,
+            CHAT_MEMBER_STATUS_MEMBER: ChatMemberMember,
+            CHAT_MEMBER_STATUS_RESTRICTED: ChatMemberRestricted,
+            CHAT_MEMBER_STATUS_LEFT: ChatMemberLeft,
+            CHAT_MEMBER_STATUS_KICKED: ChatMemberBanned
+        }
+        class_ = status_map[data['status']]
+        return class_.from_dict(data)
 
 
 @dataclass
