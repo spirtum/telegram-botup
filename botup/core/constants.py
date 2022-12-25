@@ -43,6 +43,22 @@ class MaskPositionPoint(StringConstant):
     pass
 
 
+class InlineQueryChatType(StringConstant):
+    pass
+
+
+class InlineQueryResultType(StringConstant):
+    pass
+
+
+class EncryptedPassportElementType(StringConstant):
+    pass
+
+
+class PassportElementErrorSource(StringConstant):
+    pass
+
+
 CHAT_TYPE_PRIVATE = ChatType('private')
 CHAT_TYPE_GROUP = ChatType('group')
 CHAT_TYPE_SUPERGROUP = ChatType('supergroup')
@@ -106,3 +122,47 @@ MASK_POSITION_POINT_FOREHEAD = MaskPositionPoint('forehead')
 MASK_POSITION_POINT_EYES = MaskPositionPoint('eyes')
 MASK_POSITION_POINT_MOUTH = MaskPositionPoint('mouth')
 MASK_POSITION_POINT_CHIN = MaskPositionPoint('chin')
+
+INLINE_QUERY_CHAT_TYPE_SENDER = InlineQueryChatType('sender')
+INLINE_QUERY_CHAT_TYPE_PRIVATE = InlineQueryChatType('private')
+INLINE_QUERY_CHAT_TYPE_GROUP = InlineQueryChatType('group')
+INLINE_QUERY_CHAT_TYPE_SUPERGROUP = InlineQueryChatType('supergroup')
+INLINE_QUERY_CHAT_TYPE_CHANNEL = InlineQueryChatType('channel')
+
+INLINE_QUERY_RESULT_TYPE_ARTICLE = InlineQueryResultType('article')
+INLINE_QUERY_RESULT_TYPE_PHOTO = InlineQueryResultType('photo')
+INLINE_QUERY_RESULT_TYPE_GIF = InlineQueryResultType('gif')
+INLINE_QUERY_RESULT_TYPE_MPEG4_GIF = InlineQueryResultType('mpeg4_gif')
+INLINE_QUERY_RESULT_TYPE_VIDEO = InlineQueryResultType('video')
+INLINE_QUERY_RESULT_TYPE_AUDIO = InlineQueryResultType('audio')
+INLINE_QUERY_RESULT_TYPE_VOICE = InlineQueryResultType('voice')
+INLINE_QUERY_RESULT_TYPE_DOCUMENT = InlineQueryResultType('document')
+INLINE_QUERY_RESULT_TYPE_LOCATION = InlineQueryResultType('location')
+INLINE_QUERY_RESULT_TYPE_VENUE = InlineQueryResultType('venue')
+INLINE_QUERY_RESULT_TYPE_CONTACT = InlineQueryResultType('contact')
+INLINE_QUERY_RESULT_TYPE_GAME = InlineQueryResultType('game')
+INLINE_QUERY_RESULT_TYPE_STICKER = InlineQueryResultType('sticker')
+
+ENCRYPTED_PASSPORT_ELEMENT_TYPE_PERSONAL_DETAILS = EncryptedPassportElementType('personal_details')
+ENCRYPTED_PASSPORT_ELEMENT_TYPE_PASSPORT = EncryptedPassportElementType('passport')
+ENCRYPTED_PASSPORT_ELEMENT_TYPE_DRIVER_LICENSE = EncryptedPassportElementType('driver_license')
+ENCRYPTED_PASSPORT_ELEMENT_TYPE_IDENTITY_CARD = EncryptedPassportElementType('identity_card')
+ENCRYPTED_PASSPORT_ELEMENT_TYPE_INTERNAL_PASSPORT = EncryptedPassportElementType('internal_passport')
+ENCRYPTED_PASSPORT_ELEMENT_TYPE_ADDRESS = EncryptedPassportElementType('address')
+ENCRYPTED_PASSPORT_ELEMENT_TYPE_UTILITY_BILL = EncryptedPassportElementType('utility_bill')
+ENCRYPTED_PASSPORT_ELEMENT_TYPE_BANK_STATEMENT = EncryptedPassportElementType('bank_statement')
+ENCRYPTED_PASSPORT_ELEMENT_TYPE_RENTAL_AGREEMENT = EncryptedPassportElementType('rental_agreement')
+ENCRYPTED_PASSPORT_ELEMENT_TYPE_PASSPORT_REGISTRATION = EncryptedPassportElementType('passport_registration')
+ENCRYPTED_PASSPORT_ELEMENT_TYPE_TEMPORARY_REGISTRATION = EncryptedPassportElementType('temporary_registration')
+ENCRYPTED_PASSPORT_ELEMENT_TYPE_PHONE_NUMBER = EncryptedPassportElementType('phone_number')
+ENCRYPTED_PASSPORT_ELEMENT_TYPE_EMAIL = EncryptedPassportElementType('email')
+
+PASSPORT_ELEMENT_ERROR_SOURCE_DATA = PassportElementErrorSource('data')
+PASSPORT_ELEMENT_ERROR_SOURCE_FRONT_SIDE = PassportElementErrorSource('front_side')
+PASSPORT_ELEMENT_ERROR_SOURCE_REVERSE_SIDE = PassportElementErrorSource('reverse_side')
+PASSPORT_ELEMENT_ERROR_SOURCE_SELFIE = PassportElementErrorSource('selfie')
+PASSPORT_ELEMENT_ERROR_SOURCE_FILE = PassportElementErrorSource('file')
+PASSPORT_ELEMENT_ERROR_SOURCE_FILES = PassportElementErrorSource('files')
+PASSPORT_ELEMENT_ERROR_SOURCE_TRANSLATION_FILE = PassportElementErrorSource('translation_file')
+PASSPORT_ELEMENT_ERROR_SOURCE_TRANSLATION_FILES = PassportElementErrorSource('translation_files')
+PASSPORT_ELEMENT_ERROR_SOURCE_UNSPECIFIED = PassportElementErrorSource('unspecified')

@@ -12,7 +12,16 @@ from .constants import ChatType, MessageEntityType, PollType, ChatMemberStatus, 
     MENU_BUTTON_TYPE_COMMANDS, MENU_BUTTON_TYPE_WEB_APP, MENU_BUTTON_TYPE_DEFAULT, InputMediaType, \
     INPUT_MEDIA_TYPE_PHOTO, INPUT_MEDIA_TYPE_VIDEO, INPUT_MEDIA_TYPE_ANIMATION, INPUT_MEDIA_TYPE_AUDIO, \
     INPUT_MEDIA_TYPE_DOCUMENT, InputFileType, INPUT_FILE_TYPE_STORED, INPUT_FILE_TYPE_URL, INPUT_FILE_TYPE_PATH, \
-    StickerType, MaskPositionPoint
+    StickerType, MaskPositionPoint, InlineQueryChatType, InlineQueryResultType, INLINE_QUERY_RESULT_TYPE_ARTICLE, \
+    INLINE_QUERY_RESULT_TYPE_PHOTO, INLINE_QUERY_RESULT_TYPE_GIF, INLINE_QUERY_RESULT_TYPE_MPEG4_GIF, \
+    INLINE_QUERY_RESULT_TYPE_VIDEO, INLINE_QUERY_RESULT_TYPE_AUDIO, INLINE_QUERY_RESULT_TYPE_VOICE, \
+    INLINE_QUERY_RESULT_TYPE_DOCUMENT, INLINE_QUERY_RESULT_TYPE_LOCATION, INLINE_QUERY_RESULT_TYPE_VENUE, \
+    INLINE_QUERY_RESULT_TYPE_CONTACT, INLINE_QUERY_RESULT_TYPE_GAME, INLINE_QUERY_RESULT_TYPE_STICKER, \
+    EncryptedPassportElementType, PassportElementErrorSource, PASSPORT_ELEMENT_ERROR_SOURCE_DATA, \
+    PASSPORT_ELEMENT_ERROR_SOURCE_FRONT_SIDE, PASSPORT_ELEMENT_ERROR_SOURCE_REVERSE_SIDE, \
+    PASSPORT_ELEMENT_ERROR_SOURCE_SELFIE, PASSPORT_ELEMENT_ERROR_SOURCE_FILE, PASSPORT_ELEMENT_ERROR_SOURCE_FILES, \
+    PASSPORT_ELEMENT_ERROR_SOURCE_TRANSLATION_FILE, PASSPORT_ELEMENT_ERROR_SOURCE_TRANSLATION_FILES, \
+    PASSPORT_ELEMENT_ERROR_SOURCE_UNSPECIFIED
 
 try:
     import ujson as json
@@ -81,10 +90,50 @@ class BaseObject:
 
 
 @dataclass
+class Update(BaseObject):
+    update_id: int
+    message: Optional[Message]
+    edited_message: Optional[Message]
+    channel_post: Optional[Message]
+    edited_channel_post: Optional[Message]
+    inline_query: Optional[InlineQuery]
+    chosen_inline_result: Optional[ChosenInlineResult]
+    callback_query: Optional[CallbackQuery]
+    shipping_query: Optional[ShippingQuery]
+    pre_checkout_query: Optional[PreCheckoutQuery]
+    poll: Optional[Poll]
+    poll_answer: Optional[PollAnswer]
+    my_chat_member: Optional[ChatMemberUpdated]
+    chat_member: Optional[ChatMemberUpdated]
+    chat_join_request: Optional[ChatJoinRequest]
+
+
+@dataclass
+class WebhookInfo(BaseObject):
+    url: str
+    has_custom_certificate: bool
+    pending_update_count: int
+    ip_address: Optional[str]
+    last_error_date: Optional[int]
+    last_error_message: Optional[str]
+    last_synchronization_error_date: Optional[int]
+    max_connections: Optional[int]
+    allowed_updates: Optional[List[str]]
+
+
+@dataclass
 class RawResponse(BaseObject):
     raw_data: dict
     ok: bool
     result: bool
+    description: str
+
+
+@dataclass
+class ErrorResponse(BaseObject):
+    raw_data: dict
+    ok: bool
+    error_code: str
     description: str
 
 
@@ -755,7 +804,7 @@ class InputMediaPhoto(InputMedia):
 class InputMediaVideo(InputMedia):
     media: str
     type: InputMediaType = INPUT_MEDIA_TYPE_VIDEO
-    thumb: Optional[Union[InputFile, str]] = None
+    thumb: Optional[InputFile] = None
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
@@ -769,7 +818,7 @@ class InputMediaVideo(InputMedia):
 class InputMediaAnimation(InputMedia):
     media: str
     type: InputMediaType = INPUT_MEDIA_TYPE_ANIMATION
-    thumb: Optional[Union[InputFile, str]] = None
+    thumb: Optional[InputFile] = None
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
@@ -782,7 +831,7 @@ class InputMediaAnimation(InputMedia):
 class InputMediaAudio(InputMedia):
     media: str
     type: InputMediaType = INPUT_MEDIA_TYPE_AUDIO
-    thumb: Optional[Union[InputFile, str]] = None
+    thumb: Optional[InputFile] = None
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
@@ -795,7 +844,7 @@ class InputMediaAudio(InputMedia):
 class InputMediaDocument(InputMedia):
     media: str
     type: InputMediaType = INPUT_MEDIA_TYPE_DOCUMENT
-    thumb: Optional[Union[InputFile, str]] = None
+    thumb: Optional[InputFile] = None
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
@@ -823,11 +872,6 @@ class InputFileUrl(InputFile):
 class InputFilePath(InputFile):
     path: pathlib.Path
     type: InputFileType = INPUT_FILE_TYPE_PATH
-
-
-@dataclass
-class CallbackGame(BaseObject):
-    pass
 
 
 @dataclass
@@ -865,6 +909,603 @@ class MaskPosition(BaseObject):
     x_shift: float
     y_shift: float
     scale: float
+
+
+@dataclass
+class InlineQuery(BaseObject):
+    id: str
+    from_: User
+    query: str
+    offset: str
+    chat_type: Optional[InlineQueryChatType]
+    location: Optional[Location]
+
+
+@dataclass
+class InlineQueryResult(BaseObject):
+    pass
+
+
+@dataclass
+class InlineQueryResultArticle(InlineQueryResult):
+    id: str
+    title: str
+    input_message_content: InputMessageContent
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_ARTICLE
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    url: Optional[str] = None
+    hide_url: Optional[bool] = None
+    description: Optional[str] = None
+    thumb_url: Optional[str] = None
+    thumb_width: Optional[int] = None
+    thumb_height: Optional[int] = None
+
+
+@dataclass
+class InlineQueryResultPhoto(InlineQueryResult):
+    id: str
+    photo_url: str
+    thumb_url: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_PHOTO
+    photo_width: Optional[int] = None
+    photo_height: Optional[int] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+
+
+@dataclass
+class InlineQueryResultGif(InlineQueryResult):
+    id: str
+    gif_url: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_GIF
+    gif_width: Optional[int] = None
+    gif_height: Optional[int] = None
+    gif_duration: Optional[int] = None
+    thumb_url: Optional[str] = None
+    thumb_mime_type: Optional[str] = None
+    title: Optional[str] = None
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+
+
+@dataclass
+class InlineQueryResultMpeg4Gif(InlineQueryResult):
+    id: str
+    mpeg4_url: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_MPEG4_GIF
+    mpeg4_width: Optional[int] = None
+    mpeg4_height: Optional[int] = None
+    mpeg4_duration: Optional[int] = None
+    thumb_url: Optional[str] = None
+    thumb_mime_type: Optional[str] = None
+    title: Optional[str] = None
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+
+
+@dataclass
+class InlineQueryResultVideo(InlineQueryResult):
+    id: str
+    video_url: str
+    mime_type: str
+    thumb_url: str
+    title: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_VIDEO
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    video_width: Optional[int] = None
+    video_height: Optional[int] = None
+    video_duration: Optional[int] = None
+    description: Optional[str] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+
+
+@dataclass
+class InlineQueryResultAudio(InlineQueryResult):
+    id: str
+    audio_url: str
+    title: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_AUDIO
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    performer: Optional[str] = None
+    audio_duration: Optional[int] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+
+
+@dataclass
+class InlineQueryResultVoice(InlineQueryResult):
+    id: str
+    voice_url: str
+    title: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_VOICE
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    voice_duration: Optional[int] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+
+
+@dataclass
+class InlineQueryResultDocument(InlineQueryResult):
+    id: str
+    title: str
+    document_url: str
+    mime_type: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_DOCUMENT
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    description: Optional[str] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+    thumb_url: Optional[str] = None
+    thumb_width: Optional[int] = None
+    thumb_height: Optional[int] = None
+
+
+@dataclass
+class InlineQueryResultLocation(InlineQueryResult):
+    id: str
+    latitude: float
+    longitude: float
+    title: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_LOCATION
+    horizontal_accuracy: Optional[float] = None
+    live_period: Optional[int] = None
+    heading: Optional[int] = None
+    proximity_alert_radius: Optional[int] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+    thumb_url: Optional[str] = None
+    thumb_width: Optional[int] = None
+    thumb_height: Optional[int] = None
+
+
+@dataclass
+class InlineQueryResultVenue(InlineQueryResult):
+    id: str
+    latitude: float
+    longitude: float
+    title: str
+    address: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_VENUE
+    foursquare_id: Optional[str] = None
+    foursquare_type: Optional[str] = None
+    google_place_id: Optional[str] = None
+    google_place_type: Optional[str] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+    thumb_url: Optional[str] = None
+    thumb_width: Optional[int] = None
+    thumb_height: Optional[int] = None
+
+
+@dataclass
+class InlineQueryResultContact(InlineQueryResult):
+    id: str
+    phone_number: str
+    first_name: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_CONTACT
+    last_name: Optional[str] = None
+    vcard: Optional[str] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+    thumb_url: Optional[str] = None
+    thumb_width: Optional[int] = None
+    thumb_height: Optional[int] = None
+
+
+@dataclass
+class InlineQueryResultGame(InlineQueryResult):
+    id: str
+    game_short_name: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_GAME
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+
+
+@dataclass
+class InlineQueryResultCachedPhoto(InlineQueryResult):
+    id: str
+    photo_file_id: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_PHOTO
+    title: Optional[str] = None
+    description: Optional[str] = None
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+
+
+@dataclass
+class InlineQueryResultCachedGif(InlineQueryResult):
+    id: str
+    gif_file_id: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_GIF
+    title: Optional[str] = None
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+
+
+@dataclass
+class InlineQueryResultCachedMpeg4Gif(InlineQueryResult):
+    id: str
+    mpeg4_file_id: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_MPEG4_GIF
+    title: Optional[str] = None
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+
+
+@dataclass
+class InlineQueryResultCachedSticker(InlineQueryResult):
+    id: str
+    sticker_file_id: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_STICKER
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+
+
+@dataclass
+class InlineQueryResultCachedDocument(InlineQueryResult):
+    id: str
+    title: str
+    document_file_id: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_DOCUMENT
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    description: Optional[str] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+
+
+@dataclass
+class InlineQueryResultCachedVideo(InlineQueryResult):
+    id: str
+    video_file_id: str
+    title: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_VIDEO
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    description: Optional[str] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+
+
+@dataclass
+class InlineQueryResultCachedVoice(InlineQueryResult):
+    id: str
+    voice_file_id: str
+    title: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_VOICE
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+
+
+@dataclass
+class InlineQueryResultCachedAudio(InlineQueryResult):
+    id: str
+    audio_file_id: str
+    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_AUDIO
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
+    caption_entities: Optional[List[MessageEntity]] = None
+    reply_markup: Optional[InlineKeyboardMarkup] = None
+    input_message_content: Optional[InputMessageContent] = None
+
+
+@dataclass
+class InputMessageContent(BaseObject):
+    pass
+
+
+@dataclass
+class InputTextMessageContent(InputMessageContent):
+    message_text: str
+    parse_mode: Optional[str]
+    entities: Optional[List[MessageEntity]]
+    disable_web_page_preview: Optional[bool]
+
+
+@dataclass
+class InputLocationMessageContent(InputMessageContent):
+    latitude: float
+    longitude: float
+    horizontal_accuracy: Optional[float]
+    live_period: Optional[int]
+    heading: Optional[int]
+    proximity_alert_radius: Optional[int]
+
+
+@dataclass
+class InputVenueMessageContent(InputMessageContent):
+    latitude: float
+    longitude: float
+    title: str
+    address: str
+    foursquare_id: Optional[str] = None
+    foursquare_type: Optional[str] = None
+    google_place_id: Optional[str] = None
+    google_place_type: Optional[str] = None
+
+
+@dataclass
+class InputContactMessageContent(InputMessageContent):
+    phone_number: str
+    first_name: str
+    last_name: Optional[str] = None
+    vcard: Optional[str] = None
+
+
+@dataclass
+class InputInvoiceMessageContent(InputMessageContent):
+    title: str
+    description: str
+    payload: str
+    provider_token: str
+    currency: str
+    prices: List[LabeledPrice]
+    max_tip_amount: Optional[int]
+    suggested_tip_amounts: Optional[List[int]]
+    provider_data: Optional[str]
+    photo_url: Optional[str]
+    photo_size: Optional[int]
+    photo_width: Optional[int]
+    photo_height: Optional[int]
+    need_name: Optional[bool]
+    need_phone_number: Optional[bool]
+    need_email: Optional[bool]
+    need_shipping_address: Optional[bool]
+    send_phone_number_to_provider: Optional[bool]
+    send_email_to_provider: Optional[bool]
+    is_flexible: Optional[bool]
+
+
+@dataclass
+class ChosenInlineResult(BaseObject):
+    result_id: str
+    from_: User
+    location: Optional[Location]
+    inline_message_id: Optional[str]
+    query: Optional[str]
+
+
+@dataclass
+class SentWebAppMessage(BaseObject):
+    inline_message_id: Optional[str]
+
+
+@dataclass
+class LabeledPrice(BaseObject):
+    label: str
+    amount: int
+
+
+@dataclass
+class Invoice(BaseObject):
+    title: str
+    description: str
+    start_parameter: str
+    currency: str
+    total_amount: int
+
+
+@dataclass
+class ShippingAddress(BaseObject):
+    country_code: str
+    state: str
+    city: str
+    street_line1: str
+    street_line2: str
+    post_code: str
+
+
+@dataclass
+class OrderInfo(BaseObject):
+    name: Optional[str]
+    phone_number: Optional[str]
+    email: Optional[str]
+    shipping_address: Optional[ShippingAddress]
+
+
+@dataclass
+class ShippingOption(BaseObject):
+    id: str
+    title: str
+    prices: List[LabeledPrice]
+
+
+@dataclass
+class SuccessfulPayment(BaseObject):
+    currency: str
+    total_amount: int
+    invoice_payload: str
+    telegram_payment_charge_id: str
+    provider_payment_charge_id: str
+    shipping_option_id: Optional[str]
+    order_info: Optional[OrderInfo]
+
+
+@dataclass
+class ShippingQuery(BaseObject):
+    id: str
+    from_: User
+    invoice_payload: str
+    shipping_address: ShippingAddress
+
+
+@dataclass
+class PreCheckoutQuery(BaseObject):
+    id: str
+    from_: User
+    currency: str
+    total_amount: int
+    invoice_payload: str
+    shipping_option_id: Optional[str]
+    order_info: Optional[OrderInfo]
+
+
+@dataclass
+class PassportData(BaseObject):
+    data: List[EncryptedPassportElement]
+    credentials: EncryptedCredentials
+
+
+@dataclass
+class PassportFile(BaseObject):
+    file_id: str
+    file_unique_id: str
+    file_size: int
+    file_date: int
+
+
+@dataclass
+class EncryptedPassportElement(BaseObject):
+    type: EncryptedPassportElementType
+    hash: str
+    data: Optional[str]
+    phone_number: Optional[str]
+    email: Optional[str]
+    files: Optional[List[PassportFile]]
+    front_side: Optional[PassportFile]
+    reverse_side: Optional[PassportFile]
+    selfie: Optional[PassportFile]
+    translation: Optional[List[PassportFile]]
+
+
+@dataclass
+class EncryptedCredentials(BaseObject):
+    data: str
+    hash: str
+    secret: str
+
+
+@dataclass
+class PassportElementError(BaseObject):
+    pass
+
+
+@dataclass
+class PassportElementErrorDataField(PassportElementError):
+    type: EncryptedPassportElementType
+    field_name: str
+    data_hash: str
+    message: str
+    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_DATA
+
+
+@dataclass
+class PassportElementErrorFrontSide(PassportElementError):
+    type: EncryptedPassportElementType
+    file_hash: str
+    message: str
+    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_FRONT_SIDE
+
+
+@dataclass
+class PassportElementErrorReverseSide(PassportElementError):
+    type: EncryptedPassportElementType
+    file_hash: str
+    message: str
+    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_REVERSE_SIDE
+
+
+@dataclass
+class PassportElementErrorSelfie(PassportElementError):
+    type: EncryptedPassportElementType
+    file_hash: str
+    message: str
+    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_SELFIE
+
+
+@dataclass
+class PassportElementErrorFile(PassportElementError):
+    type: EncryptedPassportElementType
+    file_hash: str
+    message: str
+    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_FILE
+
+
+@dataclass
+class PassportElementErrorFiles(PassportElementError):
+    type: EncryptedPassportElementType
+    file_hashes: List[str]
+    message: str
+    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_FILES
+
+
+@dataclass
+class PassportElementErrorTranslationFile(PassportElementError):
+    type: EncryptedPassportElementType
+    file_hash: str
+    message: str
+    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_TRANSLATION_FILE
+
+
+@dataclass
+class PassportElementErrorTranslationFiles(PassportElementError):
+    type: EncryptedPassportElementType
+    file_hashes: List[str]
+    message: str
+    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_TRANSLATION_FILES
+
+
+@dataclass
+class PassportElementErrorUnspecified(PassportElementError):
+    type: EncryptedPassportElementType
+    element_hash: str
+    message: str
+    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_UNSPECIFIED
+
+
+@dataclass
+class Game(BaseObject):
+    title: str
+    description: str
+    photo: List[PhotoSize]
+    text: Optional[str]
+    text_entities: Optional[List[MessageEntity]]
+    animation: Optional[Animation]
+
+
+@dataclass
+class CallbackGame(BaseObject):
+    pass
+
+
+@dataclass
+class GameHighScore(BaseObject):
+    position: int
+    user: User
+    score: int
 
 
 class TelegramResponse:
