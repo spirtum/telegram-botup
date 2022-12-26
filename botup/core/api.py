@@ -1,4 +1,4 @@
-from typing import Optional, List, Union, Any
+from typing import Optional, List, Union, Any, Callable, get_type_hints
 
 from aiohttp import ClientSession
 
@@ -13,7 +13,8 @@ from .types import Update, InputFile, WebhookInfo, User, \
     InputMediaAudio, InputMediaDocument, InputMediaPhoto, InputMediaVideo, UserProfilePhotos, File, ChatPermissions, \
     ChatInviteLink, Chat, ChatMember, Sticker, ForumTopic, BotCommand, BotCommandScope, MenuButton, \
     ChatAdministratorRights, InputMedia, Poll, StickerSet, MaskPosition, InlineQueryResult, SentWebAppMessage, \
-    LabeledPrice, ShippingOption, PassportElementError, GameHighScore
+    LabeledPrice, ShippingOption, PassportElementError, GameHighScore, InputFilePath, InputFileStored, InputFileUrl, \
+    BaseObject
 from .utils import get_logger
 
 logger = get_logger()
@@ -53,7 +54,7 @@ class Api:
     async def set_webhook(
             self,
             url: str,
-            certificate: Optional[InputFile] = None,
+            certificate: Optional[InputFilePath] = None,
             ip_address: Optional[str] = None,
             max_connections: Optional[int] = None,
             allowed_updates: Optional[List[str]] = None,
@@ -62,6 +63,10 @@ class Api:
     ) -> bool:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+
+        if 'certificate' in data:
+            data['certificate'] = certificate.path.open('rb')
+
         response = await self._request(constants.API_METHOD_SET_WEBHOOK, data=data)
         assert isinstance(response, bool)
         return response
@@ -105,7 +110,7 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
@@ -139,7 +144,7 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> MessageId:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
@@ -158,10 +163,11 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> Message:
 
-        data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
+        data = _prepare_args(locals(), get_type_hints(self.send_photo))
+        print(data)
         response = await self._request(constants.API_METHOD_SEND_PHOTO, data=data)
         return Message.from_dict(response)
 
@@ -181,7 +187,7 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
@@ -202,7 +208,7 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
@@ -226,7 +232,7 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
@@ -249,7 +255,7 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
@@ -269,7 +275,7 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
@@ -288,7 +294,7 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
@@ -323,7 +329,7 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
@@ -383,7 +389,7 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
@@ -402,7 +408,7 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
@@ -429,7 +435,7 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
@@ -445,7 +451,7 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
@@ -898,7 +904,7 @@ class Api:
 
     async def edit_message_media(
             self,
-            media: InputMedia,
+            media: InputMedia, # TODO _prepare_args !!!
             chat_id: Union[int, str, None] = None,
             message_id: Optional[int] = None,
             inline_message_id: Optional[str] = None,
@@ -959,7 +965,7 @@ class Api:
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
             allow_sending_without_reply: Optional[bool] = None,
-            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply] = None
+            reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None] = None
     ) -> Message:
 
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
@@ -1216,3 +1222,77 @@ class Api:
         data = {k: v for k, v in locals().items() if v is not None and k != 'self'}
         response = await self._request(constants.API_METHOD_GET_GAME_HIGH_SCORES, data=data)
         return [GameHighScore.from_dict(r) for r in response]
+
+
+def _prepare_args(locals_args: dict, hints: dict) -> dict:
+    result = {k: v for k, v in locals_args.items() if v is not None and k != 'self'}
+
+    class StrArgsOnly:
+        enabled = False
+        @classmethod
+        def enable(cls):
+            cls.enabled = True
+
+    for key, value in result.items():
+        func = _prepare_arg_dispatch_map.get(hints[key])
+
+        if func:
+            result[key] = func(value, StrArgsOnly.enable)
+
+    if StrArgsOnly.enabled:
+        for key, value in result.items():
+            if isinstance(value, (int, bool)):
+                result[key] = str(result[key])
+
+    return result
+
+
+def _prepare_input_file_path(value: InputFilePath, enable_str_args_only: Callable) -> Any:
+    enable_str_args_only()
+    return value.path.open('rb')
+
+
+def _prepare_input_file(value: InputFile, enable_str_args_only: Callable) -> Any:
+    if isinstance(value, InputFileStored):
+        return value.file_id
+
+    if isinstance(value, InputFileUrl):
+        return value.url
+
+    assert isinstance(value, InputFilePath)
+    enable_str_args_only()
+    return value.path.open('rb')
+
+
+def _prepare_json_dumps_list(value: List[BaseObject], enable_str_args_only: Callable) -> Any:
+    return json.dumps([v.as_dict() for v in value])
+
+
+def _prepare_json_dumps(
+        value: BaseObject,
+        enable_str_args_only: Callable
+) -> Any:
+
+    return json.dumps(value.as_dict())
+
+
+_prepare_arg_dispatch_map = {
+    Optional[InputFilePath]: _prepare_input_file_path,
+    InputFile: _prepare_input_file,
+    Optional[InputFile]: _prepare_input_file,
+    Optional[List[MessageEntity]]: _prepare_json_dumps_list,
+    Union[InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply, None]: _prepare_json_dumps,
+    List[Union[InputMediaAudio, InputMediaDocument, InputMediaPhoto, InputMediaVideo]]: _prepare_json_dumps_list,
+    Optional[InlineKeyboardMarkup]: _prepare_json_dumps,
+    ChatPermissions: _prepare_json_dumps,
+    List[BotCommand]: _prepare_json_dumps_list,
+    Optional[BotCommandScope]: _prepare_json_dumps,
+    Optional[MenuButton]: _prepare_json_dumps,
+    Optional[ChatAdministratorRights]: _prepare_json_dumps,
+    Optional[MaskPosition]: _prepare_json_dumps,
+    List[InlineQueryResult]: _prepare_json_dumps_list,
+    InlineQueryResult: _prepare_json_dumps,
+    List[LabeledPrice]: _prepare_json_dumps_list,
+    Optional[List[ShippingOption]]: _prepare_json_dumps_list,
+    List[PassportElementError]: _prepare_json_dumps_list
+}
