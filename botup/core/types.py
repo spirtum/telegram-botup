@@ -85,27 +85,24 @@ class BaseObject:
     def as_dict(self):
         return asdict(self)
 
-    def is_error(self):
-        return isinstance(self, ErrorResponse)
-
 
 @dataclass
 class Update(BaseObject):
     update_id: int
-    message: Optional[Message]
-    edited_message: Optional[Message]
-    channel_post: Optional[Message]
-    edited_channel_post: Optional[Message]
-    inline_query: Optional[InlineQuery]
-    chosen_inline_result: Optional[ChosenInlineResult]
-    callback_query: Optional[CallbackQuery]
-    shipping_query: Optional[ShippingQuery]
-    pre_checkout_query: Optional[PreCheckoutQuery]
-    poll: Optional[Poll]
-    poll_answer: Optional[PollAnswer]
-    my_chat_member: Optional[ChatMemberUpdated]
-    chat_member: Optional[ChatMemberUpdated]
-    chat_join_request: Optional[ChatJoinRequest]
+    message: Optional[Message] = None
+    edited_message: Optional[Message] = None
+    channel_post: Optional[Message] = None
+    edited_channel_post: Optional[Message] = None
+    inline_query: Optional[InlineQuery] = None
+    chosen_inline_result: Optional[ChosenInlineResult] = None
+    callback_query: Optional[CallbackQuery] = None
+    shipping_query: Optional[ShippingQuery] = None
+    pre_checkout_query: Optional[PreCheckoutQuery] = None
+    poll: Optional[Poll] = None
+    poll_answer: Optional[PollAnswer] = None
+    my_chat_member: Optional[ChatMemberUpdated] = None
+    chat_member: Optional[ChatMemberUpdated] = None
+    chat_join_request: Optional[ChatJoinRequest] = None
 
 
 @dataclass
@@ -113,26 +110,12 @@ class WebhookInfo(BaseObject):
     url: str
     has_custom_certificate: bool
     pending_update_count: int
-    ip_address: Optional[str]
-    last_error_date: Optional[int]
-    last_error_message: Optional[str]
-    last_synchronization_error_date: Optional[int]
-    max_connections: Optional[int]
-    allowed_updates: Optional[List[str]]
-
-
-@dataclass
-class RawResponse(BaseObject):
-    ok: bool
-    result: bool
-    description: str
-
-
-@dataclass
-class ErrorResponse(BaseObject):
-    ok: bool
-    error_code: int
-    description: str
+    ip_address: Optional[str] = None
+    last_error_date: Optional[int] = None
+    last_error_message: Optional[str] = None
+    last_synchronization_error_date: Optional[int] = None
+    max_connections: Optional[int] = None
+    allowed_updates: Optional[List[str]] = None
 
 
 @dataclass
@@ -280,7 +263,7 @@ class Animation(BaseObject):
     width: int
     height: int
     duration: int
-    thumb: Optional[PhotoSize]
+    thumb: Optional[PhotoSize] = None
     file_name: Optional[str] = None
     mime_type: Optional[str] = None
     file_size: Optional[int] = None
@@ -472,8 +455,8 @@ class UserProfilePhotos(BaseObject):
 class File(BaseObject):
     file_id: str
     file_unique_id: str
-    file_size: Optional[int]
-    file_path: Optional[str]
+    file_size: Optional[int] = None
+    file_path: Optional[str] = None
 
 
 @dataclass
@@ -484,19 +467,19 @@ class WebAppInfo(BaseObject):
 @dataclass
 class ReplyKeyboardMarkup(BaseObject):
     keyboard: List[List[KeyboardButton]]
-    resize_keyboard: Optional[bool]
-    one_time_keyboard: Optional[bool]
-    input_field_placeholder: Optional[str]
-    selective: Optional[bool]
+    resize_keyboard: Optional[bool] = None
+    one_time_keyboard: Optional[bool] = None
+    input_field_placeholder: Optional[str] = None
+    selective: Optional[bool] = None
 
 
 @dataclass
 class KeyboardButton(BaseObject):
     text: str
-    request_contact: Optional[bool]
-    request_location: Optional[bool]
-    request_poll: Optional[KeyboardButtonPollType]
-    web_app: Optional[WebAppInfo]
+    request_contact: Optional[bool] = None
+    request_location: Optional[bool] = None
+    request_poll: Optional[KeyboardButtonPollType] = None
+    web_app: Optional[WebAppInfo] = None
 
 
 @dataclass
@@ -518,33 +501,33 @@ class InlineKeyboardMarkup(BaseObject):
 @dataclass
 class InlineKeyboardButton(BaseObject):
     text: str
-    url: Optional[str]
-    callback_data: Optional[str]
-    web_app: Optional[WebAppInfo]
-    login_url: Optional[LoginUrl]
-    switch_inline_query: Optional[str]
-    switch_inline_query_current_chat: Optional[str]
-    callback_game: Optional[CallbackGame]
-    pay: Optional[bool]
+    url: Optional[str] = None
+    callback_data: Optional[str] = None
+    web_app: Optional[WebAppInfo] = None
+    login_url: Optional[LoginUrl] = None
+    switch_inline_query: Optional[str] = None
+    switch_inline_query_current_chat: Optional[str] = None
+    callback_game: Optional[CallbackGame] = None
+    pay: Optional[bool] = None
 
 
 @dataclass
 class LoginUrl(BaseObject):
     url: str
-    forward_text: Optional[str]
-    bot_username: Optional[str]
-    request_write_access: Optional[bool]
+    forward_text: Optional[str] = None
+    bot_username: Optional[str] = None
+    request_write_access: Optional[bool] = None
 
 
 @dataclass
 class CallbackQuery(BaseObject):
     id: str
     from_: User
-    message: Optional[Message]
-    inline_message_id: Optional[str]
-    chat_instance: Optional[str]
-    data: Optional[str]
-    game_short_name: Optional[str]
+    message: Optional[Message] = None
+    inline_message_id: Optional[str] = None
+    chat_instance: Optional[str] = None
+    data: Optional[str] = None
+    game_short_name: Optional[str] = None
 
 
 @dataclass
@@ -569,10 +552,10 @@ class ChatInviteLink(BaseObject):
     creates_join_request: bool
     is_primary: bool
     is_revoked: bool
-    name: Optional[str]
-    expire_date: Optional[int]
-    member_limit: Optional[int]
-    pending_join_request_count: Optional[int]
+    name: Optional[str] = None
+    expire_date: Optional[int] = None
+    member_limit: Optional[int] = None
+    pending_join_request_count: Optional[int] = None
 
 
 @dataclass
@@ -585,10 +568,10 @@ class ChatAdministratorRights(BaseObject):
     can_promote_members: bool
     can_change_info: bool
     can_invite_users: bool
-    can_post_messages: Optional[bool]
-    can_edit_messages: Optional[bool]
-    can_pin_messages: Optional[bool]
-    can_manage_topics: Optional[bool]
+    can_post_messages: Optional[bool] = None
+    can_edit_messages: Optional[bool] = None
+    can_pin_messages: Optional[bool] = None
+    can_manage_topics: Optional[bool] = None
 
 
 @dataclass
@@ -679,7 +662,7 @@ class ChatMemberUpdated(BaseObject):
     date: int
     old_chat_member: ChatMember
     new_chat_member: ChatMember
-    invite_link: Optional[ChatInviteLink]
+    invite_link: Optional[ChatInviteLink] = None
 
 
 @dataclass
@@ -687,21 +670,21 @@ class ChatJoinRequest(BaseObject):
     chat: Chat
     from_: User
     date: int
-    bio: Optional[str]
-    invite_link: Optional[ChatInviteLink]
+    bio: Optional[str] = None
+    invite_link: Optional[ChatInviteLink] = None
 
 
 @dataclass
 class ChatPermissions(BaseObject):
-    can_send_messages: Optional[bool]
-    can_send_media_messages: Optional[bool]
-    can_send_polls: Optional[bool]
-    can_send_other_messages: Optional[bool]
-    can_add_web_page_previews: Optional[bool]
-    can_change_info: Optional[bool]
-    can_invite_users: Optional[bool]
-    can_pin_messages: Optional[bool]
-    can_manage_topics: Optional[bool]
+    can_send_messages: Optional[bool] = None
+    can_send_media_messages: Optional[bool] = None
+    can_send_polls: Optional[bool] = None
+    can_send_other_messages: Optional[bool] = None
+    can_add_web_page_previews: Optional[bool] = None
+    can_change_info: Optional[bool] = None
+    can_invite_users: Optional[bool] = None
+    can_pin_messages: Optional[bool] = None
+    can_manage_topics: Optional[bool] = None
 
 
 @dataclass
@@ -715,7 +698,7 @@ class ForumTopic(BaseObject):
     message_thread_id: int
     name: str
     icon_color: int
-    icon_custom_emoji_id: Optional[str]
+    icon_custom_emoji_id: Optional[str] = None
 
 
 @dataclass
@@ -730,7 +713,7 @@ class BotCommandScope(BaseObject):
 
 
 @dataclass
-class BotCommandScoreDefault(BotCommandScope):
+class BotCommandScopeDefault(BotCommandScope):
     type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_DEFAULT
 
 
@@ -792,8 +775,8 @@ class MenuButtonDefault(MenuButton):
 
 @dataclass
 class ResponseParameters(BaseObject):
-    migrate_to_chat_id: Optional[int]
-    retry_after: Optional[int]
+    migrate_to_chat_id: Optional[int] = None
+    retry_after: Optional[int] = None
 
 
 @dataclass
@@ -893,13 +876,13 @@ class Sticker(BaseObject):
     height: int
     is_animated: bool
     is_video: bool
-    thumb: Optional[PhotoSize]
-    emoji: Optional[str]
-    set_name: Optional[str]
-    premium_animation: Optional[File]
-    mask_position: Optional[MaskPosition]
-    custom_emoji_id: Optional[str]
-    file_size: Optional[int]
+    thumb: Optional[PhotoSize] = None
+    emoji: Optional[str] = None
+    set_name: Optional[str] = None
+    premium_animation: Optional[File] = None
+    mask_position: Optional[MaskPosition] = None
+    custom_emoji_id: Optional[str] = None
+    file_size: Optional[int] = None
 
 
 @dataclass
@@ -910,7 +893,7 @@ class StickerSet(BaseObject):
     is_animated: bool
     is_video: bool
     stickers: List[Sticker]
-    thumb: Optional[PhotoSize]
+    thumb: Optional[PhotoSize] = None
 
 
 @dataclass
@@ -927,8 +910,8 @@ class InlineQuery(BaseObject):
     from_: User
     query: str
     offset: str
-    chat_type: Optional[InlineQueryChatType]
-    location: Optional[Location]
+    chat_type: Optional[InlineQueryChatType] = None
+    location: Optional[Location] = None
 
 
 @dataclass
@@ -1240,19 +1223,19 @@ class InputMessageContent(BaseObject):
 @dataclass
 class InputTextMessageContent(InputMessageContent):
     message_text: str
-    parse_mode: Optional[str]
-    entities: Optional[List[MessageEntity]]
-    disable_web_page_preview: Optional[bool]
+    parse_mode: Optional[str] = None
+    entities: Optional[List[MessageEntity]] = None
+    disable_web_page_preview: Optional[bool] = None
 
 
 @dataclass
 class InputLocationMessageContent(InputMessageContent):
     latitude: float
     longitude: float
-    horizontal_accuracy: Optional[float]
-    live_period: Optional[int]
-    heading: Optional[int]
-    proximity_alert_radius: Optional[int]
+    horizontal_accuracy: Optional[float] = None
+    live_period: Optional[int] = None
+    heading: Optional[int] = None
+    proximity_alert_radius: Optional[int] = None
 
 
 @dataclass
@@ -1283,34 +1266,34 @@ class InputInvoiceMessageContent(InputMessageContent):
     provider_token: str
     currency: str
     prices: List[LabeledPrice]
-    max_tip_amount: Optional[int]
-    suggested_tip_amounts: Optional[List[int]]
-    provider_data: Optional[str]
-    photo_url: Optional[str]
-    photo_size: Optional[int]
-    photo_width: Optional[int]
-    photo_height: Optional[int]
-    need_name: Optional[bool]
-    need_phone_number: Optional[bool]
-    need_email: Optional[bool]
-    need_shipping_address: Optional[bool]
-    send_phone_number_to_provider: Optional[bool]
-    send_email_to_provider: Optional[bool]
-    is_flexible: Optional[bool]
+    max_tip_amount: Optional[int] = None
+    suggested_tip_amounts: Optional[List[int]] = None
+    provider_data: Optional[str] = None
+    photo_url: Optional[str] = None
+    photo_size: Optional[int] = None
+    photo_width: Optional[int] = None
+    photo_height: Optional[int] = None
+    need_name: Optional[bool] = None
+    need_phone_number: Optional[bool] = None
+    need_email: Optional[bool] = None
+    need_shipping_address: Optional[bool] = None
+    send_phone_number_to_provider: Optional[bool] = None
+    send_email_to_provider: Optional[bool] = None
+    is_flexible: Optional[bool] = None
 
 
 @dataclass
 class ChosenInlineResult(BaseObject):
     result_id: str
     from_: User
-    location: Optional[Location]
-    inline_message_id: Optional[str]
-    query: Optional[str]
+    location: Optional[Location] = None
+    inline_message_id: Optional[str] = None
+    query: Optional[str] = None
 
 
 @dataclass
 class SentWebAppMessage(BaseObject):
-    inline_message_id: Optional[str]
+    inline_message_id: Optional[str] = None
 
 
 @dataclass
@@ -1340,10 +1323,10 @@ class ShippingAddress(BaseObject):
 
 @dataclass
 class OrderInfo(BaseObject):
-    name: Optional[str]
-    phone_number: Optional[str]
-    email: Optional[str]
-    shipping_address: Optional[ShippingAddress]
+    name: Optional[str] = None
+    phone_number: Optional[str] = None
+    email: Optional[str] = None
+    shipping_address: Optional[ShippingAddress] = None
 
 
 @dataclass
@@ -1360,8 +1343,8 @@ class SuccessfulPayment(BaseObject):
     invoice_payload: str
     telegram_payment_charge_id: str
     provider_payment_charge_id: str
-    shipping_option_id: Optional[str]
-    order_info: Optional[OrderInfo]
+    shipping_option_id: Optional[str] = None
+    order_info: Optional[OrderInfo] = None
 
 
 @dataclass
@@ -1379,8 +1362,8 @@ class PreCheckoutQuery(BaseObject):
     currency: str
     total_amount: int
     invoice_payload: str
-    shipping_option_id: Optional[str]
-    order_info: Optional[OrderInfo]
+    shipping_option_id: Optional[str] = None
+    order_info: Optional[OrderInfo] = None
 
 
 @dataclass
@@ -1401,14 +1384,14 @@ class PassportFile(BaseObject):
 class EncryptedPassportElement(BaseObject):
     type: EncryptedPassportElementType
     hash: str
-    data: Optional[str]
-    phone_number: Optional[str]
-    email: Optional[str]
-    files: Optional[List[PassportFile]]
-    front_side: Optional[PassportFile]
-    reverse_side: Optional[PassportFile]
-    selfie: Optional[PassportFile]
-    translation: Optional[List[PassportFile]]
+    data: Optional[str] = None
+    phone_number: Optional[str] = None
+    email: Optional[str] = None
+    files: Optional[List[PassportFile]] = None
+    front_side: Optional[PassportFile] = None
+    reverse_side: Optional[PassportFile] = None
+    selfie: Optional[PassportFile] = None
+    translation: Optional[List[PassportFile]] = None
 
 
 @dataclass
@@ -1501,9 +1484,9 @@ class Game(BaseObject):
     title: str
     description: str
     photo: List[PhotoSize]
-    text: Optional[str]
-    text_entities: Optional[List[MessageEntity]]
-    animation: Optional[Animation]
+    text: Optional[str] = None
+    text_entities: Optional[List[MessageEntity]] = None
+    animation: Optional[Animation] = None
 
 
 @dataclass
@@ -1516,50 +1499,3 @@ class GameHighScore(BaseObject):
     position: int
     user: User
     score: int
-
-
-class TelegramResponse:
-
-    def __new__(cls, data):
-        if not isinstance(data, dict):
-            data = json.loads(data)
-        status = data.get('ok')
-        result = data.get('result')
-        if not status:
-            return ErrorResponse(**data)
-        elif isinstance(result, bool) or isinstance(result, str):
-            return RawResponse(**data)
-        elif isinstance(result, list):
-            parsed_result = []
-            for item in result:
-                if 'update_id' in item:
-                    parsed_result.append(Update(**item))
-                elif 'command' in item:
-                    parsed_result.append(BotCommand(**item))
-                elif 'user' in item and 'status' in item:
-                    parsed_result.append(ChatMember(**item))
-                elif 'user' in item and 'score' in item:
-                    parsed_result.append(GameHighScore(**item))
-            return parsed_result
-        elif 'update_id' in result:
-            return Update(**result)
-        elif 'message_id' in result:
-            return Message(**result)
-        elif 'is_bot' in result:
-            return User(**result)
-        elif 'total_count' in result and 'photos' in result:
-            return UserProfilePhotos(**result)
-        elif 'file_id' in result and 'file_size' in result and 'file_path' in result:
-            return File(**result)
-        elif 'type' in result and result['type'] in ('private', 'group', 'supergroup', 'channel'):
-            return Chat(**result)
-        elif 'user' in result and 'status' in result:
-            return ChatMember(**result)
-        elif 'question' in result and 'options' in result:
-            return Poll(**result)
-        elif 'contains_masks' in result and 'stickers' in result:
-            return StickerSet(**result)
-        elif 'has_custom_certificate' in result:
-            return WebhookInfo(**result)
-        else:
-            return result

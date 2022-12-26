@@ -566,7 +566,7 @@ class Dispatcher:
 
     async def handle(self, update, *args, **kwargs):
         if not isinstance(update, Update):
-            update = Update(**update)
+            update = Update.from_dict(update)
         if await self._run_middlewares(update):
             return True
         return await self._run_statements(update)

@@ -1,6 +1,6 @@
 class StringConstant(str):
-    def __new__(cls, *args, **kw):
-        return str.__new__(cls, *args, **kw)
+    def __new__(cls, *args, **kwargs):
+        return str.__new__(cls, *args, **kwargs)
 
 
 class ApiMethod(StringConstant):
@@ -153,7 +153,16 @@ API_METHOD_ADD_STICKER_TO_SET = ApiMethod('addStickerToSet')
 API_METHOD_SET_STICKER_POSITION_IN_SET = ApiMethod('setStickerPositionInSet')
 API_METHOD_DELETE_STICKER_FROM_SET = ApiMethod('deleteStickerFromSet')
 API_METHOD_SET_STICKER_SET_THUMB = ApiMethod('setStickerSetThumb')
-
+API_METHOD_ANSWER_INLINE_QUERY = ApiMethod('answerInlineQuery')
+API_METHOD_ANSWER_WEB_APP_QUERY = ApiMethod('answerWebAppQuery')
+API_METHOD_SEND_INVOICE = ApiMethod('sendInvoice')
+API_METHOD_CREATE_INVOICE_LINK = ApiMethod('createInvoiceLink')
+API_METHOD_ANSWER_SHIPPING_QUERY = ApiMethod('answerShippingQuery')
+API_METHOD_ANSWER_PRE_CHECKOUT_QUERY = ApiMethod('answerPreCheckoutQuery')
+API_METHOD_SET_PASSPORT_DATA_ERRORS = ApiMethod('setPassportDataErrors')
+API_METHOD_SEND_GAME = ApiMethod('sendGame')
+API_METHOD_SET_GAME_HIGH_SCORE = ApiMethod('setGameHighScore')
+API_METHOD_GET_GAME_HIGH_SCORES = ApiMethod('getGameHighScores')
 
 CHAT_TYPE_PRIVATE = ChatType('private')
 CHAT_TYPE_GROUP = ChatType('group')
