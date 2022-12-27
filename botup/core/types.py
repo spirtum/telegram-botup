@@ -465,7 +465,12 @@ class WebAppInfo(BaseObject):
 
 
 @dataclass
-class ReplyKeyboardMarkup(BaseObject):
+class Keyboard(BaseObject):
+    pass
+
+
+@dataclass
+class ReplyKeyboardMarkup(Keyboard):
     keyboard: List[List[KeyboardButton]]
     resize_keyboard: Optional[bool] = None
     one_time_keyboard: Optional[bool] = None
@@ -488,13 +493,13 @@ class KeyboardButtonPollType(BaseObject):
 
 
 @dataclass
-class ReplyKeyboardRemove(BaseObject):
+class ReplyKeyboardRemove(Keyboard):
     remove_keyboard: bool = True
     selective: Optional[bool] = None
 
 
 @dataclass
-class InlineKeyboardMarkup(BaseObject):
+class InlineKeyboardMarkup(Keyboard):
     inline_keyboard: List[List[InlineKeyboardButton]]
 
 
@@ -531,7 +536,7 @@ class CallbackQuery(BaseObject):
 
 
 @dataclass
-class ForceReply(BaseObject):
+class ForceReply(Keyboard):
     force_reply: bool = True
     input_field_placeholder: Optional[str] = None
     selective: Optional[bool] = None
