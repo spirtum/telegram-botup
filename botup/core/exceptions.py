@@ -2,5 +2,4 @@ class StateManagerException(Exception):
     pass
 
 
-class BadHandlerException(Exception):
-    pass
+IsNotPrivateUpdate = StateManagerException('Update is not private')

@@ -10,8 +10,8 @@ from typing import (
     Any,
     get_type_hints,
     get_origin,
-    get_args
-)
+    get_args,
+    Callable)
 
 from .constants import (
     chat_member_status,
@@ -1511,3 +1511,162 @@ class GameHighScore(BaseObject):
     position: int
     user: User
     score: int
+
+
+@dataclass
+class Context:
+    update: Update
+    chat_id: Optional[int] = None
+    user_id: Optional[int] = None
+
+    @property
+    def is_private_update(self) -> bool:
+        return self.chat_id is not None and self.chat_id == self.user_id
+
+    @property
+    def is_message(self) -> bool:
+        return self.update.message is not None
+
+    @property
+    def is_edited_message(self) -> bool:
+        return self.update.edited_message is not None
+
+    @property
+    def is_channel_post(self) -> bool:
+        return self.update.channel_post is not None
+
+    @property
+    def is_edited_channel_post(self) -> bool:
+        return self.update.edited_channel_post is not None
+
+    @property
+    def is_inline_query(self) -> bool:
+        return self.update.inline_query is not None
+
+    @property
+    def is_chosen_inline_query(self) -> bool:
+        return self.update.chosen_inline_result is not None
+
+    @property
+    def is_callback_query(self) -> bool:
+        return self.update.callback_query is not None
+
+    @property
+    def is_shipping_query(self) -> bool:
+        return self.update.shipping_query is not None
+
+    @property
+    def is_pre_checkout_query(self) -> bool:
+        return self.update.pre_checkout_query is not None
+
+    @property
+    def is_poll(self) -> bool:
+        return self.update.poll is not None
+
+    @property
+    def is_poll_answer(self) -> bool:
+        return self.update.poll_answer is not None
+
+    @property
+    def is_my_chat_member(self) -> bool:
+        return self.update.my_chat_member is not None
+
+    @property
+    def is_chat_member(self) -> bool:
+        return self.update.chat_member is not None
+
+    @property
+    def is_chat_join_request(self) -> bool:
+        return self.update.chat_join_request is not None
+
+    @property
+    def is_message_command(self) -> bool:
+        return self.is_message and self.update.message.text is not None and self.update.message.text.startswith('/')
+
+    @property
+    def is_message_text(self) -> bool:
+        return self.is_message and self.update.message.text is not None and not self.update.message.text.startswith('/')
+
+    @property
+    def is_message_dice(self) -> bool:
+        return self.is_message and self.update.message.dice is not None
+
+    @property
+    def is_message_document(self) -> bool:
+        return self.is_message and self.update.message.document is not None and self.update.message.animation is None
+
+    @property
+    def is_message_animation(self) -> bool:
+        return self.is_message and self.update.message.animation is not None
+
+    @property
+    def is_message_audio(self) -> bool:
+        return self.is_message and self.update.message.audio is not None
+
+    @property
+    def is_message_contact(self) -> bool:
+        return self.is_message and self.update.message.contact is not None
+
+    @property
+    def is_message_game(self) -> bool:
+        return self.is_message and self.update.message.game is not None
+
+    @property
+    def is_message_invoice(self) -> bool:
+        return self.is_message and self.update.message.invoice is not None
+
+    @property
+    def is_message_left_chat_member(self) -> bool:
+        return self.is_message and self.update.message.left_chat_member is not None
+
+    @property
+    def is_message_location(self) -> bool:
+        return self.is_message and self.update.message.location is not None
+
+    @property
+    def is_message_new_chat_members(self) -> bool:
+        return self.is_message and self.update.message.new_chat_members is not None
+
+    @property
+    def is_message_new_chat_photo(self) -> bool:
+        return self.is_message and self.update.message.new_chat_photo is not None
+
+    @property
+    def is_message_new_chat_title(self) -> bool:
+        return self.is_message and self.update.message.new_chat_title is not None
+
+    @property
+    def is_message_photo(self) -> bool:
+        return self.is_message and self.update.message.photo is not None
+
+    @property
+    def is_message_sticker(self) -> bool:
+        return self.is_message and self.update.message.sticker is not None
+
+    @property
+    def is_message_successful_payment(self) -> bool:
+        return self.is_message and self.update.message.successful_payment is not None
+
+    @property
+    def is_message_venue(self) -> bool:
+        return self.is_message and self.update.message.venue is not None
+
+    @property
+    def is_message_video(self) -> bool:
+        return self.is_message and self.update.message.video is not None
+
+    @property
+    def is_message_video_note(self) -> bool:
+        return self.is_message and self.update.message.video_note is not None
+
+    @property
+    def is_message_voice(self) -> bool:
+        return self.is_message and self.update.message.voice is not None
+
+    @property
+    def is_message_poll(self) -> bool:
+        return self.is_message and self.update.message.poll is not None
+
+
+HandleFunction = Callable[[Context], None]
+MiddlewareFunction = Callable[[Context], bool]
