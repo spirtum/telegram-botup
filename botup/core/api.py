@@ -1,22 +1,63 @@
 import io
+import json
 
-from typing import Optional, List, Union, Any, get_type_hints, Type, get_origin, get_args
+from typing import (
+    Optional,
+    List,
+    Union,
+    Any,
+    Type,
+    get_type_hints,
+    get_origin,
+    get_args
+)
 
 from aiohttp import ClientSession
 
-try:
-    import ujson as json
-except ImportError:
-    import json
-
-from . import constants
-from .types import Update, InputFile, WebhookInfo, User, \
-    Message, MessageEntity, InlineKeyboardMarkup, MessageId, \
-    InputMediaAudio, InputMediaDocument, InputMediaPhoto, InputMediaVideo, UserProfilePhotos, File, ChatPermissions, \
-    ChatInviteLink, Chat, ChatMember, Sticker, ForumTopic, BotCommand, BotCommandScope, MenuButton, \
-    ChatAdministratorRights, InputMedia, Poll, StickerSet, MaskPosition, InlineQueryResult, SentWebAppMessage, \
-    LabeledPrice, ShippingOption, PassportElementError, GameHighScore, InputFilePath, InputFileStored, InputFileUrl, \
-    BaseObject, Keyboard
+from .constants import api_method
+from .constants.chat_action import ChatAction
+from .constants.sticker_type import StickerType
+from .types import (
+    Update,
+    InputFile,
+    WebhookInfo,
+    User,
+    Message,
+    MessageEntity,
+    InlineKeyboardMarkup,
+    MessageId,
+    InputMediaAudio,
+    InputMediaDocument,
+    InputMediaPhoto,
+    InputMediaVideo,
+    UserProfilePhotos,
+    File,
+    ChatPermissions,
+    ChatInviteLink,
+    Chat,
+    ChatMember,
+    Sticker,
+    ForumTopic,
+    BotCommand,
+    BotCommandScope,
+    MenuButton,
+    ChatAdministratorRights,
+    InputMedia,
+    Poll,
+    StickerSet,
+    MaskPosition,
+    InlineQueryResult,
+    SentWebAppMessage,
+    LabeledPrice,
+    ShippingOption,
+    PassportElementError,
+    GameHighScore,
+    InputFilePath,
+    InputFileStored,
+    InputFileUrl,
+    BaseObject,
+    Keyboard
+)
 from .utils import get_logger
 
 logger = get_logger()
@@ -32,7 +73,7 @@ class Api:
     async def close_session(self):
         await self._session.close()
 
-    async def _request(self, method: constants.ApiMethod, data: dict, hints: dict) -> Any:
+    async def _request(self, method: api_method.ApiMethod, data: dict, hints: dict) -> Any:
         request_data = _prepare_args(data, hints)
         response = await self._session.post(self._url + method, data=request_data, timeout=self.timeout)
         response_data = await response.json()
@@ -71,7 +112,7 @@ class Api:
     ) -> List[Update]:
 
         return await self._request(
-            method=constants.API_METHOD_GET_UPDATES,
+            method=api_method.GET_UPDATES,
             data=locals(),
             hints=get_type_hints(self.get_updates)
         )
@@ -88,7 +129,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_SET_WEBHOOK,
+            method=api_method.SET_WEBHOOK,
             data=locals(),
             hints=get_type_hints(self.set_webhook)
         )
@@ -99,34 +140,35 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_DELETE_WEBHOOK,
+            method=api_method.DELETE_WEBHOOK,
             data=locals(),
             hints=get_type_hints(self.delete_webhook)
         )
 
     async def get_webhook_info(self) -> WebhookInfo:
         return await self._request(
-            method=constants.API_METHOD_GET_WEBHOOK_INFO,
+            method=api_method.GET_WEBHOOK_INFO,
             data=locals(),
             hints=get_type_hints(self.get_webhook_info)
         )
 
     async def get_me(self) -> User:
         return await self._request(
-            method=constants.API_METHOD_GET_ME,
+            method=api_method.GET_ME,
             data=locals(),
             hints=get_type_hints(self.get_me)
         )
+
     async def logout(self) -> bool:
         return await self._request(
-            method=constants.API_METHOD_LOGOUT,
+            method=api_method.LOGOUT,
             data=locals(),
             hints=get_type_hints(self.logout)
         )
 
     async def close(self) -> bool:
         return await self._request(
-            method=constants.API_METHOD_CLOSE,
+            method=api_method.CLOSE,
             data=locals(),
             hints=get_type_hints(self.close)
         )
@@ -146,7 +188,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_MESSAGE,
+            method=api_method.SEND_MESSAGE,
             data=locals(),
             hints=get_type_hints(self.send_message)
         )
@@ -162,7 +204,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_FORWARD_MESSAGE,
+            method=api_method.FORWARD_MESSAGE,
             data=locals(),
             hints=get_type_hints(self.forward_message)
         )
@@ -184,7 +226,7 @@ class Api:
     ) -> MessageId:
 
         return await self._request(
-            method=constants.API_METHOD_COPY_MESSAGE,
+            method=api_method.COPY_MESSAGE,
             data=locals(),
             hints=get_type_hints(self.copy_message)
         )
@@ -205,7 +247,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_PHOTO,
+            method=api_method.SEND_PHOTO,
             data=locals(),
             hints=get_type_hints(self.send_photo)
         )
@@ -230,7 +272,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_AUDIO,
+            method=api_method.SEND_AUDIO,
             data=locals(),
             hints=get_type_hints(self.send_audio)
         )
@@ -253,7 +295,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_DOCUMENT,
+            method=api_method.SEND_DOCUMENT,
             data=locals(),
             hints=get_type_hints(self.send_document)
         )
@@ -279,7 +321,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_VIDEO,
+            method=api_method.SEND_VIDEO,
             data=locals(),
             hints=get_type_hints(self.send_video)
         )
@@ -304,7 +346,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_ANIMATION,
+            method=api_method.SEND_ANIMATION,
             data=locals(),
             hints=get_type_hints(self.send_animation)
         )
@@ -326,7 +368,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_VOICE,
+            method=api_method.SEND_VOICE,
             data=locals(),
             hints=get_type_hints(self.send_voice)
         )
@@ -347,7 +389,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_VIDEO_NOTE,
+            method=api_method.SEND_VIDEO_NOTE,
             data=locals(),
             hints=get_type_hints(self.send_video_note)
         )
@@ -363,7 +405,7 @@ class Api:
     ) -> List[Message]:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_MEDIA_GROUP,
+            method=api_method.SEND_MEDIA_GROUP,
             data=locals(),
             hints=get_type_hints(self.send_media_group)
         )
@@ -386,7 +428,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_LOCATION,
+            method=api_method.SEND_LOCATION,
             data=locals(),
             hints=get_type_hints(self.send_location)
         )
@@ -405,7 +447,7 @@ class Api:
     ) -> Union[Message, bool]:
 
         return await self._request(
-            method=constants.API_METHOD_EDIT_MESSAGE_LIVE_LOCATION,
+            method=api_method.EDIT_MESSAGE_LIVE_LOCATION,
             data=locals(),
             hints=get_type_hints(self.edit_message_live_location)
         )
@@ -419,7 +461,7 @@ class Api:
     ) -> Union[Message, bool]:
 
         return await self._request(
-            method=constants.API_METHOD_STOP_MESSAGE_LIVE_LOCATION,
+            method=api_method.STOP_MESSAGE_LIVE_LOCATION,
             data=locals(),
             hints=get_type_hints(self.stop_message_live_location)
         )
@@ -444,7 +486,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_VENUE,
+            method=api_method.SEND_VENUE,
             data=locals(),
             hints=get_type_hints(self.send_venue)
         )
@@ -465,7 +507,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_CONTACT,
+            method=api_method.SEND_CONTACT,
             data=locals(),
             hints=get_type_hints(self.send_contact)
         )
@@ -494,7 +536,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_POLL,
+            method=api_method.SEND_POLL,
             data=locals(),
             hints=get_type_hints(self.send_poll)
         )
@@ -512,7 +554,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_DICE,
+            method=api_method.SEND_DICE,
             data=locals(),
             hints=get_type_hints(self.send_dice)
         )
@@ -520,11 +562,11 @@ class Api:
     async def send_chat_action(
             self,
             chat_id: Union[int, str],
-            action: constants.ChatAction
+            action: ChatAction
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_CHAT_ACTION,
+            method=api_method.SEND_CHAT_ACTION,
             data=locals(),
             hints=get_type_hints(self.send_chat_action)
         )
@@ -537,7 +579,7 @@ class Api:
     ) -> UserProfilePhotos:
 
         return await self._request(
-            method=constants.API_METHOD_GET_USER_PROFILE_PHOTOS,
+            method=api_method.GET_USER_PROFILE_PHOTOS,
             data=locals(),
             hints=get_type_hints(self.get_user_profile_photos)
         )
@@ -548,7 +590,7 @@ class Api:
     ) -> File:
 
         return await self._request(
-            method=constants.API_METHOD_GET_FILE,
+            method=api_method.GET_FILE,
             data=locals(),
             hints=get_type_hints(self.get_file)
         )
@@ -562,7 +604,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_BAN_CHAT_MEMBER,
+            method=api_method.BAN_CHAT_MEMBER,
             data=locals(),
             hints=get_type_hints(self.ban_chat_member)
         )
@@ -575,7 +617,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_UNBAN_CHAT_MEMBER,
+            method=api_method.UNBAN_CHAT_MEMBER,
             data=locals(),
             hints=get_type_hints(self.unban_chat_member)
         )
@@ -589,7 +631,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_RESTRICT_CHAT_MEMBER,
+            method=api_method.RESTRICT_CHAT_MEMBER,
             data=locals(),
             hints=get_type_hints(self.restrict_chat_member)
         )
@@ -613,7 +655,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_PROMOTE_CHAT_MEMBER,
+            method=api_method.PROMOTE_CHAT_MEMBER,
             data=locals(),
             hints=get_type_hints(self.promote_chat_member)
         )
@@ -626,7 +668,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_SET_CHAT_ADMINISTRATOR_CUSTOM_TITLE,
+            method=api_method.SET_CHAT_ADMINISTRATOR_CUSTOM_TITLE,
             data=locals(),
             hints=get_type_hints(self.set_chat_administrator_custom_title)
         )
@@ -638,7 +680,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_BAN_CHAT_SENDER_CHAT,
+            method=api_method.BAN_CHAT_SENDER_CHAT,
             data=locals(),
             hints=get_type_hints(self.ban_chat_sender_chat)
         )
@@ -650,7 +692,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_UNBAN_CHAT_SENDER_CHAT,
+            method=api_method.UNBAN_CHAT_SENDER_CHAT,
             data=locals(),
             hints=get_type_hints(self.unban_chat_sender_chat)
         )
@@ -662,7 +704,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_SET_CHAT_PERMISSIONS,
+            method=api_method.SET_CHAT_PERMISSIONS,
             data=locals(),
             hints=get_type_hints(self.set_chat_permissions)
         )
@@ -673,7 +715,7 @@ class Api:
     ) -> str:
 
         return await self._request(
-            method=constants.API_METHOD_EXPORT_CHAT_INVITE_LINK,
+            method=api_method.EXPORT_CHAT_INVITE_LINK,
             data=locals(),
             hints=get_type_hints(self.export_chat_invite_link)
         )
@@ -688,7 +730,7 @@ class Api:
     ) -> ChatInviteLink:
 
         return await self._request(
-            method=constants.API_METHOD_CREATE_CHAT_INVITE_LINK,
+            method=api_method.CREATE_CHAT_INVITE_LINK,
             data=locals(),
             hints=get_type_hints(self.create_chat_invite_link)
         )
@@ -704,7 +746,7 @@ class Api:
     ) -> ChatInviteLink:
 
         return await self._request(
-            method=constants.API_METHOD_EDIT_CHAT_INVITE_LINK,
+            method=api_method.EDIT_CHAT_INVITE_LINK,
             data=locals(),
             hints=get_type_hints(self.edit_chat_invite_link)
         )
@@ -716,7 +758,7 @@ class Api:
     ) -> ChatInviteLink:
 
         return await self._request(
-            method=constants.API_METHOD_REVOKE_CHAT_INVITE_LINK,
+            method=api_method.REVOKE_CHAT_INVITE_LINK,
             data=locals(),
             hints=get_type_hints(self.revoke_chat_invite_link)
         )
@@ -728,7 +770,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_APPROVE_CHAT_JOIN_REQUEST,
+            method=api_method.APPROVE_CHAT_JOIN_REQUEST,
             data=locals(),
             hints=get_type_hints(self.approve_chat_join_request)
         )
@@ -740,7 +782,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_DECLINE_CHAT_JOIN_REQUEST,
+            method=api_method.DECLINE_CHAT_JOIN_REQUEST,
             data=locals(),
             hints=get_type_hints(self.decline_chat_join_request)
         )
@@ -752,7 +794,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_SET_CHAT_PHOTO,
+            method=api_method.SET_CHAT_PHOTO,
             data=locals(),
             hints=get_type_hints(self.set_chat_photo)
         )
@@ -763,7 +805,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_DELETE_CHAT_PHOTO,
+            method=api_method.DELETE_CHAT_PHOTO,
             data=locals(),
             hints=get_type_hints(self.delete_chat_photo)
         )
@@ -775,7 +817,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_SET_CHAT_TITLE,
+            method=api_method.SET_CHAT_TITLE,
             data=locals(),
             hints=get_type_hints(self.set_chat_title)
         )
@@ -787,7 +829,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_SET_CHAT_DESCRIPTION,
+            method=api_method.SET_CHAT_DESCRIPTION,
             data=locals(),
             hints=get_type_hints(self.set_chat_description)
         )
@@ -800,7 +842,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_PIN_CHAT_MESSAGE,
+            method=api_method.PIN_CHAT_MESSAGE,
             data=locals(),
             hints=get_type_hints(self.pin_chat_message)
         )
@@ -812,7 +854,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_UNPIN_CHAT_MESSAGE,
+            method=api_method.UNPIN_CHAT_MESSAGE,
             data=locals(),
             hints=get_type_hints(self.unpin_chat_message)
         )
@@ -823,7 +865,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_UNPIN_ALL_CHAT_MESSAGES,
+            method=api_method.UNPIN_ALL_CHAT_MESSAGES,
             data=locals(),
             hints=get_type_hints(self.unpin_all_chat_messages)
         )
@@ -834,7 +876,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_LEAVE_CHAT,
+            method=api_method.LEAVE_CHAT,
             data=locals(),
             hints=get_type_hints(self.leave_chat)
         )
@@ -845,7 +887,7 @@ class Api:
     ) -> Chat:
 
         return await self._request(
-            method=constants.API_METHOD_GET_CHAT,
+            method=api_method.GET_CHAT,
             data=locals(),
             hints=get_type_hints(self.get_chat)
         )
@@ -856,7 +898,7 @@ class Api:
     ) -> List[ChatMember]:
 
         return await self._request(
-            method=constants.API_METHOD_GET_CHAT_ADMINISTRATORS,
+            method=api_method.GET_CHAT_ADMINISTRATORS,
             data=locals(),
             hints=get_type_hints(self.get_chat_administrators)
         )
@@ -867,7 +909,7 @@ class Api:
     ) -> int:
 
         return await self._request(
-            method=constants.API_METHOD_GET_CHAT_MEMBER_COUNT,
+            method=api_method.GET_CHAT_MEMBER_COUNT,
             data=locals(),
             hints=get_type_hints(self.get_chat_member_count)
         )
@@ -879,7 +921,7 @@ class Api:
     ) -> ChatMember:
 
         return await self._request(
-            method=constants.API_METHOD_GET_CHAT_MEMBER,
+            method=api_method.GET_CHAT_MEMBER,
             data=locals(),
             hints=get_type_hints(self.get_chat_member)
         )
@@ -891,7 +933,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_SET_CHAT_STICKER_SET,
+            method=api_method.SET_CHAT_STICKER_SET,
             data=locals(),
             hints=get_type_hints(self.set_chat_sticker_set)
         )
@@ -902,7 +944,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_DELETE_CHAT_STICKER_SET,
+            method=api_method.DELETE_CHAT_STICKER_SET,
             data=locals(),
             hints=get_type_hints(self.delete_chat_sticker_set)
         )
@@ -912,7 +954,7 @@ class Api:
     ) -> List[Sticker]:
 
         return await self._request(
-            method=constants.API_METHOD_GET_FORUM_TOPIC_ICON_STICKERS,
+            method=api_method.GET_FORUM_TOPIC_ICON_STICKERS,
             data=locals(),
             hints=get_type_hints(self.get_forum_topic_icon_stickers)
         )
@@ -926,7 +968,7 @@ class Api:
     ) -> ForumTopic:
 
         return await self._request(
-            method=constants.API_METHOD_CREATE_FORUM_TOPIC,
+            method=api_method.CREATE_FORUM_TOPIC,
             data=locals(),
             hints=get_type_hints(self.create_forum_topic)
         )
@@ -940,7 +982,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_EDIT_FORUM_TOPIC,
+            method=api_method.EDIT_FORUM_TOPIC,
             data=locals(),
             hints=get_type_hints(self.edit_forum_topic)
         )
@@ -952,7 +994,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_CLOSE_FORUM_TOPIC,
+            method=api_method.CLOSE_FORUM_TOPIC,
             data=locals(),
             hints=get_type_hints(self.close_forum_topic)
         )
@@ -964,7 +1006,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_REOPEN_FORUM_TOPIC,
+            method=api_method.REOPEN_FORUM_TOPIC,
             data=locals(),
             hints=get_type_hints(self.reopen_forum_topic)
         )
@@ -976,7 +1018,7 @@ class Api:
     ):
 
         return await self._request(
-            method=constants.API_METHOD_DELETE_FORUM_TOPIC,
+            method=api_method.DELETE_FORUM_TOPIC,
             data=locals(),
             hints=get_type_hints(self.delete_forum_topic)
         )
@@ -988,7 +1030,7 @@ class Api:
     ):
 
         return await self._request(
-            method=constants.API_METHOD_UNPIN_ALL_FORUM_TOPIC_MESSAGES,
+            method=api_method.UNPIN_ALL_FORUM_TOPIC_MESSAGES,
             data=locals(),
             hints=get_type_hints(self.unpin_all_forum_topic_messages)
         )
@@ -1003,7 +1045,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_ANSWER_CALLBACK_QUERY,
+            method=api_method.ANSWER_CALLBACK_QUERY,
             data=locals(),
             hints=get_type_hints(self.answer_callback_query)
         )
@@ -1016,7 +1058,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_SET_MY_COMMANDS,
+            method=api_method.SET_MY_COMMANDS,
             data=locals(),
             hints=get_type_hints(self.set_my_commands)
         )
@@ -1028,7 +1070,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_DELETE_MY_COMMANDS,
+            method=api_method.DELETE_MY_COMMANDS,
             data=locals(),
             hints=get_type_hints(self.delete_my_commands)
         )
@@ -1040,7 +1082,7 @@ class Api:
     ) -> List[BotCommand]:
 
         return await self._request(
-            method=constants.API_METHOD_GET_MY_COMMANDS,
+            method=api_method.GET_MY_COMMANDS,
             data=locals(),
             hints=get_type_hints(self.get_my_commands)
         )
@@ -1052,7 +1094,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_SET_CHAT_MENU_BUTTON,
+            method=api_method.SET_CHAT_MENU_BUTTON,
             data=locals(),
             hints=get_type_hints(self.set_chat_menu_button)
         )
@@ -1063,7 +1105,7 @@ class Api:
     ) -> MenuButton:
 
         return await self._request(
-            method=constants.API_METHOD_GET_CHAT_MENU_BUTTON,
+            method=api_method.GET_CHAT_MENU_BUTTON,
             data=locals(),
             hints=get_type_hints(self.get_chat_menu_button)
         )
@@ -1075,7 +1117,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_SET_MY_DEFAULT_ADMINISTRATOR_RIGHTS,
+            method=api_method.SET_MY_DEFAULT_ADMINISTRATOR_RIGHTS,
             data=locals(),
             hints=get_type_hints(self.set_my_default_administrator_rights)
         )
@@ -1086,7 +1128,7 @@ class Api:
     ) -> ChatAdministratorRights:
 
         return await self._request(
-            method=constants.API_METHOD_GET_MY_DEFAULT_ADMINISTRATOR_RIGHTS,
+            method=api_method.GET_MY_DEFAULT_ADMINISTRATOR_RIGHTS,
             data=locals(),
             hints=get_type_hints(self.get_my_default_administrator_rights)
         )
@@ -1104,7 +1146,7 @@ class Api:
     ) -> Union[Message, bool]:
 
         return await self._request(
-            method=constants.API_METHOD_EDIT_MESSAGE_TEXT,
+            method=api_method.EDIT_MESSAGE_TEXT,
             data=locals(),
             hints=get_type_hints(self.edit_message_text)
         )
@@ -1121,7 +1163,7 @@ class Api:
     ) -> Union[Message, bool]:
 
         return await self._request(
-            method=constants.API_METHOD_EDIT_MESSAGE_CAPTION,
+            method=api_method.EDIT_MESSAGE_CAPTION,
             data=locals(),
             hints=get_type_hints(self.edit_message_caption)
         )
@@ -1136,7 +1178,7 @@ class Api:
     ) -> Union[Message, bool]:
 
         return await self._request(
-            method=constants.API_METHOD_EDIT_MESSAGE_MEDIA,
+            method=api_method.EDIT_MESSAGE_MEDIA,
             data=locals(),
             hints=get_type_hints(self.edit_message_media)
         )
@@ -1150,7 +1192,7 @@ class Api:
     ) -> Union[Message, bool]:
 
         return await self._request(
-            method=constants.API_METHOD_EDIT_MESSAGE_REPLY_MARKUP,
+            method=api_method.EDIT_MESSAGE_REPLY_MARKUP,
             data=locals(),
             hints=get_type_hints(self.edit_message_reply_markup)
         )
@@ -1163,7 +1205,7 @@ class Api:
     ) -> Poll:
 
         return await self._request(
-            method=constants.API_METHOD_STOP_POLL,
+            method=api_method.STOP_POLL,
             data=locals(),
             hints=get_type_hints(self.stop_poll)
         )
@@ -1175,7 +1217,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_DELETE_MESSAGE,
+            method=api_method.DELETE_MESSAGE,
             data=locals(),
             hints=get_type_hints(self.delete_message)
         )
@@ -1193,7 +1235,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_STICKER,
+            method=api_method.SEND_STICKER,
             data=locals(),
             hints=get_type_hints(self.send_sticker)
         )
@@ -1204,7 +1246,7 @@ class Api:
     ) -> StickerSet:
 
         return await self._request(
-            method=constants.API_METHOD_GET_STICKER_SET,
+            method=api_method.GET_STICKER_SET,
             data=locals(),
             hints=get_type_hints(self.get_sticker_set)
         )
@@ -1215,7 +1257,7 @@ class Api:
     ) -> List[Sticker]:
 
         return await self._request(
-            method=constants.API_METHOD_GET_CUSTOM_EMOJI_STICKERS,
+            method=api_method.GET_CUSTOM_EMOJI_STICKERS,
             data=locals(),
             hints=get_type_hints(self.get_custom_emoji_stickers)
         )
@@ -1227,7 +1269,7 @@ class Api:
     ) -> File:
 
         return await self._request(
-            method=constants.API_METHOD_UPLOAD_STICKER_FILE,
+            method=api_method.UPLOAD_STICKER_FILE,
             data=locals(),
             hints=get_type_hints(self.upload_sticker_file)
         )
@@ -1241,12 +1283,12 @@ class Api:
             png_sticker: Optional[InputFile] = None,
             tgs_sticker: Optional[InputFile] = None,
             webm_sticker: Optional[InputFile] = None,
-            sticker_type: Optional[constants.StickerType] = None,
+            sticker_type: Optional[StickerType] = None,
             mask_position: Optional[MaskPosition] = None
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_CREATE_NEW_STICKER_SET,
+            method=api_method.CREATE_NEW_STICKER_SET,
             data=locals(),
             hints=get_type_hints(self.create_new_sticker_set)
         )
@@ -1263,7 +1305,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_ADD_STICKER_TO_SET,
+            method=api_method.ADD_STICKER_TO_SET,
             data=locals(),
             hints=get_type_hints(self.add_sticker_to_set)
         )
@@ -1275,7 +1317,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_SET_STICKER_POSITION_IN_SET,
+            method=api_method.SET_STICKER_POSITION_IN_SET,
             data=locals(),
             hints=get_type_hints(self.set_sticker_position_in_set)
         )
@@ -1286,7 +1328,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_DELETE_STICKER_FROM_SET,
+            method=api_method.DELETE_STICKER_FROM_SET,
             data=locals(),
             hints=get_type_hints(self.delete_sticker_from_set)
         )
@@ -1299,7 +1341,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_SET_STICKER_SET_THUMB,
+            method=api_method.SET_STICKER_SET_THUMB,
             data=locals(),
             hints=get_type_hints(self.set_sticker_set_thumb)
         )
@@ -1316,7 +1358,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_ANSWER_INLINE_QUERY,
+            method=api_method.ANSWER_INLINE_QUERY,
             data=locals(),
             hints=get_type_hints(self.answer_inline_query)
         )
@@ -1328,7 +1370,7 @@ class Api:
     ) -> SentWebAppMessage:
 
         return await self._request(
-            method=constants.API_METHOD_ANSWER_WEB_APP_QUERY,
+            method=api_method.ANSWER_WEB_APP_QUERY,
             data=locals(),
             hints=get_type_hints(self.answer_web_app_query)
         )
@@ -1366,7 +1408,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_INVOICE,
+            method=api_method.SEND_INVOICE,
             data=locals(),
             hints=get_type_hints(self.send_invoice)
         )
@@ -1396,7 +1438,7 @@ class Api:
     ) -> str:
 
         return await self._request(
-            method=constants.API_METHOD_CREATE_INVOICE_LINK,
+            method=api_method.CREATE_INVOICE_LINK,
             data=locals(),
             hints=get_type_hints(self.create_invoice_link)
         )
@@ -1410,7 +1452,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_ANSWER_SHIPPING_QUERY,
+            method=api_method.ANSWER_SHIPPING_QUERY,
             data=locals(),
             hints=get_type_hints(self.answer_shipping_query)
         )
@@ -1423,7 +1465,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_ANSWER_PRE_CHECKOUT_QUERY,
+            method=api_method.ANSWER_PRE_CHECKOUT_QUERY,
             data=locals(),
             hints=get_type_hints(self.answer_pre_checkout_query)
         )
@@ -1435,7 +1477,7 @@ class Api:
     ) -> bool:
 
         return await self._request(
-            method=constants.API_METHOD_SET_PASSPORT_DATA_ERRORS,
+            method=api_method.SET_PASSPORT_DATA_ERRORS,
             data=locals(),
             hints=get_type_hints(self.set_passport_data_errors)
         )
@@ -1453,7 +1495,7 @@ class Api:
     ) -> Message:
 
         return await self._request(
-            method=constants.API_METHOD_SEND_GAME,
+            method=api_method.SEND_GAME,
             data=locals(),
             hints=get_type_hints(self.send_game)
         )
@@ -1470,7 +1512,7 @@ class Api:
     ) -> Union[Message, bool]:
 
         return await self._request(
-            method=constants.API_METHOD_SET_GAME_HIGH_SCORE,
+            method=api_method.SET_GAME_HIGH_SCORE,
             data=locals(),
             hints=get_type_hints(self.set_game_score)
         )
@@ -1484,7 +1526,7 @@ class Api:
     ) -> List[GameHighScore]:
 
         return await self._request(
-            method=constants.API_METHOD_GET_GAME_HIGH_SCORES,
+            method=api_method.GET_GAME_HIGH_SCORES,
             data=locals(),
             hints=get_type_hints(self.get_game_high_scores)
         )
@@ -1561,7 +1603,3 @@ def _is_multipart_form_data(data: dict) -> bool:
             return True
 
     return False
-
-
-class _ResponseWrapper:
-    pass

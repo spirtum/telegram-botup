@@ -1,37 +1,44 @@
 from __future__ import annotations
+
 import pathlib
+
 from dataclasses import dataclass, asdict, is_dataclass
-from typing import get_type_hints, get_origin, get_args, Optional, Union, List, Any
+from typing import (
+    Optional,
+    Union,
+    List,
+    Any,
+    get_type_hints,
+    get_origin,
+    get_args
+)
 
-from .constants import ChatType, MessageEntityType, PollType, ChatMemberStatus, CHAT_MEMBER_STATUS_CREATOR, \
-    CHAT_MEMBER_STATUS_ADMINISTRATOR, CHAT_MEMBER_STATUS_MEMBER, CHAT_MEMBER_STATUS_RESTRICTED, CHAT_MEMBER_STATUS_LEFT, \
-    CHAT_MEMBER_STATUS_KICKED, BotCommandScopeType, BOT_COMMAND_SCOPE_TYPE_DEFAULT, \
-    BOT_COMMAND_SCOPE_TYPE_ALL_PRIVATE_CHATS, BOT_COMMAND_SCOPE_TYPE_ALL_GROUP_CHATS, \
-    BOT_COMMAND_SCOPE_TYPE_ALL_CHAT_ADMINISTRATORS, BOT_COMMAND_SCOPE_TYPE_CHAT, \
-    BOT_COMMAND_SCOPE_TYPE_CHAT_ADMINISTRATORS, BOT_COMMAND_SCOPE_TYPE_CHAT_MEMBER, MenuButtonType, \
-    MENU_BUTTON_TYPE_COMMANDS, MENU_BUTTON_TYPE_WEB_APP, MENU_BUTTON_TYPE_DEFAULT, InputMediaType, \
-    INPUT_MEDIA_TYPE_PHOTO, INPUT_MEDIA_TYPE_VIDEO, INPUT_MEDIA_TYPE_ANIMATION, INPUT_MEDIA_TYPE_AUDIO, \
-    INPUT_MEDIA_TYPE_DOCUMENT, InputFileType, INPUT_FILE_TYPE_STORED, INPUT_FILE_TYPE_URL, INPUT_FILE_TYPE_PATH, \
-    StickerType, MaskPositionPoint, InlineQueryChatType, InlineQueryResultType, INLINE_QUERY_RESULT_TYPE_ARTICLE, \
-    INLINE_QUERY_RESULT_TYPE_PHOTO, INLINE_QUERY_RESULT_TYPE_GIF, INLINE_QUERY_RESULT_TYPE_MPEG4_GIF, \
-    INLINE_QUERY_RESULT_TYPE_VIDEO, INLINE_QUERY_RESULT_TYPE_AUDIO, INLINE_QUERY_RESULT_TYPE_VOICE, \
-    INLINE_QUERY_RESULT_TYPE_DOCUMENT, INLINE_QUERY_RESULT_TYPE_LOCATION, INLINE_QUERY_RESULT_TYPE_VENUE, \
-    INLINE_QUERY_RESULT_TYPE_CONTACT, INLINE_QUERY_RESULT_TYPE_GAME, INLINE_QUERY_RESULT_TYPE_STICKER, \
-    EncryptedPassportElementType, PassportElementErrorSource, PASSPORT_ELEMENT_ERROR_SOURCE_DATA, \
-    PASSPORT_ELEMENT_ERROR_SOURCE_FRONT_SIDE, PASSPORT_ELEMENT_ERROR_SOURCE_REVERSE_SIDE, \
-    PASSPORT_ELEMENT_ERROR_SOURCE_SELFIE, PASSPORT_ELEMENT_ERROR_SOURCE_FILE, PASSPORT_ELEMENT_ERROR_SOURCE_FILES, \
-    PASSPORT_ELEMENT_ERROR_SOURCE_TRANSLATION_FILE, PASSPORT_ELEMENT_ERROR_SOURCE_TRANSLATION_FILES, \
-    PASSPORT_ELEMENT_ERROR_SOURCE_UNSPECIFIED
-
-try:
-    import ujson as json
-except ImportError:
-    import json
+from .constants import (
+    chat_member_status,
+    bot_command_scope_type,
+    menu_button_type,
+    input_media_type,
+    input_file_type,
+    inline_query_result_type,
+    passport_element_error_source
+)
+from .constants.bot_command_scope_type import BotCommandScopeType
+from .constants.chat_member_status import ChatMemberStatus
+from .constants.chat_type import ChatType
+from .constants.encrypted_passport_element_type import EncryptedPassportElementType
+from .constants.inline_query_chat_type import InlineQueryChatType
+from .constants.inline_query_result_type import InlineQueryResultType
+from .constants.input_file_type import InputFileType
+from .constants.input_media_type import InputMediaType
+from .constants.mask_position_point import MaskPositionPoint
+from .constants.menu_button_type import MenuButtonType
+from .constants.message_entity_type import MessageEntityType
+from .constants.passport_element_error_source import PassportElementErrorSource
+from .constants.poll_type import PollType
+from .constants.sticker_type import StickerType
 
 
 NoneType = type(None)
-
-
 _rename_key_mapping = {
     'from_': 'from'
 }
@@ -585,12 +592,12 @@ class ChatMember(BaseObject):
     @classmethod
     def from_dict(cls, data: dict):
         status_map = {
-            CHAT_MEMBER_STATUS_CREATOR: ChatMemberOwner,
-            CHAT_MEMBER_STATUS_ADMINISTRATOR: ChatMemberAdministrator,
-            CHAT_MEMBER_STATUS_MEMBER: ChatMemberMember,
-            CHAT_MEMBER_STATUS_RESTRICTED: ChatMemberRestricted,
-            CHAT_MEMBER_STATUS_LEFT: ChatMemberLeft,
-            CHAT_MEMBER_STATUS_KICKED: ChatMemberBanned
+            chat_member_status.CREATOR: ChatMemberOwner,
+            chat_member_status.ADMINISTRATOR: ChatMemberAdministrator,
+            chat_member_status.MEMBER: ChatMemberMember,
+            chat_member_status.RESTRICTED: ChatMemberRestricted,
+            chat_member_status.LEFT: ChatMemberLeft,
+            chat_member_status.KICKED: ChatMemberBanned
         }
         class_ = status_map[data['status']]
         return class_.from_dict(data)
@@ -600,7 +607,7 @@ class ChatMember(BaseObject):
 class ChatMemberOwner(ChatMember):
     user: User
     is_anonymous: bool
-    status: ChatMemberStatus = CHAT_MEMBER_STATUS_CREATOR
+    status: ChatMemberStatus = chat_member_status.CREATOR
     custom_title: Optional[str] = None
 
 
@@ -616,7 +623,7 @@ class ChatMemberAdministrator(ChatMember):
     can_promote_members: bool
     can_change_info: bool
     can_invite_users: bool
-    status: ChatMemberStatus = CHAT_MEMBER_STATUS_ADMINISTRATOR
+    status: ChatMemberStatus = chat_member_status.ADMINISTRATOR
     can_post_messages: Optional[bool] = None
     can_edit_messages: Optional[bool] = None
     can_pin_messages: Optional[bool] = None
@@ -627,7 +634,7 @@ class ChatMemberAdministrator(ChatMember):
 @dataclass
 class ChatMemberMember(ChatMember):
     user: User
-    status: ChatMemberStatus = CHAT_MEMBER_STATUS_MEMBER
+    status: ChatMemberStatus = chat_member_status.MEMBER
 
 
 @dataclass
@@ -644,20 +651,20 @@ class ChatMemberRestricted(ChatMember):
     can_send_other_messages: bool
     can_add_web_page_previews: bool
     until_date: int
-    status: ChatMemberStatus = CHAT_MEMBER_STATUS_RESTRICTED
+    status: ChatMemberStatus = chat_member_status.RESTRICTED
 
 
 @dataclass
 class ChatMemberLeft(ChatMember):
     user: User
-    status: ChatMemberStatus = CHAT_MEMBER_STATUS_LEFT
+    status: ChatMemberStatus = chat_member_status.LEFT
 
 
 @dataclass
 class ChatMemberBanned(ChatMember):
     user: User
     until_date: int
-    status: ChatMemberStatus = CHAT_MEMBER_STATUS_KICKED
+    status: ChatMemberStatus = chat_member_status.KICKED
 
 
 @dataclass
@@ -719,41 +726,41 @@ class BotCommandScope(BaseObject):
 
 @dataclass
 class BotCommandScopeDefault(BotCommandScope):
-    type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_DEFAULT
+    type: BotCommandScopeType = bot_command_scope_type.DEFAULT
 
 
 @dataclass
 class BotCommandScopeAllPrivateChats(BotCommandScope):
-    type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_ALL_PRIVATE_CHATS
+    type: BotCommandScopeType = bot_command_scope_type.ALL_PRIVATE_CHATS
 
 
 @dataclass
 class BotCommandScopeAllGroupChats(BotCommandScope):
-    type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_ALL_GROUP_CHATS
+    type: BotCommandScopeType = bot_command_scope_type.ALL_GROUP_CHATS
 
 
 @dataclass
 class BotCommandScopeAllChatAdministrators(BotCommandScope):
-    type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_ALL_CHAT_ADMINISTRATORS
+    type: BotCommandScopeType = bot_command_scope_type.ALL_CHAT_ADMINISTRATORS
 
 
 @dataclass
 class BotCommandScopeChat(BotCommandScope):
     chat_id: str
-    type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_CHAT
+    type: BotCommandScopeType = bot_command_scope_type.CHAT
 
 
 @dataclass
 class BotCommandScopeChatAdministrators(BotCommandScope):
     chat_id: str
-    type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_CHAT_ADMINISTRATORS
+    type: BotCommandScopeType = bot_command_scope_type.CHAT_ADMINISTRATORS
 
 
 @dataclass
 class BotCommandScopeChatMember(BotCommandScope):
     chat_id: str
     user_id: str
-    type: BotCommandScopeType = BOT_COMMAND_SCOPE_TYPE_CHAT_MEMBER
+    type: BotCommandScopeType = bot_command_scope_type.CHAT_MEMBER
 
 
 @dataclass
@@ -763,19 +770,19 @@ class MenuButton(BaseObject):
 
 @dataclass
 class MenuButtonCommands(MenuButton):
-    type: MenuButtonType = MENU_BUTTON_TYPE_COMMANDS
+    type: MenuButtonType = menu_button_type.COMMANDS
 
 
 @dataclass
 class MenuButtonWebApp(MenuButton):
     text: str
     web_app: WebAppInfo
-    type: MenuButtonType = MENU_BUTTON_TYPE_WEB_APP
+    type: MenuButtonType = menu_button_type.WEB_APP
 
 
 @dataclass
 class MenuButtonDefault(MenuButton):
-    type: MenuButtonType = MENU_BUTTON_TYPE_DEFAULT
+    type: MenuButtonType = menu_button_type.DEFAULT
 
 
 @dataclass
@@ -792,7 +799,7 @@ class InputMedia(BaseObject):
 @dataclass
 class InputMediaPhoto(InputMedia):
     media: str
-    type: InputMediaType = INPUT_MEDIA_TYPE_PHOTO
+    type: InputMediaType = input_media_type.PHOTO
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
@@ -801,7 +808,7 @@ class InputMediaPhoto(InputMedia):
 @dataclass
 class InputMediaVideo(InputMedia):
     media: str
-    type: InputMediaType = INPUT_MEDIA_TYPE_VIDEO
+    type: InputMediaType = input_media_type.VIDEO
     thumb: Optional[InputFile] = None
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
@@ -815,7 +822,7 @@ class InputMediaVideo(InputMedia):
 @dataclass
 class InputMediaAnimation(InputMedia):
     media: str
-    type: InputMediaType = INPUT_MEDIA_TYPE_ANIMATION
+    type: InputMediaType = input_media_type.ANIMATION
     thumb: Optional[InputFile] = None
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
@@ -828,7 +835,7 @@ class InputMediaAnimation(InputMedia):
 @dataclass
 class InputMediaAudio(InputMedia):
     media: str
-    type: InputMediaType = INPUT_MEDIA_TYPE_AUDIO
+    type: InputMediaType = input_media_type.AUDIO
     thumb: Optional[InputFile] = None
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
@@ -841,7 +848,7 @@ class InputMediaAudio(InputMedia):
 @dataclass
 class InputMediaDocument(InputMedia):
     media: str
-    type: InputMediaType = INPUT_MEDIA_TYPE_DOCUMENT
+    type: InputMediaType = input_media_type.DOCUMENT
     thumb: Optional[InputFile] = None
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
@@ -857,19 +864,19 @@ class InputFile(BaseObject):
 @dataclass
 class InputFileStored(InputFile):
     file_id: str
-    type: InputFileType = INPUT_FILE_TYPE_STORED
+    type: InputFileType = input_file_type.STORED
 
 
 @dataclass
 class InputFileUrl(InputFile):
     url: str
-    type: InputFileType = INPUT_FILE_TYPE_URL
+    type: InputFileType = input_file_type.URL
 
 
 @dataclass
 class InputFilePath(InputFile):
     path: pathlib.Path
-    type: InputFileType = INPUT_FILE_TYPE_PATH
+    type: InputFileType = input_file_type.PATH
 
 
 @dataclass
@@ -929,7 +936,7 @@ class InlineQueryResultArticle(InlineQueryResult):
     id: str
     title: str
     input_message_content: InputMessageContent
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_ARTICLE
+    type: InlineQueryResultType = inline_query_result_type.ARTICLE
     reply_markup: Optional[InlineKeyboardMarkup] = None
     url: Optional[str] = None
     hide_url: Optional[bool] = None
@@ -944,7 +951,7 @@ class InlineQueryResultPhoto(InlineQueryResult):
     id: str
     photo_url: str
     thumb_url: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_PHOTO
+    type: InlineQueryResultType = inline_query_result_type.PHOTO
     photo_width: Optional[int] = None
     photo_height: Optional[int] = None
     title: Optional[str] = None
@@ -960,7 +967,7 @@ class InlineQueryResultPhoto(InlineQueryResult):
 class InlineQueryResultGif(InlineQueryResult):
     id: str
     gif_url: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_GIF
+    type: InlineQueryResultType = inline_query_result_type.GIF
     gif_width: Optional[int] = None
     gif_height: Optional[int] = None
     gif_duration: Optional[int] = None
@@ -978,7 +985,7 @@ class InlineQueryResultGif(InlineQueryResult):
 class InlineQueryResultMpeg4Gif(InlineQueryResult):
     id: str
     mpeg4_url: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_MPEG4_GIF
+    type: InlineQueryResultType = inline_query_result_type.MPEG4_GIF
     mpeg4_width: Optional[int] = None
     mpeg4_height: Optional[int] = None
     mpeg4_duration: Optional[int] = None
@@ -999,7 +1006,7 @@ class InlineQueryResultVideo(InlineQueryResult):
     mime_type: str
     thumb_url: str
     title: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_VIDEO
+    type: InlineQueryResultType = inline_query_result_type.VIDEO
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
@@ -1016,7 +1023,7 @@ class InlineQueryResultAudio(InlineQueryResult):
     id: str
     audio_url: str
     title: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_AUDIO
+    type: InlineQueryResultType = inline_query_result_type.AUDIO
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
@@ -1031,7 +1038,7 @@ class InlineQueryResultVoice(InlineQueryResult):
     id: str
     voice_url: str
     title: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_VOICE
+    type: InlineQueryResultType = inline_query_result_type.VOICE
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
@@ -1046,7 +1053,7 @@ class InlineQueryResultDocument(InlineQueryResult):
     title: str
     document_url: str
     mime_type: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_DOCUMENT
+    type: InlineQueryResultType = inline_query_result_type.DOCUMENT
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
@@ -1064,7 +1071,7 @@ class InlineQueryResultLocation(InlineQueryResult):
     latitude: float
     longitude: float
     title: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_LOCATION
+    type: InlineQueryResultType = inline_query_result_type.LOCATION
     horizontal_accuracy: Optional[float] = None
     live_period: Optional[int] = None
     heading: Optional[int] = None
@@ -1083,7 +1090,7 @@ class InlineQueryResultVenue(InlineQueryResult):
     longitude: float
     title: str
     address: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_VENUE
+    type: InlineQueryResultType = inline_query_result_type.VENUE
     foursquare_id: Optional[str] = None
     foursquare_type: Optional[str] = None
     google_place_id: Optional[str] = None
@@ -1100,7 +1107,7 @@ class InlineQueryResultContact(InlineQueryResult):
     id: str
     phone_number: str
     first_name: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_CONTACT
+    type: InlineQueryResultType = inline_query_result_type.CONTACT
     last_name: Optional[str] = None
     vcard: Optional[str] = None
     reply_markup: Optional[InlineKeyboardMarkup] = None
@@ -1114,7 +1121,7 @@ class InlineQueryResultContact(InlineQueryResult):
 class InlineQueryResultGame(InlineQueryResult):
     id: str
     game_short_name: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_GAME
+    type: InlineQueryResultType = inline_query_result_type.GAME
     reply_markup: Optional[InlineKeyboardMarkup] = None
 
 
@@ -1122,7 +1129,7 @@ class InlineQueryResultGame(InlineQueryResult):
 class InlineQueryResultCachedPhoto(InlineQueryResult):
     id: str
     photo_file_id: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_PHOTO
+    type: InlineQueryResultType = inline_query_result_type.PHOTO
     title: Optional[str] = None
     description: Optional[str] = None
     caption: Optional[str] = None
@@ -1136,7 +1143,7 @@ class InlineQueryResultCachedPhoto(InlineQueryResult):
 class InlineQueryResultCachedGif(InlineQueryResult):
     id: str
     gif_file_id: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_GIF
+    type: InlineQueryResultType = inline_query_result_type.GIF
     title: Optional[str] = None
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
@@ -1149,7 +1156,7 @@ class InlineQueryResultCachedGif(InlineQueryResult):
 class InlineQueryResultCachedMpeg4Gif(InlineQueryResult):
     id: str
     mpeg4_file_id: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_MPEG4_GIF
+    type: InlineQueryResultType = inline_query_result_type.MPEG4_GIF
     title: Optional[str] = None
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
@@ -1162,7 +1169,7 @@ class InlineQueryResultCachedMpeg4Gif(InlineQueryResult):
 class InlineQueryResultCachedSticker(InlineQueryResult):
     id: str
     sticker_file_id: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_STICKER
+    type: InlineQueryResultType = inline_query_result_type.STICKER
     reply_markup: Optional[InlineKeyboardMarkup] = None
     input_message_content: Optional[InputMessageContent] = None
 
@@ -1172,7 +1179,7 @@ class InlineQueryResultCachedDocument(InlineQueryResult):
     id: str
     title: str
     document_file_id: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_DOCUMENT
+    type: InlineQueryResultType = inline_query_result_type.DOCUMENT
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
@@ -1186,7 +1193,7 @@ class InlineQueryResultCachedVideo(InlineQueryResult):
     id: str
     video_file_id: str
     title: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_VIDEO
+    type: InlineQueryResultType = inline_query_result_type.VIDEO
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
@@ -1200,7 +1207,7 @@ class InlineQueryResultCachedVoice(InlineQueryResult):
     id: str
     voice_file_id: str
     title: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_VOICE
+    type: InlineQueryResultType = inline_query_result_type.VOICE
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
@@ -1212,7 +1219,7 @@ class InlineQueryResultCachedVoice(InlineQueryResult):
 class InlineQueryResultCachedAudio(InlineQueryResult):
     id: str
     audio_file_id: str
-    type: InlineQueryResultType = INLINE_QUERY_RESULT_TYPE_AUDIO
+    type: InlineQueryResultType = inline_query_result_type.AUDIO
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
@@ -1417,7 +1424,7 @@ class PassportElementErrorDataField(PassportElementError):
     field_name: str
     data_hash: str
     message: str
-    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_DATA
+    source: PassportElementErrorSource = passport_element_error_source.DATA
 
 
 @dataclass
@@ -1425,7 +1432,7 @@ class PassportElementErrorFrontSide(PassportElementError):
     type: EncryptedPassportElementType
     file_hash: str
     message: str
-    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_FRONT_SIDE
+    source: PassportElementErrorSource = passport_element_error_source.FRONT_SIDE
 
 
 @dataclass
@@ -1433,7 +1440,7 @@ class PassportElementErrorReverseSide(PassportElementError):
     type: EncryptedPassportElementType
     file_hash: str
     message: str
-    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_REVERSE_SIDE
+    source: PassportElementErrorSource = passport_element_error_source.REVERSE_SIDE
 
 
 @dataclass
@@ -1441,7 +1448,7 @@ class PassportElementErrorSelfie(PassportElementError):
     type: EncryptedPassportElementType
     file_hash: str
     message: str
-    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_SELFIE
+    source: PassportElementErrorSource = passport_element_error_source.SELFIE
 
 
 @dataclass
@@ -1449,7 +1456,7 @@ class PassportElementErrorFile(PassportElementError):
     type: EncryptedPassportElementType
     file_hash: str
     message: str
-    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_FILE
+    source: PassportElementErrorSource = passport_element_error_source.FILE
 
 
 @dataclass
@@ -1457,7 +1464,7 @@ class PassportElementErrorFiles(PassportElementError):
     type: EncryptedPassportElementType
     file_hashes: List[str]
     message: str
-    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_FILES
+    source: PassportElementErrorSource = passport_element_error_source.FILES
 
 
 @dataclass
@@ -1465,7 +1472,7 @@ class PassportElementErrorTranslationFile(PassportElementError):
     type: EncryptedPassportElementType
     file_hash: str
     message: str
-    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_TRANSLATION_FILE
+    source: PassportElementErrorSource = passport_element_error_source.TRANSLATION_FILE
 
 
 @dataclass
@@ -1473,7 +1480,7 @@ class PassportElementErrorTranslationFiles(PassportElementError):
     type: EncryptedPassportElementType
     file_hashes: List[str]
     message: str
-    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_TRANSLATION_FILES
+    source: PassportElementErrorSource = passport_element_error_source.TRANSLATION_FILES
 
 
 @dataclass
@@ -1481,7 +1488,7 @@ class PassportElementErrorUnspecified(PassportElementError):
     type: EncryptedPassportElementType
     element_hash: str
     message: str
-    source: PassportElementErrorSource = PASSPORT_ELEMENT_ERROR_SOURCE_UNSPECIFIED
+    source: PassportElementErrorSource = passport_element_error_source.UNSPECIFIED
 
 
 @dataclass
