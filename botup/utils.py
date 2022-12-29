@@ -1,9 +1,8 @@
-from .core.utils import get_logger, setup_logging, get_chat_id
+from .core.utils import get_logger, setup_logging
 
 __all__ = [
     'get_logger',
     'setup_logging',
-    'get_chat_id',
     'start_group_link',
     'start_link'
 ]
