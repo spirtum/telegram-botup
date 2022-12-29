@@ -379,6 +379,7 @@ class Dispatcher:
 
             if getattr(context, statement_key):
                 handler = getattr(self, handler_key)
+                context.update_type = update_type
                 return await handler.handle(context)
 
         return False
@@ -391,9 +392,9 @@ class Dispatcher:
         return False
 
     async def handle(self, update: dict) -> bool:
-        return await self._handle(Context(Update.from_dict(update)))
+        return await self.handle_context(Context(Update.from_dict(update)))
 
-    async def _handle(self, context: Context, *args, **kwargs) -> bool:
+    async def handle_context(self, context: Context) -> bool:
         if await self._run_middlewares(context):
             return True
 

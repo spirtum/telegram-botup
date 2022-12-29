@@ -15,6 +15,7 @@ from typing import (
     get_args
 )
 
+from .constants.update_type import UpdateType
 from .constants import (
     chat_member_status,
     bot_command_scope_type,
@@ -1520,10 +1521,7 @@ class Context:
     update: Update
     chat_id: Optional[int] = None
     user_id: Optional[int] = None
-
-    @property
-    def is_private_update(self) -> bool:
-        return self.chat_id is not None and self.chat_id == self.user_id
+    update_type: Optional[UpdateType] = None
 
     @property
     def is_message(self) -> bool:
