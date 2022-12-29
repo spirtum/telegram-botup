@@ -8,10 +8,12 @@ from typing import (
     Union,
     List,
     Any,
+    Callable,
+    Awaitable,
     get_type_hints,
     get_origin,
-    get_args,
-    Callable)
+    get_args
+)
 
 from .constants import (
     chat_member_status,
@@ -1544,7 +1546,7 @@ class Context:
         return self.update.inline_query is not None
 
     @property
-    def is_chosen_inline_query(self) -> bool:
+    def is_chosen_inline_result(self) -> bool:
         return self.update.chosen_inline_result is not None
 
     @property
@@ -1668,5 +1670,5 @@ class Context:
         return self.is_message and self.update.message.poll is not None
 
 
-HandleFunction = Callable[[Context], None]
-MiddlewareFunction = Callable[[Context], bool]
+HandleFunction = Callable[[Context], Awaitable[None]]
+MiddlewareFunction = Callable[[Context], Awaitable[bool]]

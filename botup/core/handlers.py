@@ -5,394 +5,391 @@ from .types import Update, HandleFunction, Context
 
 class Handler:
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return None
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return None
 
 
 class PatternHandler(Handler):
 
-    def __init__(self, pattern: Pattern, function: HandleFunction):
-        self.pattern = pattern
-        self.function = function
+    def __init__(self):
+        self._handlers: Dict[Union[str, Pattern], HandleFunction] = {}
 
-    @classmethod
-    def get_handler(
-            cls,
-            key: str,
-            handlers: Dict[Union[str, Pattern], HandleFunction]
-    ) -> Optional[HandleFunction]:
+    def register(self, pattern: Union[str, Pattern], function: HandleFunction):
+        self._handlers[pattern] = function
 
-        if key in handlers:
-            return handlers[key]
+    def get_handler(self, key: str) -> Optional[HandleFunction]:
+        if key in self._handlers:
+            return self._handlers[key]
 
-        for pattern in handlers.keys():
+        for pattern in self._handlers.keys():
             if isinstance(pattern, Pattern) and pattern.match(key):
-                return handlers[pattern]
+                return self._handlers[pattern]
 
-    @classmethod
-    async def handle(cls, context: Context, handlers: Dict[str, HandleFunction]) -> bool:
-        handler = cls.get_handler(cls.get_key(context.update), handlers)
+    async def handle(self, context: Context) -> bool:
+        handler = self.get_handler(self.get_key(context.update))
 
         if not handler:
             return False
 
-        context.chat_id = cls.get_chat_id(context.update)
-        context.user_id = cls.get_user_id(context.update)
+        context.chat_id = self.get_chat_id(context.update)
+        context.user_id = self.get_user_id(context.update)
 
         await handler(context)
         return True
 
-    @classmethod
-    def get_key(cls, update: Update) -> str:
+    @staticmethod
+    def get_key(update: Update) -> str:
         raise NotImplemented
 
 
 class SimpleHandler(Handler):
 
-    def __init__(self, function: HandleFunction):
-        self.function = function
+    def __init__(self):
+        self._handler: Optional[HandleFunction] = None
 
-    @classmethod
-    async def handle(cls, context: Context, handler: Optional[HandleFunction]) -> bool:
-        if not handler:
+    def register(self, function: HandleFunction):
+        self._handler = function
+
+    async def handle(self, context: Context) -> bool:
+        if not self._handler:
             return False
 
-        context.chat_id = cls.get_chat_id(context.update)
-        context.user_id = cls.get_user_id(context.update)
+        context.chat_id = self.get_chat_id(context.update)
+        context.user_id = self.get_user_id(context.update)
 
-        await handler(context)
+        await self._handler(context)
         return True
 
 
-class AnimationHandler(SimpleHandler):
+class MessageAnimationHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class AudioHandler(SimpleHandler):
+class MessageAudioHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
 class CallbackQueryHandler(PatternHandler):
 
-    @classmethod
-    def get_key(cls, update: Update) -> str:
+    @staticmethod
+    def get_key(update: Update) -> str:
         return update.callback_query.data
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.callback_query.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.callback_query.from_.id
 
 
 class ChannelPostHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.channel_post.chat.id
 
 
 class ChosenInlineResultHandler(SimpleHandler):
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.chosen_inline_result.from_.id
 
 
-class CommandHandler(PatternHandler):
+class MessageCommandHandler(PatternHandler):
 
-    @classmethod
-    def get_key(cls, update: Update) -> str:
+    @staticmethod
+    def get_key(update: Update) -> str:
         return update.message.text
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class ContactHandler(SimpleHandler):
+class MessageContactHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class DiceHandler(SimpleHandler):
+class MessageDiceHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class DocumentHandler(SimpleHandler):
+class MessageDocumentHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
 class EditedChannelPostHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.edited_channel_post.chat.id
 
 
 class EditedMessageHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.edited_message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class GameHandler(SimpleHandler):
+class MessageGameHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
 class InlineQueryHandler(PatternHandler):
 
-    @classmethod
-    def get_key(cls, update: Update) -> str:
+    @staticmethod
+    def get_key(update: Update) -> str:
         return update.inline_query.query
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.inline_query.from_.id
 
 
-class InvoiceHandler(SimpleHandler):
+class MessageInvoiceHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class LeftChatMemberHandler(SimpleHandler):
+class MessageLeftChatMemberHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class LocationHandler(SimpleHandler):
+class MessageLocationHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class MessageHandler(PatternHandler):
+class MessageTextHandler(PatternHandler):
 
-    @classmethod
-    def get_key(cls, update: Update) -> str:
+    @staticmethod
+    def get_key(update: Update) -> str:
         return update.message.text
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class NewChatMembersHandler(SimpleHandler):
+class MessageNewChatMembersHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class NewChatPhotoHandler(SimpleHandler):
+class MessageNewChatPhotoHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class NewChatTitleHandler(SimpleHandler):
+class MessageNewChatTitleHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class PhotoHandler(SimpleHandler):
+class MessagePhotoHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
 class MessagePollHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.poll.from_.id
 
 
 class PollAnswerHandler(SimpleHandler):
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.poll_answer.user.id
 
 
 class PreCheckoutQueryHandler(SimpleHandler):
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.pre_checkout_query.from_.id
 
 
 class ShippingQueryHandler(SimpleHandler):
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.shipping_query.from_.id
 
 
-class StickerHandler(SimpleHandler):
+class MessageStickerHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class SuccessfulPaymentHandler(SimpleHandler):
+class MessageSuccessfulPaymentHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class VenueHandler(SimpleHandler):
+class MessageVenueHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class VideoHandler(SimpleHandler):
+class MessageVideoHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class VideoNoteHandler(SimpleHandler):
+class MessageVideoNoteHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
 
 
-class VoiceHandler(SimpleHandler):
+class MessageVoiceHandler(SimpleHandler):
 
-    @classmethod
-    def get_chat_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_chat_id(update: Update) -> Optional[int]:
         return update.message.chat.id
 
-    @classmethod
-    def get_user_id(cls, update: Update) -> Optional[int]:
+    @staticmethod
+    def get_user_id(update: Update) -> Optional[int]:
         return update.message.from_.id
