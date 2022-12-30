@@ -12,14 +12,13 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     py_modules=['botup'],
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     packages=find_packages(),
     install_requires=[
         'aiohttp'
     ],
     extras_require={
-        'ujson': ['ujson'],
-        'redis': ['redis']
+        'redis': ['aioredis']
     },
     project_urls={
         'Source Code': 'https://github.com/spirtum/telegram-botup'

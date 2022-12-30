@@ -23,6 +23,7 @@ class Navigation:
         return Navigation(context, path)
 
     async def push(self, name: str):
+        assert name in (w.key for w in self.current_widget.children)
         self._stack.append(WidgetRegistry().get(name))
         await self._context.state_manager.set(self._context.chat_id, self.path())
         await self.current_widget.entry(self._context)

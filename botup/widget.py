@@ -4,7 +4,7 @@ from typing import Dict, Optional, List
 
 from .core.dispatcher import Dispatcher
 from .core.types import Update, Context
-from .helpers import Singleton, StateManager
+from .state_manager.base import Singleton, StateManager
 
 
 class WidgetRegistry(metaclass=Singleton):
@@ -24,19 +24,19 @@ class Widget:
     def __init__(self, key: str):
         self.key = key
         self._dispatcher = Dispatcher()
-        self.setup(self._dispatcher)
-        self.build()
+        self.build(self._dispatcher)
+        self.children = self.build_children()
         WidgetRegistry().add(self)
 
     @staticmethod
     async def entry(context: BuildContext):
         raise NotImplementedError()
 
-    async def setup(self, dispatcher: Dispatcher):
+    async def build(self, dispatcher: Dispatcher):
         raise NotImplementedError()
 
     @staticmethod
-    async def build() -> List[Widget]:
+    async def build_children() -> List[Widget]:
         return []
 
     async def handle(self, context: BuildContext):
