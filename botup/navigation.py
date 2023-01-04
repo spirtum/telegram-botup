@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import List
 
-from .widget import WidgetRegistry, Widget, BuildContext
+from .widget import WidgetRegistry, Widget, Context
 
 
 class Navigation:
 
-    def __init__(self, context: BuildContext, path: str):
+    def __init__(self, context: Context, path: str):
         path = path or context.root_widget.key
         _widget_registry = WidgetRegistry()
         self._context = context
@@ -18,7 +18,7 @@ class Navigation:
         return self._stack[-1]
 
     @classmethod
-    async def of(cls, context: BuildContext) -> Navigation:
+    async def of(cls, context: Context) -> Navigation:
         path = await context.get_path()
         return Navigation(context, path)
 

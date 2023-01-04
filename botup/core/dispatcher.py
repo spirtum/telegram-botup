@@ -1,6 +1,6 @@
 from typing import Callable, Set, Pattern, Union
 
-from .types import Update, HandleFunction, MiddlewareFunction, Context
+from .types import Update, HandleFunction, MiddlewareFunction, CoreContext
 from .handlers import (
     MessageCommandHandler,
     CallbackQueryHandler,
@@ -372,7 +372,7 @@ class Dispatcher:
         self._update_types.add(MESSAGE_VOICE)
         self._message_voice_handler.register(handler)
 
-    async def _run_statements(self, context: Context) -> bool:
+    async def _run_statements(self, context: CoreContext) -> bool:
         for update_type in self._update_types:
             statement_key = f'is_{update_type}'
             handler_key = f'_{update_type}_handler'
@@ -384,7 +384,7 @@ class Dispatcher:
 
         return False
 
-    async def _run_middlewares(self, context: Context) -> bool:
+    async def _run_middlewares(self, context: CoreContext) -> bool:
         for middleware in self._middlewares:
             if await middleware(context):
                 return True
@@ -392,9 +392,9 @@ class Dispatcher:
         return False
 
     async def handle(self, update: dict) -> bool:
-        return await self.handle_context(Context(Update.from_dict(update)))
+        return await self.handle_context(CoreContext(Update.from_dict(update)))
 
-    async def handle_context(self, context: Context) -> bool:
+    async def handle_context(self, context: CoreContext) -> bool:
         if await self._run_middlewares(context):
             return True
 

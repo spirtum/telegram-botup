@@ -1,6 +1,6 @@
 from typing import Dict, Optional, Union, Pattern
 
-from .types import Update, HandleFunction, Context
+from .types import Update, HandleFunction, CoreContext
 
 
 class Handler:
@@ -30,7 +30,7 @@ class PatternHandler(Handler):
             if isinstance(pattern, Pattern) and pattern.match(key):
                 return self._handlers[pattern]
 
-    async def handle(self, context: Context) -> bool:
+    async def handle(self, context: CoreContext) -> bool:
         handler = self.get_handler(self.get_key(context.update))
 
         if not handler:
@@ -55,7 +55,7 @@ class SimpleHandler(Handler):
     def register(self, function: HandleFunction):
         self._handler = function
 
-    async def handle(self, context: Context) -> bool:
+    async def handle(self, context: CoreContext) -> bool:
         if not self._handler:
             return False
 

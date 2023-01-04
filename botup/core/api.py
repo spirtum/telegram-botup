@@ -74,8 +74,11 @@ class Api:
         await self._session.close()
 
     async def _request(self, method: api_method.ApiMethod, data: dict, hints: dict) -> Any:
-        request_data = _prepare_args(data, hints)
-        response = await self._session.post(self._url + method, data=request_data, timeout=self.timeout)
+        response = await self._session.post(
+            url=self._url + method,
+            data=_prepare_args(data, hints),
+            timeout=self.timeout
+        )
         response_data = await response.json()
 
         if not response_data['ok']:

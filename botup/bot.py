@@ -1,7 +1,7 @@
 from .core.types import Update
 from .state_manager.base import StateManager, DictStateManager
 from .navigation import Navigation
-from .widget import Widget, BuildContext
+from .widget import Widget, Context
 
 
 class Bot:
@@ -16,6 +16,6 @@ class Bot:
 
     async def handle(self, update: dict):
         update = Update.from_dict(update)
-        context = BuildContext(update, self._root_widget, self._state_manager)
+        context = Context(update, self._root_widget, self._state_manager)
         navigation = await Navigation.of(context)
         await navigation.current_widget.handle(context)

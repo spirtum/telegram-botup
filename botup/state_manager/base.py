@@ -13,10 +13,10 @@ class Singleton(type):
 class StateManager:
 
     async def get(self, chat_id: int) -> Optional[str]:
-        raise NotImplemented
+        raise NotImplementedError()
 
     async def set(self, chat_id: int, path: str):
-        raise NotImplemented
+        raise NotImplementedError()
 
 
 class DictStateManager(StateManager, metaclass=Singleton):

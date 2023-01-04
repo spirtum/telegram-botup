@@ -1517,11 +1517,11 @@ class GameHighScore(BaseObject):
 
 
 @dataclass
-class Context:
+class CoreContext:
     update: Update
+    update_type: Optional[UpdateType] = None
     chat_id: Optional[int] = None
     user_id: Optional[int] = None
-    update_type: Optional[UpdateType] = None
 
     @property
     def is_message(self) -> bool:
@@ -1668,5 +1668,5 @@ class Context:
         return self.is_message and self.update.message.poll is not None
 
 
-HandleFunction = Callable[[Context], Awaitable[None]]
-MiddlewareFunction = Callable[[Context], Awaitable[bool]]
+HandleFunction = Callable[[CoreContext], Awaitable[None]]
+MiddlewareFunction = Callable[[CoreContext], Awaitable[bool]]

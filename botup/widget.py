@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict, Optional, List
 
 from .core.dispatcher import Dispatcher
-from .core.types import Update, Context
+from .core.types import Update, CoreContext
 from .state_manager.base import Singleton, StateManager
 
 
@@ -28,22 +28,21 @@ class Widget:
         self.children = self.build_children()
         WidgetRegistry().add(self)
 
-    @staticmethod
-    async def entry(context: BuildContext):
-        raise NotImplementedError()
+    async def entry(self, context: Context):
+        pass
 
     async def build(self, dispatcher: Dispatcher):
-        raise NotImplementedError()
+        pass
 
     @staticmethod
     async def build_children() -> List[Widget]:
         return []
 
-    async def handle(self, context: BuildContext):
+    async def handle(self, context: Context):
         await self._dispatcher.handle_context(context)
 
 
-class BuildContext(Context):
+class Context(CoreContext):
 
     def __init__(self, update: Update, root_widget: Widget, state_manager: StateManager):
         super().__init__(update)
