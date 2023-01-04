@@ -12,10 +12,16 @@ class Singleton(type):
 
 class StateManager:
 
-    async def get(self, chat_id: int) -> Optional[str]:
+    async def get_path(self, chat_id: int) -> Optional[str]:
         raise NotImplementedError()
 
-    async def set(self, chat_id: int, path: str):
+    async def set_path(self, chat_id: int, path: str):
+        raise NotImplementedError()
+
+    async def get(self, chat_id: int, key: str) -> Optional[str]:
+        raise NotImplementedError()
+
+    async def set(self, chat_id: int, key: str, value: str):
         raise NotImplementedError()
 
 
@@ -23,10 +29,23 @@ class DictStateManager(StateManager, metaclass=Singleton):
 
     def __init__(self):
         super().__init__()
-        self._data: Dict[str, str] = {}
+        self._data: Dict[str, Dict] = {}
 
-    async def get(self, chat_id: int) -> Optional[str]:
-        return self._data.get(str(chat_id))
+    def _get_user_dict(self, chat_id: int) -> dict:
+        return self._data.setdefault(str(chat_id), {})
 
-    async def set(self, chat_id: int, path: str):
-        self._data[str(chat_id)] = path
+    async def get_path(self, chat_id: int) -> Optional[str]:
+        user_dict = self._get_user_dict(chat_id)
+        return user_dict.get('botup_path')
+
+    async def set_path(self, chat_id: int, path: str):
+        user_dict = self._get_user_dict(chat_id)
+        user_dict['botup_path'] = path
+
+    async def get(self, chat_id: int, key: str) -> Optional[str]:
+        user_dict = self._get_user_dict(chat_id)
+        return user_dict.get(key)
+
+    async def set(self, chat_id: int, key: str, value: str):
+        user_dict = self._get_user_dict(chat_id)
+        user_dict[key] = value

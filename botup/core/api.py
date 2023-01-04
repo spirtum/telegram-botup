@@ -1579,7 +1579,7 @@ _prepare_arg_by_type = {
     InputFileStored: _prepare_input_file,
     InputFileUrl: _prepare_input_file,
     InputFilePath: _prepare_input_file,
-    Keyboard: _prepare_json_dumps,
+    InlineKeyboardMarkup: _prepare_json_dumps,
     ChatPermissions: _prepare_json_dumps,
     BotCommandScope: _prepare_json_dumps,
     MenuButton: _prepare_json_dumps,

@@ -50,7 +50,7 @@ class Context(CoreContext):
         self.root_widget = root_widget
 
     async def get_path(self) -> str:
-        return await self.state_manager.get(self.chat_id or self.get_chat_id()) or ''
+        return await self.state_manager.get_path(self.chat_id or self.get_chat_id()) or ''
 
     def get_chat_id(self) -> Optional[int]:
         if self.is_message:

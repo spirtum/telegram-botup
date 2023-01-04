@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import copy
 import pathlib
-from dataclasses import dataclass, asdict, is_dataclass
+from dataclasses import dataclass, is_dataclass, fields
 from typing import (
     Optional,
     Union,
@@ -45,7 +46,38 @@ _rename_key_mapping = {
 }
 
 
-def _from_dict_helper(data: Any, class_: Any) -> Any:
+def asdict(obj, *, dict_factory=dict):
+    if not _is_dataclass_instance(obj):
+        raise TypeError("asdict() should be called on dataclass instances")
+    return _asdict_inner(obj, dict_factory)
+
+
+def _is_dataclass_instance(obj):
+    return hasattr(type(obj), '__dataclass_fields__')
+
+
+def _asdict_inner(obj, dict_factory):
+    if _is_dataclass_instance(obj):
+        result = []
+        for f in fields(obj):
+            value = _asdict_inner(getattr(obj, f.name), dict_factory)
+            if value is None:
+                continue
+            result.append((f.name, value))
+        return dict_factory(result)
+    elif isinstance(obj, tuple) and hasattr(obj, '_fields'):
+        return type(obj)(*[_asdict_inner(v, dict_factory) for v in obj])
+    elif isinstance(obj, (list, tuple)):
+        return type(obj)(_asdict_inner(v, dict_factory) for v in obj)
+    elif isinstance(obj, dict):
+        return type(obj)((_asdict_inner(k, dict_factory),
+                          _asdict_inner(v, dict_factory))
+                         for k, v in obj.items())
+    else:
+        return copy.deepcopy(obj)
+
+
+def _from_dict_inner(data: Any, class_: Any) -> Any:
     if is_dataclass(class_):
         assert isinstance(data, dict)
         return class_.from_dict(data)
@@ -54,12 +86,12 @@ def _from_dict_helper(data: Any, class_: Any) -> Any:
     args = get_args(class_)
 
     if origin is Union:
-        return _from_dict_helper(data, args[0])
+        return _from_dict_inner(data, args[0])
 
     if origin is list:
         assert isinstance(data, list)
         inner_type = get_args(class_)[0]
-        return [_from_dict_helper(v, inner_type) for v in data]
+        return [_from_dict_inner(v, inner_type) for v in data]
 
     return data
 
@@ -83,7 +115,7 @@ class BaseObject:
             if not is_optional and is_none_value:
                 raise Exception(f'{hint_key} is required')
 
-            kwargs[hint_key] = _from_dict_helper(
+            kwargs[hint_key] = _from_dict_inner(
                 data=value,
                 class_=hint_value
             )

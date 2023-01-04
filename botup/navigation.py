@@ -25,12 +25,12 @@ class Navigation:
     async def push(self, name: str):
         assert name in (w.key for w in self.current_widget.children)
         self._stack.append(WidgetRegistry().get(name))
-        await self._context.state_manager.set(self._context.chat_id, self.path())
+        await self._context.state_manager.set_path(self._context.chat_id, self.path())
         await self.current_widget.entry(self._context)
 
     async def pop(self):
         self._stack.pop()
-        await self._context.state_manager.set(self._context.chat_id, self.path())
+        await self._context.state_manager.set_path(self._context.chat_id, self.path())
         await self.current_widget.entry(self._context)
 
     def path(self) -> str:
