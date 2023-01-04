@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pathlib
-
 from dataclasses import dataclass, asdict, is_dataclass
 from typing import (
     Optional,
@@ -15,7 +14,6 @@ from typing import (
     get_args
 )
 
-from .constants.update_type import UpdateType
 from .constants import (
     chat_member_status,
     bot_command_scope_type,
@@ -39,7 +37,7 @@ from .constants.message_entity_type import MessageEntityType
 from .constants.passport_element_error_source import PassportElementErrorSource
 from .constants.poll_type import PollType
 from .constants.sticker_type import StickerType
-
+from .constants.update_type import UpdateType
 
 NoneType = type(None)
 _rename_key_mapping = {

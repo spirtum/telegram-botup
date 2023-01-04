@@ -1,6 +1,6 @@
 from .core.types import Update
-from .state_manager.base import StateManager, DictStateManager
 from .navigation import Navigation
+from .state_manager.base import StateManager, DictStateManager
 from .widget import Widget, Context
 
 

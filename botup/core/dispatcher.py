@@ -1,39 +1,5 @@
 from typing import Callable, Set, Pattern, Union
 
-from .types import Update, HandleFunction, MiddlewareFunction, CoreContext
-from .handlers import (
-    MessageCommandHandler,
-    CallbackQueryHandler,
-    MessageTextHandler,
-    InlineQueryHandler,
-    EditedMessageHandler,
-    ChannelPostHandler,
-    ChosenInlineResultHandler,
-    EditedChannelPostHandler,
-    MessagePollHandler,
-    PollAnswerHandler,
-    PreCheckoutQueryHandler,
-    ShippingQueryHandler,
-    MessageDiceHandler,
-    MessageDocumentHandler,
-    MessageAnimationHandler,
-    MessageAudioHandler,
-    MessageContactHandler,
-    MessageGameHandler,
-    MessageInvoiceHandler,
-    MessageLeftChatMemberHandler,
-    MessageLocationHandler,
-    MessageNewChatMembersHandler,
-    MessageNewChatPhotoHandler,
-    MessageNewChatTitleHandler,
-    MessagePhotoHandler,
-    MessageStickerHandler,
-    MessageSuccessfulPaymentHandler,
-    MessageVenueHandler,
-    MessageVideoHandler,
-    MessageVideoNoteHandler,
-    MessageVoiceHandler
-)
 from .constants.update_type import (
     UpdateType,
     CALLBACK_QUERY,
@@ -68,6 +34,40 @@ from .constants.update_type import (
     MESSAGE_VIDEO_NOTE,
     MESSAGE_VOICE
 )
+from .handlers import (
+    MessageCommandHandler,
+    CallbackQueryHandler,
+    MessageTextHandler,
+    InlineQueryHandler,
+    EditedMessageHandler,
+    ChannelPostHandler,
+    ChosenInlineResultHandler,
+    EditedChannelPostHandler,
+    MessagePollHandler,
+    PollAnswerHandler,
+    PreCheckoutQueryHandler,
+    ShippingQueryHandler,
+    MessageDiceHandler,
+    MessageDocumentHandler,
+    MessageAnimationHandler,
+    MessageAudioHandler,
+    MessageContactHandler,
+    MessageGameHandler,
+    MessageInvoiceHandler,
+    MessageLeftChatMemberHandler,
+    MessageLocationHandler,
+    MessageNewChatMembersHandler,
+    MessageNewChatPhotoHandler,
+    MessageNewChatTitleHandler,
+    MessagePhotoHandler,
+    MessageStickerHandler,
+    MessageSuccessfulPaymentHandler,
+    MessageVenueHandler,
+    MessageVideoHandler,
+    MessageVideoNoteHandler,
+    MessageVoiceHandler
+)
+from .types import Update, HandleFunction, MiddlewareFunction, CoreContext
 
 
 class Dispatcher:
@@ -115,24 +115,28 @@ class Dispatcher:
         def inner(handler: HandleFunction):
             self.register_command_handler(command, handler)
             return handler
+
         return inner
 
     def callback_handler(self, callback: Union[str, Pattern]) -> Callable:
         def inner(handler: HandleFunction):
             self.register_callback_handler(callback, handler)
             return handler
+
         return inner
 
     def message_handler(self, message: Union[str, Pattern]) -> Callable:
         def inner(handler: HandleFunction):
             self.register_message_handler(message, handler)
             return handler
+
         return inner
 
     def inline_handler(self, inline_query: Union[str, Pattern]) -> Callable:
         def inner(handler: HandleFunction):
             self.register_inline_handler(inline_query, handler)
             return handler
+
         return inner
 
     def channel_post_handler(self, handler: HandleFunction):
