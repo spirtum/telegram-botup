@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, Optional, List
 
+from .core.api import Api
 from .core.dispatcher import Dispatcher
 from .core.types import Update, CoreContext
 from .state_manager.base import Singleton, StateManager
@@ -28,7 +29,7 @@ class Widget:
         self.children = self.build_children()
         WidgetRegistry().add(self)
 
-    async def entry(self, context: Context):
+    async def entry(self, context: Context, *args, **kwargs):
         pass
 
     async def build(self, dispatcher: Dispatcher):
@@ -44,10 +45,17 @@ class Widget:
 
 class Context(CoreContext):
 
-    def __init__(self, update: Update, root_widget: Widget, state_manager: StateManager):
+    def __init__(
+            self,
+            update: Update,
+            api: Api,
+            root_widget: Widget,
+            state_manager: StateManager
+    ):
         super().__init__(update)
-        self.state_manager = state_manager
+        self.api = api
         self.root_widget = root_widget
+        self.state_manager = state_manager
 
     async def get_path(self) -> str:
         return await self.state_manager.get_path(self.chat_id or self.get_chat_id()) or ''
