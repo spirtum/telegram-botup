@@ -87,9 +87,6 @@ class Api:
 
     @staticmethod
     def _response(data: Any, hint: Type) -> Any:
-        if issubclass(hint, BaseObject):
-            return hint.from_dict(data)
-
         origin = get_origin(hint)
         args = get_args(hint)
 
@@ -102,6 +99,9 @@ class Api:
             if isinstance(data, type_):
                 return data
             return class_.from_dict(data)
+
+        if issubclass(hint, BaseObject):
+            return hint.from_dict(data)
 
         return data
 
