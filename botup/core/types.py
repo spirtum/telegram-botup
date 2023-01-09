@@ -196,6 +196,8 @@ class Chat(BaseObject):
     permissions: Optional[ChatPermissions] = None
     slow_mode_delay: Optional[int] = None
     message_auto_delete_time: Optional[int] = None
+    has_aggressive_anti_spam_enabled: Optional[bool] = None
+    has_hidden_members: Optional[bool] = None
     has_protected_content: Optional[bool] = None
     sticker_set_name: Optional[str] = None
     can_set_sticker_set: Optional[bool] = None
@@ -237,6 +239,7 @@ class Message(BaseObject):
     voice: Optional[Voice] = None
     caption: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
+    has_media_spoiler: Optional[bool] = None
     contact: Optional[Contact] = None
     dice: Optional[Dice] = None
     game: Optional[Game] = None
@@ -258,11 +261,15 @@ class Message(BaseObject):
     invoice: Optional[Invoice] = None
     successful_payment: Optional[SuccessfulPayment] = None
     connected_website: Optional[str] = None
+    write_access_allowed: Optional[WriteAccessAllowed] = None
     passport_data: Optional[PassportData] = None
     proximity_alert_triggered: Optional[ProximityAlertTriggered] = None
     forum_topic_created: Optional[ForumTopicCreated] = None
+    forum_topic_edited: Optional[ForumTopicEdited] = None
     forum_topic_closed: Optional[ForumTopicClosed] = None
     forum_topic_reopened: Optional[ForumTopicReopened] = None
+    general_forum_topic_hidden: Optional[GeneralForumTopicHidden] = None
+    general_forum_topic_unhidden: Optional[GeneralForumTopicUnhidden] = None
     video_chat_scheduled: Optional[VideoChatScheduled] = None
     video_chat_started: Optional[VideoChatStarted] = None
     video_chat_ended: Optional[VideoChatEnded] = None
@@ -461,7 +468,28 @@ class ForumTopicClosed(BaseObject):
 
 
 @dataclass
+class ForumTopicEdited(BaseObject):
+    name: Optional[str] = None
+    icon_custom_emoji_id: Optional[str] = None
+
+
+@dataclass
 class ForumTopicReopened(BaseObject):
+    pass
+
+
+@dataclass
+class GeneralForumTopicHidden(BaseObject):
+    pass
+
+
+@dataclass
+class GeneralForumTopicUnhidden(BaseObject):
+    pass
+
+
+@dataclass
+class WriteAccessAllowed(BaseObject):
     pass
 
 
@@ -512,6 +540,7 @@ class Keyboard(BaseObject):
 @dataclass
 class ReplyKeyboardMarkup(Keyboard):
     keyboard: List[List[KeyboardButton]]
+    is_persistent: Optional[bool] = None
     resize_keyboard: Optional[bool] = None
     one_time_keyboard: Optional[bool] = None
     input_field_placeholder: Optional[str] = None
@@ -836,6 +865,7 @@ class InputMediaPhoto(InputMedia):
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     caption_entities: Optional[List[MessageEntity]] = None
+    has_spoiler: Optional[bool] = None
 
 
 @dataclass
@@ -850,6 +880,7 @@ class InputMediaVideo(InputMedia):
     height: Optional[int] = None
     duration: Optional[int] = None
     supports_streaming: Optional[bool] = None
+    has_spoiler: Optional[bool] = None
 
 
 @dataclass
@@ -863,6 +894,7 @@ class InputMediaAnimation(InputMedia):
     width: Optional[int] = None
     height: Optional[int] = None
     duration: Optional[int] = None
+    has_spoiler: Optional[bool] = None
 
 
 @dataclass

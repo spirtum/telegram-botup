@@ -241,6 +241,7 @@ class Api:
             caption: Optional[str] = None,
             parse_mode: Optional[str] = None,
             caption_entities: Optional[List[MessageEntity]] = None,
+            has_spoiler: Optional[bool] = None,
             disable_notification: Optional[bool] = None,
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
@@ -314,6 +315,7 @@ class Api:
             caption: Optional[str] = None,
             parse_mode: Optional[str] = None,
             caption_entities: Optional[List[MessageEntity]] = None,
+            has_spoiler: Optional[bool] = None,
             supports_streaming: Optional[bool] = None,
             disable_notification: Optional[bool] = None,
             protect_content: Optional[bool] = None,
@@ -340,6 +342,7 @@ class Api:
             caption: Optional[str] = None,
             parse_mode: Optional[str] = None,
             caption_entities: Optional[List[MessageEntity]] = None,
+            has_spoiler: Optional[bool] = None,
             disable_notification: Optional[bool] = None,
             protect_content: Optional[bool] = None,
             reply_to_message_id: Optional[int] = None,
@@ -564,7 +567,8 @@ class Api:
     async def send_chat_action(
             self,
             chat_id: Union[int, str],
-            action: ChatAction
+            action: ChatAction,
+            message_thread_id: Optional[int] = None
     ) -> bool:
 
         return await self._request(
@@ -979,8 +983,8 @@ class Api:
             self,
             chat_id: Union[int, str],
             message_thread_id: int,
-            name: str,
-            icon_custom_emoji_id: str
+            name: Optional[str] = None,
+            icon_custom_emoji_id: Optional[str] = None
     ) -> bool:
 
         return await self._request(
@@ -1017,7 +1021,7 @@ class Api:
             self,
             chat_id: Union[int, str],
             message_thread_id: int
-    ):
+    ) -> bool:
 
         return await self._request(
             method=api_method.DELETE_FORUM_TOPIC,
@@ -1029,12 +1033,68 @@ class Api:
             self,
             chat_id: Union[int, str],
             message_thread_id: int
-    ):
+    ) -> bool:
 
         return await self._request(
             method=api_method.UNPIN_ALL_FORUM_TOPIC_MESSAGES,
             data=locals(),
             hints=get_type_hints(self.unpin_all_forum_topic_messages)
+        )
+
+    async def edit_general_forum_topic(
+            self,
+            chat_id: Union[int, str],
+            name: str
+    ) -> bool:
+
+        return await self._request(
+            method=api_method.EDIT_GENERAL_FORUM_TOPIC,
+            data=locals(),
+            hints=get_type_hints(self.edit_general_forum_topic)
+        )
+
+    async def close_general_forum_topic(
+            self,
+            chat_id: Union[int, str]
+    ) -> bool:
+
+        return await self._request(
+            method=api_method.CLOSE_GENERAL_FORUM_TOPIC,
+            data=locals(),
+            hints=get_type_hints(self.close_general_forum_topic)
+        )
+
+    async def reopen_general_forum_topic(
+            self,
+            chat_id: Union[int, str]
+    ) -> bool:
+
+        return await self._request(
+            method=api_method.REOPEN_GENERAL_FORUM_TOPIC,
+            data=locals(),
+            hints=get_type_hints(self.reopen_general_forum_topic)
+        )
+
+    async def hide_general_forum_topic(
+            self,
+            chat_id: Union[int, str]
+    ) -> bool:
+
+        return await self._request(
+            method=api_method.HIDE_GENERAL_FORUM_TOPIC,
+            data=locals(),
+            hints=get_type_hints(self.hide_general_forum_topic)
+        )
+
+    async def unhide_general_forum_topic(
+            self,
+            chat_id: Union[int, str]
+    ) -> bool:
+
+        return await self._request(
+            method=api_method.UNHIDE_GENERAL_FORUM_TOPIC,
+            data=locals(),
+            hints=get_type_hints(self.unhide_general_forum_topic)
         )
 
     async def answer_callback_query(
