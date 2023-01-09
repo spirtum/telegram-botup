@@ -64,6 +64,7 @@ class DatePicker(Widget):
         await gather(
             ctx.api.edit_message_text(
                 text=message_text,
+                chat_id=ctx.chat_id,
                 message_id=message_id,
                 reply_markup=self._calendar_keyboard(start_date.year, start_date.month)
             ),

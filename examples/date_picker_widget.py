@@ -3,7 +3,6 @@ from typing import List
 from fastapi import FastAPI, Request
 
 from botup import Widget, Context, Bot, Navigation, Dispatcher, Api
-from botup.state_manager.redis import RedisStateManager
 from botup.widgets.date_picker import DatePicker
 
 TOKEN = ""
@@ -42,8 +41,7 @@ class RootWidget(Widget):
 
 bot = Bot(
     token=TOKEN,
-    root_widget=RootWidget(key='root'),
-    state_manager=RedisStateManager('redis://localhost:6379/0')
+    root_widget=RootWidget(key='root')
 )
 
 
