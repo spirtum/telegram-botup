@@ -22,25 +22,21 @@ class WidgetRegistry(metaclass=Singleton):
 
 class Widget:
 
-    def __init__(self, key: str):
+    def __init__(self, key: str, children: Optional[List[Widget]] = None):
         self.key = key
         self._dispatcher = Dispatcher()
+        self.children = children or []
         self.build(self._dispatcher)
-        self.children = self.build_children()
         WidgetRegistry().add(self)
 
-    async def entry(self, context: Context, *args, **kwargs):
+    async def entry(self, ctx: Context, *args, **kwargs):
         pass
 
     async def build(self, dispatcher: Dispatcher):
         pass
 
-    @staticmethod
-    async def build_children() -> List[Widget]:
-        return []
-
-    async def handle(self, context: Context):
-        await self._dispatcher.handle_context(context)
+    async def handle(self, ctx: Context):
+        await self._dispatcher.handle_context(ctx)
 
 
 class Context(CoreContext):
@@ -71,3 +67,7 @@ class Context(CoreContext):
             return self.update.inline_query.from_.id
 
         return None
+
+    async def quick_callback_answer(self):
+        assert self.is_callback_query
+        await self.api.answer_callback_query(self.update.callback_query.id)

@@ -16,6 +16,9 @@ class RootWidget(Widget):
     Type "go" message
     """
 
+    KEY = 'root'
+    DATE_PICKER_KEY = 'date_picker'
+
     async def entry(self, ctx: Context, *args, **kwargs):
         botup_date_picker_result = kwargs.get('botup_date_picker_result')
         if botup_date_picker_result:
@@ -28,20 +31,21 @@ class RootWidget(Widget):
         dispatcher.register_message_handler('go', self.go_handler)
 
     @staticmethod
-    def build_children() -> List[Widget]:
-        return [
-            DatePicker('date_picker')
-        ]
-
-    @staticmethod
     async def go_handler(ctx: Context):
         nav = await Navigation.of(ctx)
         await nav.push('date_picker')
 
 
+root_widget = RootWidget(
+    key=RootWidget.KEY,
+    children=[
+        DatePicker(RootWidget.DATE_PICKER_KEY)
+    ]
+)
+
 bot = Bot(
     token=TOKEN,
-    root_widget=RootWidget(key='root')
+    root_widget=root_widget
 )
 
 
