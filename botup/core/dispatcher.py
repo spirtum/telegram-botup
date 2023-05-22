@@ -376,7 +376,7 @@ class Dispatcher:
         self._update_types.add(MESSAGE_VOICE)
         self._message_voice_handler.register(handler)
 
-    async def _run_statements(self, context: CoreContext) -> bool:
+    async def _run_statements(self, context: CoreContext):
         for update_type in self._update_types:
             statement_key = f'is_{update_type}'
             handler_key = f'_{update_type}_handler'
@@ -384,9 +384,7 @@ class Dispatcher:
             if getattr(context, statement_key):
                 handler = getattr(self, handler_key)
                 context.update_type = update_type
-                return await handler.handle(context)
-
-        return False
+                await handler.handle(context)
 
     async def _run_middlewares(self, context: CoreContext) -> bool:
         for middleware in self._middlewares:
@@ -395,11 +393,11 @@ class Dispatcher:
 
         return False
 
-    async def handle(self, update: dict) -> bool:
-        return await self.handle_context(CoreContext(Update.from_dict(update)))
+    async def handle(self, update: dict):
+        await self.handle_context(CoreContext(Update.from_dict(update)))
 
-    async def handle_context(self, context: CoreContext) -> bool:
+    async def handle_context(self, context: CoreContext):
         if await self._run_middlewares(context):
-            return True
+            return
 
-        return await self._run_statements(context)
+        await self._run_statements(context)

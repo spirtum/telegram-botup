@@ -12,12 +12,18 @@ from botup.core.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 class DatePicker(Widget):
 
-    def __init__(self, key: str):
+    def __init__(
+            self,
+            key: str,
+            result_key: str = 'botup_date_picker_result',
+            message_text: str = 'Date picker'
+    ):
         super().__init__(key)
-        self._default_message_text = 'Date picker'
+        self._message_text = message_text
         self._storage_section = 'botup_date_picker'
         self._storage_value_key = 'value'
         self._storage_message_id_key = 'message_id'
+        self._result_key = result_key
 
     def build(self, dispatcher: Dispatcher):
         dispatcher.register_callback_handler('left', self._clb_month)
@@ -31,15 +37,13 @@ class DatePicker(Widget):
 
     async def entry(self, ctx: Context, *args, **kwargs):
         start_date = kwargs.get('start_date') or datetime.now()
-        message_text = kwargs.get('message_text') or self._default_message_text
         message_id = kwargs.get('message_id')
         assert isinstance(start_date, datetime)
-        assert isinstance(message_text, str)
 
         if not message_id:
             message = await ctx.api.send_message(
                 chat_id=ctx.chat_id,
-                text=message_text,
+                text=self._message_text,
                 reply_markup=self._calendar_keyboard(start_date.year, start_date.month)
             )
 
@@ -63,7 +67,7 @@ class DatePicker(Widget):
 
         await gather(
             ctx.api.edit_message_text(
-                text=message_text,
+                text=self._message_text,
                 chat_id=ctx.chat_id,
                 message_id=message_id,
                 reply_markup=self._calendar_keyboard(start_date.year, start_date.month)
@@ -202,7 +206,7 @@ class DatePicker(Widget):
                 chat_id=ctx.chat_id,
                 message_id=message_id
             ),
-            nav.pop(botup_date_picker_result=datetime.strptime(date_str, '%Y-%m-%d'))
+            nav.pop(**{self._result_key: datetime.strptime(date_str, '%Y-%m-%d')})
         )
 
     async def _clb_back(self, ctx: Context):

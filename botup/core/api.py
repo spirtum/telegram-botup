@@ -69,6 +69,12 @@ class Api:
         self._url = f'https://api.telegram.org/bot{self.token}/'
         self._session = ClientSession()
 
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args, **kwargs):
+        await self.close_session()
+
     async def close_session(self):
         await self._session.close()
 

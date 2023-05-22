@@ -32,7 +32,7 @@ class Widget:
     async def entry(self, ctx: Context, *args, **kwargs):
         pass
 
-    async def build(self, dispatcher: Dispatcher):
+    def build(self, dispatcher: Dispatcher):
         pass
 
     async def handle(self, ctx: Context):

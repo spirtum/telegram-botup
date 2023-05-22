@@ -30,17 +30,16 @@ class PatternHandler(Handler):
             if isinstance(pattern, Pattern) and pattern.match(key):
                 return self._handlers[pattern]
 
-    async def handle(self, context: CoreContext) -> bool:
+    async def handle(self, context: CoreContext):
         handler = self.get_handler(self.get_key(context.update))
 
         if not handler:
-            return False
+            return
 
         context.chat_id = self.get_chat_id(context.update)
         context.user_id = self.get_user_id(context.update)
 
         await handler(context)
-        return True
 
     @staticmethod
     def get_key(update: Update) -> str:
@@ -55,15 +54,14 @@ class SimpleHandler(Handler):
     def register(self, function: HandleFunction):
         self._handler = function
 
-    async def handle(self, context: CoreContext) -> bool:
+    async def handle(self, context: CoreContext):
         if not self._handler:
-            return False
+            return
 
         context.chat_id = self.get_chat_id(context.update)
         context.user_id = self.get_user_id(context.update)
 
         await self._handler(context)
-        return True
 
 
 class MessageAnimationHandler(SimpleHandler):

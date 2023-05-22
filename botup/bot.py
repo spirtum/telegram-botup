@@ -18,6 +18,9 @@ class Bot:
         self._root_widget = root_widget
         self._state_manager = state_manager
 
+    async def close_session(self):
+        await self._api.close_session()
+
     async def handle(self, update: dict):
         update = Update.from_dict(update)
         context = Context(update, self._api, self._root_widget, self._state_manager)
