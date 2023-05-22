@@ -29,7 +29,7 @@ class Widget:
         self.build(self._dispatcher)
         WidgetRegistry().add(self)
 
-    async def entry(self, ctx: Context, *args, **kwargs):
+    async def entry(self, ctx: Context, **kwargs):
         pass
 
     def build(self, dispatcher: Dispatcher):
