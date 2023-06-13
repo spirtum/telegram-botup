@@ -1,16 +1,18 @@
-from fastapi import FastAPI, Request
-from botup import Dispatcher, Api
+from web_lib import App, Request
+from botup.core.dispatcher import Dispatcher
+from botup.core.api import Api
+from botup.core.types import CoreContext
 
 TOKEN = "token"
 
-app = FastAPI()
+app = App()
 dispatcher = Dispatcher()
-sender = Api(TOKEN)
+api = Api(TOKEN)
 
 
 @dispatcher.message_handler('hello')
-async def hello_handler(chat_id, update):
-    await sender.send_message(chat_id, f'Hello {update.message.from_.first_name}')
+async def hello_handler(ctx: CoreContext):
+    await api.send_message(ctx.chat_id, f'Hello {ctx.update.message.from_.first_name}')
 
 
 @app.post(f'/{TOKEN}')

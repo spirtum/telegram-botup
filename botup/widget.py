@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Dict, Optional, List
 
-from .core.api import Api
-from .core.dispatcher import Dispatcher
-from .core.types import Update, CoreContext
-from .state_manager.base import Singleton, StateManager
+from botup.core.api import Api
+from botup.core.dispatcher import Dispatcher
+from botup.core.types import Update, CoreContext
+from botup.state_manager.base import Singleton, StateManager
 
 
 class WidgetRegistry(metaclass=Singleton):

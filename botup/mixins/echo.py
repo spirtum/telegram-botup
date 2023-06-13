@@ -1,6 +1,7 @@
 import re
 
-from botup import Dispatcher, Context
+from botup.core.dispatcher import Dispatcher
+from botup.widget import Context
 
 
 class EchoMixin:

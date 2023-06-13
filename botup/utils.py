@@ -1,4 +1,4 @@
-from .core.utils import get_logger, setup_logging
+from botup.core.utils import get_logger, setup_logging
 
 __all__ = [
     'get_logger',

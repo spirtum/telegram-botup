@@ -13,10 +13,10 @@ from typing import (
 
 from aiohttp import ClientSession
 
-from .constants import api_method
-from .constants.chat_action import ChatAction
-from .constants.sticker_type import StickerType
-from .types import (
+from botup.core.constants import api_method
+from botup.core.constants.chat_action import ChatAction
+from botup.core.constants.sticker_type import StickerType
+from botup.core.types import (
     Update,
     InputFile,
     WebhookInfo,
@@ -57,7 +57,7 @@ from .types import (
     BaseObject,
     Keyboard
 )
-from .utils import get_logger
+from botup.core.utils import get_logger
 
 logger = get_logger()
 

@@ -1,6 +1,6 @@
 from typing import Dict, Optional, Union, Pattern
 
-from .types import Update, HandleFunction, CoreContext
+from botup.core.types import Update, HandleFunction, CoreContext
 
 
 class Handler:

@@ -1,6 +1,6 @@
 from typing import Callable, Set, Pattern, Union
 
-from .constants.update_type import (
+from botup.core.constants.update_type import (
     UpdateType,
     CALLBACK_QUERY,
     INLINE_QUERY,
@@ -34,7 +34,7 @@ from .constants.update_type import (
     MESSAGE_VIDEO_NOTE,
     MESSAGE_VOICE
 )
-from .handlers import (
+from botup.core.handlers import (
     MessageCommandHandler,
     CallbackQueryHandler,
     MessageTextHandler,
@@ -67,7 +67,7 @@ from .handlers import (
     MessageVideoNoteHandler,
     MessageVoiceHandler
 )
-from .types import Update, HandleFunction, MiddlewareFunction, CoreContext
+from botup.core.types import Update, HandleFunction, MiddlewareFunction, CoreContext
 
 
 class Dispatcher:

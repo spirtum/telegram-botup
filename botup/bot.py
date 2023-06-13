@@ -1,8 +1,8 @@
-from .core.api import Api
-from .core.types import Update
-from .navigation import Navigation
-from .state_manager.base import StateManager, DictStateManager
-from .widget import Widget, Context
+from botup.core.api import Api
+from botup.core.types import Update
+from botup.navigation import Navigation
+from botup.state_manager.base import StateManager, DictStateManager
+from botup.widget import Widget, Context
 
 
 class Bot:

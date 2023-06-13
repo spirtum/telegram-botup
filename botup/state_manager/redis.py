@@ -2,7 +2,7 @@ from typing import Optional
 
 import aioredis
 
-from .base import Singleton, StateManager
+from botup.state_manager.base import Singleton, StateManager
 
 
 class RedisStateManager(StateManager, metaclass=Singleton):

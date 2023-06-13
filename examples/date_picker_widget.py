@@ -1,8 +1,10 @@
 from asyncio import gather
 
-from fastapi import FastAPI, Request
+from web_lib import App, Request
 
-from botup.widget import Widget, Context, Dispatcher, Api
+from botup.widget import Widget, Context
+from botup.core.dispatcher import Dispatcher
+from botup.core.api import Api
 from botup.bot import Bot
 from botup.navigation import Navigation
 from botup.widgets.date_picker import DatePicker
@@ -12,7 +14,7 @@ from botup.core.types import InlineKeyboardMarkup, InlineKeyboardButton
 TOKEN = ""
 WEBHOOK = f'https:///{TOKEN}'
 
-app = FastAPI(docs_url=None, redoc_url=None)
+app = App(docs_url=None, redoc_url=None)
 
 
 class MyCustomMixin:
@@ -83,6 +85,7 @@ class RootWidget(Widget, MyCustomMixin, EchoMixin):
     async def go_handler(ctx: Context):
         nav = await Navigation.of(ctx)
         await nav.push(RootWidget.DATE_PICKER_KEY)
+
 
 root_widget = RootWidget(
     key=RootWidget.KEY,
