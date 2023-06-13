@@ -5,24 +5,20 @@ with open('README.md', 'r', encoding='utf-8') as fd:
 
 setup(
     name='telegram-botup',
-    version='0.10.2',
+    version='1.0.0',
     author='Dima Shebotinov',
     author_email='groovestreetmagic@gmail.com',
     description='Telegram bot API',
     long_description=long_description,
     long_description_content_type="text/markdown",
     py_modules=['botup'],
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     packages=find_packages(),
     install_requires=[
-        'requests'
+        'aiohttp'
     ],
     extras_require={
-        'ujson': ['ujson'],
-        'redis': ['redis']
-    },
-    entry_points={
-        'console_scripts': ['botup=botup.cli:main'],
+        'redis': ['aioredis']
     },
     project_urls={
         'Source Code': 'https://github.com/spirtum/telegram-botup'

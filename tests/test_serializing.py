@@ -1,8 +1,14 @@
-from botup.types import InlineKeyboardMarkup
+from botup.core.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 def test_inline_keyboard_markup():
-    k = InlineKeyboardMarkup()
-    k.line(k.callback_data('text1', 'callback1'), k.callback_data('text2', 'callback2'))
-    k.line(k.url('text3', 'url'))
-    InlineKeyboardMarkup(**k.as_dict())
+    k = InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton('text1', callback_data='callback1'),
+             InlineKeyboardButton('text2', callback_data='callback2')],
+            [
+                InlineKeyboardButton('text3', url='url')
+            ]
+        ]
+    )
+    InlineKeyboardMarkup.from_dict(k.as_dict())
