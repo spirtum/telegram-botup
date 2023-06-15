@@ -546,9 +546,11 @@ class Api:
             reply_markup: Optional[Keyboard] = None
     ) -> Message:
 
+        data = locals()
+        data['options'] = json.dumps(data['options'])
         return await self._request(
             method=api_method.SEND_POLL,
-            data=locals(),
+            data=data,
             hints=get_type_hints(self.send_poll)
         )
 

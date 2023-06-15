@@ -1,4 +1,4 @@
-from typing import Callable, Set, Pattern, Union
+from typing import Callable, Pattern, Union, List
 
 from botup.constants.update_type import (
     UpdateType,
@@ -10,6 +10,7 @@ from botup.constants.update_type import (
     CHOSEN_INLINE_RESULT,
     SHIPPING_QUERY,
     PRE_CHECKOUT_QUERY,
+    POLL,
     POLL_ANSWER,
     MESSAGE_POLL,
     MESSAGE_COMMAND,
@@ -44,6 +45,7 @@ from botup.handlers import (
     ChosenInlineResultHandler,
     EditedChannelPostHandler,
     MessagePollHandler,
+    PollHandler,
     PollAnswerHandler,
     PreCheckoutQueryHandler,
     ShippingQueryHandler,
@@ -73,8 +75,8 @@ from botup.types import Update, HandleFunction, MiddlewareFunction, BaseContext
 class Dispatcher:
 
     def __init__(self):
-        self._middlewares: Set[MiddlewareFunction] = set()
-        self._update_types: Set[UpdateType] = set()
+        self._middlewares: List[MiddlewareFunction] = list()
+        self._update_types: List[UpdateType] = list()
         self._message_command_handler = MessageCommandHandler()
         self._callback_query_handler = CallbackQueryHandler()
         self._message_text_handler = MessageTextHandler()
@@ -84,6 +86,7 @@ class Dispatcher:
         self._chosen_inline_result_handler = ChosenInlineResultHandler()
         self._edited_channel_post_handler = EditedChannelPostHandler()
         self._message_poll_handler = MessagePollHandler()
+        self._poll_handler = PollHandler()
         self._poll_answer_handler = PollAnswerHandler()
         self._pre_checkout_query_handler = PreCheckoutQueryHandler()
         self._shipping_query_handler = ShippingQueryHandler()
@@ -153,6 +156,10 @@ class Dispatcher:
 
     def edited_message_handler(self, handler: HandleFunction):
         self.register_edited_message_handler(handler)
+        return handler
+
+    def poll_handler(self, handler: HandleFunction):
+        self.register_poll_handler(handler)
         return handler
 
     def message_poll_handler(self, handler: HandleFunction):
@@ -248,132 +255,168 @@ class Dispatcher:
         return handler
 
     def register_middleware(self, middleware: MiddlewareFunction):
-        self._middlewares.add(middleware)
+        self._middlewares.append(middleware)
 
     def register_command_handler(self, command: Union[str, Pattern], handler: HandleFunction):
-        self._update_types.add(MESSAGE_COMMAND)
+        if MESSAGE_COMMAND not in self._update_types:
+            self._update_types.append(MESSAGE_COMMAND)
         if isinstance(command, str) and not command.startswith('/'):
             command = f'/{command}'
         self._message_command_handler.register(command, handler)
 
     def register_message_handler(self, message: Union[str, Pattern], handler: HandleFunction):
-        self._update_types.add(MESSAGE_TEXT)
+        if MESSAGE_TEXT not in self._update_types:
+            self._update_types.append(MESSAGE_TEXT)
         self._message_text_handler.register(message, handler)
 
     def register_callback_handler(self, callback: Union[str, Pattern], handler: HandleFunction):
-        self._update_types.add(CALLBACK_QUERY)
+        if CALLBACK_QUERY not in self._update_types:
+            self._update_types.append(CALLBACK_QUERY)
         self._callback_query_handler.register(callback, handler)
 
     def register_inline_handler(self, inline_query: Union[str, Pattern], handler: HandleFunction):
-        self._update_types.add(INLINE_QUERY)
+        if INLINE_QUERY not in self._update_types:
+            self._update_types.append(INLINE_QUERY)
         self._inline_query_handler.register(inline_query, handler)
 
     def register_channel_post_handler(self, handler: HandleFunction):
-        self._update_types.add(CHANNEL_POST)
+        if CHANNEL_POST not in self._update_types:
+            self._update_types.append(CHANNEL_POST)
         self._channel_post_handler.register(handler)
 
     def register_edited_message_handler(self, handler: HandleFunction):
-        self._update_types.add(EDITED_MESSAGE)
+        if EDITED_MESSAGE not in self._update_types:
+            self._update_types.append(EDITED_MESSAGE)
         self._edited_message_handler.register(handler)
 
     def register_edited_channel_post_handler(self, handler: HandleFunction):
-        self._update_types.add(EDITED_CHANNEL_POST)
+        if EDITED_CHANNEL_POST not in self._update_types:
+            self._update_types.append(EDITED_CHANNEL_POST)
         self._edited_channel_post_handler.register(handler)
 
     def register_chosen_inline_result_handler(self, handler: HandleFunction):
-        self._update_types.add(CHOSEN_INLINE_RESULT)
+        if CHOSEN_INLINE_RESULT not in self._update_types:
+            self._update_types.append(CHOSEN_INLINE_RESULT)
         self._chosen_inline_result_handler.register(handler)
 
     def register_shipping_query_handler(self, handler: HandleFunction):
-        self._update_types.add(SHIPPING_QUERY)
+        if SHIPPING_QUERY not in self._update_types:
+            self._update_types.append(SHIPPING_QUERY)
         self._shipping_query_handler.register(handler)
 
     def register_pre_checkout_query_handler(self, handler: HandleFunction):
-        self._update_types.add(PRE_CHECKOUT_QUERY)
+        if PRE_CHECKOUT_QUERY not in self._update_types:
+            self._update_types.append(PRE_CHECKOUT_QUERY)
         self._pre_checkout_query_handler.register(handler)
 
+    def register_poll_handler(self, handler: HandleFunction):
+        if POLL not in self._update_types:
+            self._update_types.append(POLL)
+        self._poll_handler.register(handler)
+
     def register_message_poll_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_POLL)
+        if MESSAGE_POLL not in self._update_types:
+            self._update_types.append(MESSAGE_POLL)
         self._message_poll_handler.register(handler)
 
     def register_poll_answer_handler(self, handler: HandleFunction):
-        self._update_types.add(POLL_ANSWER)
+        if POLL_ANSWER not in self._update_types:
+            self._update_types.append(POLL_ANSWER)
         self._poll_answer_handler.register(handler)
 
     def register_dice_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_DICE)
+        if MESSAGE_DICE not in self._update_types:
+            self._update_types.append(MESSAGE_DICE)
         self._message_dice_handler.register(handler)
 
     def register_document_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_DOCUMENT)
+        if MESSAGE_DOCUMENT not in self._update_types:
+            self._update_types.append(MESSAGE_DOCUMENT)
         self._message_document_handler.register(handler)
 
     def register_animation_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_ANIMATION)
+        if MESSAGE_ANIMATION not in self._update_types:
+            self._update_types.append(MESSAGE_ANIMATION)
         self._message_animation_handler.register(handler)
 
     def register_audio_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_AUDIO)
-        self._message_audio_handler = handler
+        if MESSAGE_AUDIO not in self._update_types:
+            self._update_types.append(MESSAGE_AUDIO)
+        self._message_audio_handler.register(handler)
 
     def register_contact_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_CONTACT)
+        if MESSAGE_CONTACT not in self._update_types:
+            self._update_types.append(MESSAGE_CONTACT)
         self._message_contact_handler.register(handler)
 
     def register_game_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_GAME)
+        if MESSAGE_GAME not in self._update_types:
+            self._update_types.append(MESSAGE_GAME)
         self._message_game_handler.register(handler)
 
     def register_invoice_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_INVOICE)
+        if MESSAGE_INVOICE not in self._update_types:
+            self._update_types.append(MESSAGE_INVOICE)
         self._message_invoice_handler.register(handler)
 
     def register_left_chat_member_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_LEFT_CHAT_MEMBER)
+        if MESSAGE_LEFT_CHAT_MEMBER not in self._update_types:
+            self._update_types.append(MESSAGE_LEFT_CHAT_MEMBER)
         self._message_left_chat_member_handler.register(handler)
 
     def register_location_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_LOCATION)
+        if MESSAGE_LOCATION not in self._update_types:
+            self._update_types.append(MESSAGE_LOCATION)
         self._message_location_handler.register(handler)
 
     def register_new_chat_members_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_NEW_CHAT_MEMBERS)
+        if MESSAGE_NEW_CHAT_MEMBERS not in self._update_types:
+            self._update_types.append(MESSAGE_NEW_CHAT_MEMBERS)
         self._message_new_chat_members_handler.register(handler)
 
     def register_new_chat_photo_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_NEW_CHAT_PHOTO)
+        if MESSAGE_NEW_CHAT_PHOTO not in self._update_types:
+            self._update_types.append(MESSAGE_NEW_CHAT_PHOTO)
         self._message_new_chat_photo_handler.register(handler)
 
     def register_new_chat_title_handler(self, handler):
-        self._update_types.add(MESSAGE_NEW_CHAT_TITLE)
+        if MESSAGE_NEW_CHAT_TITLE not in self._update_types:
+            self._update_types.append(MESSAGE_NEW_CHAT_TITLE)
         self._message_new_chat_title_handler.register(handler)
 
     def register_photo_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_PHOTO)
+        if MESSAGE_PHOTO not in self._update_types:
+            self._update_types.append(MESSAGE_PHOTO)
         self._message_photo_handler.register(handler)
 
     def register_sticker_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_STICKER)
+        if MESSAGE_STICKER not in self._update_types:
+            self._update_types.append(MESSAGE_STICKER)
         self._message_sticker_handler.register(handler)
 
     def register_successful_payment_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_SUCCESSFUL_PAYMENT)
+        if MESSAGE_SUCCESSFUL_PAYMENT not in self._update_types:
+            self._update_types.append(MESSAGE_SUCCESSFUL_PAYMENT)
         self._message_successful_payment_handler.register(handler)
 
     def register_venue_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_VENUE)
+        if MESSAGE_VENUE not in self._update_types:
+            self._update_types.append(MESSAGE_VENUE)
         self._message_venue_handler.register(handler)
 
     def register_video_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_VIDEO)
+        if MESSAGE_VIDEO not in self._update_types:
+            self._update_types.append(MESSAGE_VIDEO)
         self._message_video_handler.register(handler)
 
     def register_video_note_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_VIDEO_NOTE)
+        if MESSAGE_VIDEO_NOTE not in self._update_types:
+            self._update_types.append(MESSAGE_VIDEO_NOTE)
         self._message_video_note_handler.register(handler)
 
     def register_voice_handler(self, handler: HandleFunction):
-        self._update_types.add(MESSAGE_VOICE)
+        if MESSAGE_VOICE not in self._update_types:
+            self._update_types.append(MESSAGE_VOICE)
         self._message_voice_handler.register(handler)
 
     async def _run_statements(self, context: BaseContext):

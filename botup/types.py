@@ -653,15 +653,23 @@ class ChatMember(BaseObject):
 
     @classmethod
     def from_dict(cls, data: dict):
-        status_map = {
-            chat_member_status.CREATOR: ChatMemberOwner,
-            chat_member_status.ADMINISTRATOR: ChatMemberAdministrator,
-            chat_member_status.MEMBER: ChatMemberMember,
-            chat_member_status.RESTRICTED: ChatMemberRestricted,
-            chat_member_status.LEFT: ChatMemberLeft,
-            chat_member_status.KICKED: ChatMemberBanned
-        }
-        class_ = status_map[data['status']]
+        status = data['status']
+
+        if status == chat_member_status.CREATOR:
+            class_ = ChatMemberOwner
+        elif status == chat_member_status.ADMINISTRATOR:
+            class_ = ChatMemberAdministrator
+        elif status == chat_member_status.MEMBER:
+            class_ = ChatMemberMember
+        elif status == chat_member_status.RESTRICTED:
+            class_ = ChatMemberRestricted
+        elif status == chat_member_status.LEFT:
+            class_ = ChatMemberLeft
+        elif status == chat_member_status.KICKED:
+            class_ = ChatMemberBanned
+        else:
+            raise Exception('Undefined chat_member_status')  # TODO: specify exception
+
         return class_.from_dict(data)
 
 
@@ -671,6 +679,10 @@ class ChatMemberOwner(ChatMember):
     is_anonymous: bool
     status: ChatMemberStatus = chat_member_status.CREATOR
     custom_title: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return BaseObject.from_dict(data)
 
 
 @dataclass
@@ -692,11 +704,19 @@ class ChatMemberAdministrator(ChatMember):
     can_manage_topics: Optional[bool] = None
     custom_title: Optional[str] = None
 
+    @classmethod
+    def from_dict(cls, data: dict):
+        return BaseObject.from_dict(data)
+
 
 @dataclass
 class ChatMemberMember(ChatMember):
     user: User
     status: ChatMemberStatus = chat_member_status.MEMBER
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return BaseObject.from_dict(data)
 
 
 @dataclass
@@ -715,11 +735,19 @@ class ChatMemberRestricted(ChatMember):
     until_date: int
     status: ChatMemberStatus = chat_member_status.RESTRICTED
 
+    @classmethod
+    def from_dict(cls, data: dict):
+        return BaseObject.from_dict(data)
+
 
 @dataclass
 class ChatMemberLeft(ChatMember):
     user: User
     status: ChatMemberStatus = chat_member_status.LEFT
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return BaseObject.from_dict(data)
 
 
 @dataclass
@@ -727,6 +755,10 @@ class ChatMemberBanned(ChatMember):
     user: User
     until_date: int
     status: ChatMemberStatus = chat_member_status.KICKED
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return BaseObject.from_dict(data)
 
 
 @dataclass
@@ -737,6 +769,7 @@ class ChatMemberUpdated(BaseObject):
     old_chat_member: ChatMember
     new_chat_member: ChatMember
     invite_link: Optional[ChatInviteLink] = None
+    via_chat_folder_invite_link: Optional[bool] = None
 
 
 @dataclass

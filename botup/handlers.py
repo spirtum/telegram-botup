@@ -178,7 +178,7 @@ class EditedMessageHandler(SimpleHandler):
 
     @staticmethod
     def get_user_id(update: Update) -> Optional[int]:
-        return update.message.from_.id
+        return update.edited_message.from_.id
 
 
 class MessageGameHandler(SimpleHandler):
@@ -295,6 +295,10 @@ class MessagePhotoHandler(SimpleHandler):
         return update.message.from_.id
 
 
+class PollHandler(SimpleHandler):
+    pass
+
+
 class MessagePollHandler(SimpleHandler):
 
     @staticmethod
@@ -303,7 +307,7 @@ class MessagePollHandler(SimpleHandler):
 
     @staticmethod
     def get_user_id(update: Update) -> Optional[int]:
-        return update.poll.from_.id
+        return update.message.from_.id
 
 
 class PollAnswerHandler(SimpleHandler):

@@ -1,5 +1,5 @@
 import pytest
-from botup.core.dispatcher import Dispatcher
+from botup.dispatcher import Dispatcher
 
 
 @pytest.fixture

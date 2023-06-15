@@ -1,4 +1,6 @@
-from botup.core.types import InlineKeyboardMarkup, InlineKeyboardButton
+from botup.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+from tests import utils
 
 
 def test_inline_keyboard_markup():
@@ -12,3 +14,13 @@ def test_inline_keyboard_markup():
         ]
     )
     InlineKeyboardMarkup.from_dict(k.as_dict())
+
+
+def test_my_chat_member():
+    c = utils.my_chat_member_update()
+    assert c
+
+
+def test_poll():
+    c = utils.poll_update()
+    assert c.is_poll
