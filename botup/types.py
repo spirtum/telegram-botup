@@ -15,7 +15,7 @@ from typing import (
     get_args
 )
 
-from botup.core.constants import (
+from botup.constants import (
     chat_member_status,
     bot_command_scope_type,
     menu_button_type,
@@ -24,21 +24,21 @@ from botup.core.constants import (
     inline_query_result_type,
     passport_element_error_source
 )
-from botup.core.constants.bot_command_scope_type import BotCommandScopeType
-from botup.core.constants.chat_member_status import ChatMemberStatus
-from botup.core.constants.chat_type import ChatType
-from botup.core.constants.encrypted_passport_element_type import EncryptedPassportElementType
-from botup.core.constants.inline_query_chat_type import InlineQueryChatType
-from botup.core.constants.inline_query_result_type import InlineQueryResultType
-from botup.core.constants.input_file_type import InputFileType
-from botup.core.constants.input_media_type import InputMediaType
-from botup.core.constants.mask_position_point import MaskPositionPoint
-from botup.core.constants.menu_button_type import MenuButtonType
-from botup.core.constants.message_entity_type import MessageEntityType
-from botup.core.constants.passport_element_error_source import PassportElementErrorSource
-from botup.core.constants.poll_type import PollType
-from botup.core.constants.sticker_type import StickerType
-from botup.core.constants.update_type import UpdateType
+from botup.constants.bot_command_scope_type import BotCommandScopeType
+from botup.constants.chat_member_status import ChatMemberStatus
+from botup.constants.chat_type import ChatType
+from botup.constants.encrypted_passport_element_type import EncryptedPassportElementType
+from botup.constants.inline_query_chat_type import InlineQueryChatType
+from botup.constants.inline_query_result_type import InlineQueryResultType
+from botup.constants.input_file_type import InputFileType
+from botup.constants.input_media_type import InputMediaType
+from botup.constants.mask_position_point import MaskPositionPoint
+from botup.constants.menu_button_type import MenuButtonType
+from botup.constants.message_entity_type import MessageEntityType
+from botup.constants.passport_element_error_source import PassportElementErrorSource
+from botup.constants.poll_type import PollType
+from botup.constants.sticker_type import StickerType
+from botup.constants.update_type import UpdateType
 
 NoneType = type(None)
 _rename_key_mapping = {
@@ -1579,7 +1579,7 @@ class GameHighScore(BaseObject):
 
 
 @dataclass
-class CoreContext:
+class BaseContext:
     update: Update
     update_type: Optional[UpdateType] = None
     chat_id: Optional[int] = None
@@ -1730,5 +1730,5 @@ class CoreContext:
         return self.is_message and self.update.message.poll is not None
 
 
-HandleFunction = Callable[[CoreContext], Awaitable[None]]
-MiddlewareFunction = Callable[[CoreContext], Awaitable[bool]]
+HandleFunction = Callable[[BaseContext], Awaitable[None]]
+MiddlewareFunction = Callable[[BaseContext], Awaitable[bool]]

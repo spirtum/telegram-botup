@@ -1,6 +1,6 @@
 from typing import Optional
 
-import aioredis
+from redis.asyncio import Redis
 
 from botup.state_manager.base import Singleton, StateManager
 
@@ -9,7 +9,7 @@ class RedisStateManager(StateManager, metaclass=Singleton):
 
     def __init__(self, url: str):
         super().__init__()
-        self.redis = aioredis.from_url(url, decode_responses=True)
+        self.redis = Redis.from_url(url, decode_responses=True)
 
     async def get_path(self, chat_id: int) -> Optional[str]:
         return await self.get(chat_id, 'path', 'botup')

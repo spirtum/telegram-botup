@@ -1,6 +1,6 @@
 import re
 
-from botup.core.dispatcher import Dispatcher
+from botup.dispatcher import Dispatcher
 from botup.widget import Context
 
 

@@ -5,10 +5,10 @@ with open('README.md', 'r', encoding='utf-8') as fd:
 
 setup(
     name='telegram-botup',
-    version='1.0.2',
-    author='Dima Shebotinov',
+    version='1.0.3',
+    author='Dmitry Shebotinov',
     author_email='groovestreetmagic@gmail.com',
-    description='Telegram bot API',
+    description='Python library for building Telegram bots',
     long_description=long_description,
     long_description_content_type="text/markdown",
     py_modules=['botup'],
@@ -18,7 +18,7 @@ setup(
         'aiohttp'
     ],
     extras_require={
-        'redis': ['aioredis']
+        'redis': ['redis']
     },
     project_urls={
         'Source Code': 'https://github.com/spirtum/telegram-botup'

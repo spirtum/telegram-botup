@@ -1,5 +1,5 @@
-from botup.core.api import Api
-from botup.core.types import Update
+from botup.api import Api
+from botup.types import Update
 from botup.navigation import Navigation
 from botup.state_manager.base import StateManager, DictStateManager
 from botup.widget import Widget, Context

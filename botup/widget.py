@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Dict, Optional, List
 
-from botup.core.api import Api
-from botup.core.dispatcher import Dispatcher
-from botup.core.types import Update, CoreContext
+from botup.api import Api
+from botup.dispatcher import Dispatcher
+from botup.types import Update, BaseContext
 from botup.state_manager.base import Singleton, StateManager
 
 
@@ -39,7 +39,7 @@ class Widget:
         await self._dispatcher.handle_context(ctx)
 
 
-class Context(CoreContext):
+class Context(BaseContext):
 
     def __init__(
             self,

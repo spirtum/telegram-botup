@@ -6,8 +6,8 @@ from asyncio import gather
 
 from botup.navigation import Navigation
 from botup.widget import Widget, Context
-from botup.core.dispatcher import Dispatcher
-from botup.core.types import InlineKeyboardMarkup, InlineKeyboardButton
+from botup.dispatcher import Dispatcher
+from botup.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 class DatePicker(Widget):

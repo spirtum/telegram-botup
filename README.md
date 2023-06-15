@@ -11,26 +11,27 @@ $ pip install telegram-botup
 # app.py
 
 from web_lib import App, Request
-from botup.core.dispatcher import Dispatcher
-from botup.core.api import Api
-from botup.core.types import CoreContext
+
+from botup.dispatcher import Dispatcher
+from botup.api import Api
+from botup.types import BaseContext
 
 TOKEN = "token"
 
 app = App()
-dispatcher = Dispatcher()
 api = Api(TOKEN)
+dispatcher = Dispatcher()
 
 
 @dispatcher.message_handler('hello')
-async def hello_handler(ctx: CoreContext):
+async def hello_handler(ctx: BaseContext):
     await api.send_message(ctx.chat_id, f'Hello {ctx.update.message.from_.first_name}')
 
 
 @app.post(f'/{TOKEN}')
 async def index(request: Request):
     await dispatcher.handle(await request.json())
-    return "!"
+    return ""
 ```
 
 
@@ -42,24 +43,21 @@ from asyncio import gather
 
 from web_lib import App, Request
 
-from botup.widget import Widget, Context
-from botup.core.dispatcher import Dispatcher
-from botup.core.api import Api
-from botup.bot import Bot
-from botup.navigation import Navigation
+from botup import Widget, Context, Dispatcher, Api, Bot, Navigation
 from botup.widgets.date_picker import DatePicker
 from botup.mixins.echo import EchoMixin
-from botup.core.types import InlineKeyboardMarkup, InlineKeyboardButton
+from botup.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-TOKEN = ""
-WEBHOOK = f'https:///{TOKEN}'
+TOKEN = "token"
+WEBHOOK = f'https://url/{TOKEN}'
 
-app = App(docs_url=None, redoc_url=None)
+app = App()
 
 
-class MyCustomMixin:
+class TestMixin:
 
     def build(self, dispatcher: Dispatcher):
+        print('TestMixin build')
         dispatcher.register_command_handler('/test', self.cmd_test)
 
     @staticmethod
@@ -70,9 +68,9 @@ class MyCustomMixin:
         )
 
 
-class RootWidget(Widget, MyCustomMixin, EchoMixin):
+class RootWidget(Widget, TestMixin, EchoMixin):
     """
-    Type "/start"
+    Type "go" message
     """
 
     KEY = 'root'
@@ -89,7 +87,7 @@ class RootWidget(Widget, MyCustomMixin, EchoMixin):
             return
 
     def build(self, dispatcher: Dispatcher):
-        MyCustomMixin.build(self, dispatcher)
+        TestMixin.build(self, dispatcher)
         dispatcher.register_message_handler('go', self.go_handler)
         dispatcher.register_command_handler('/start', self.cmd_start)
         dispatcher.register_callback_handler('ready', self.clb_ready)
@@ -107,6 +105,7 @@ class RootWidget(Widget, MyCustomMixin, EchoMixin):
             key='message_id',
             value=str(message.message_id)
         )
+        return None
 
     @staticmethod
     async def clb_ready(ctx: Context):
@@ -160,6 +159,5 @@ async def shutdown_event():
 @app.post(f'/{TOKEN}')
 async def index(request: Request):
     await bot.handle(await request.json())
-    return {'ok': True}
-
+    return ""
 ```

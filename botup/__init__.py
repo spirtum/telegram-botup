@@ -1,4 +1,5 @@
-__version__ = "1.0.2"
-
-from .core.api import Api
-from .core.dispatcher import Dispatcher
+from .api import Api
+from .dispatcher import Dispatcher
+from .bot import Bot
+from .widget import Widget, Context
+from .navigation import Navigation

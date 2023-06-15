@@ -1,6 +1,6 @@
 from typing import Callable, Set, Pattern, Union
 
-from botup.core.constants.update_type import (
+from botup.constants.update_type import (
     UpdateType,
     CALLBACK_QUERY,
     INLINE_QUERY,
@@ -34,7 +34,7 @@ from botup.core.constants.update_type import (
     MESSAGE_VIDEO_NOTE,
     MESSAGE_VOICE
 )
-from botup.core.handlers import (
+from botup.handlers import (
     MessageCommandHandler,
     CallbackQueryHandler,
     MessageTextHandler,
@@ -67,7 +67,7 @@ from botup.core.handlers import (
     MessageVideoNoteHandler,
     MessageVoiceHandler
 )
-from botup.core.types import Update, HandleFunction, MiddlewareFunction, CoreContext
+from botup.types import Update, HandleFunction, MiddlewareFunction, BaseContext
 
 
 class Dispatcher:
@@ -376,7 +376,7 @@ class Dispatcher:
         self._update_types.add(MESSAGE_VOICE)
         self._message_voice_handler.register(handler)
 
-    async def _run_statements(self, context: CoreContext):
+    async def _run_statements(self, context: BaseContext):
         for update_type in self._update_types:
             statement_key = f'is_{update_type}'
             handler_key = f'_{update_type}_handler'
@@ -386,7 +386,7 @@ class Dispatcher:
                 context.update_type = update_type
                 await handler.handle(context)
 
-    async def _run_middlewares(self, context: CoreContext) -> bool:
+    async def _run_middlewares(self, context: BaseContext) -> bool:
         for middleware in self._middlewares:
             if await middleware(context):
                 return True
@@ -394,9 +394,9 @@ class Dispatcher:
         return False
 
     async def handle(self, update: dict):
-        await self.handle_context(CoreContext(Update.from_dict(update)))
+        await self.handle_context(BaseContext(Update.from_dict(update)))
 
-    async def handle_context(self, context: CoreContext):
+    async def handle_context(self, context: BaseContext):
         if await self._run_middlewares(context):
             return
 
