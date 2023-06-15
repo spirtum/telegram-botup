@@ -1,5 +1,7 @@
 # Telegram-botup
 
+Python library for building Telegram bots
+
 
 ## Install
 ```
