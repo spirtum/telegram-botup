@@ -3,6 +3,7 @@ import re
 from calendar import Calendar, month_name
 from datetime import datetime, timedelta
 from asyncio import gather
+from typing import Optional
 
 from botup.navigation import Navigation
 from botup.widget import Widget, Context
@@ -12,10 +13,12 @@ from botup.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 class DatePicker(Widget):
 
+    DEFAULT_RESULT_KEY = 'botup_date_picker_result'
+
     def __init__(
             self,
-            key: str,
-            result_key: str = 'botup_date_picker_result',
+            key: Optional[str] = None,
+            result_key: str = DEFAULT_RESULT_KEY,
             message_text: str = 'Date picker'
     ):
         super().__init__(key)

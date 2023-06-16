@@ -1,0 +1,2 @@
+class WidgetNotInRegistryError(Exception):
+    pass

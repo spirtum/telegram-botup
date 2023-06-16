@@ -10,13 +10,10 @@ from botup.types import InlineKeyboardMarkup, InlineKeyboardButton
 TOKEN = "token"
 WEBHOOK = f'https://url/{TOKEN}'
 
-app = App()
-
 
 class TestMixin:
 
     def build(self, dispatcher: Dispatcher):
-        print('TestMixin build')
         dispatcher.register_command_handler('/test', self.cmd_test)
 
     @staticmethod
@@ -28,16 +25,8 @@ class TestMixin:
 
 
 class RootWidget(Widget, TestMixin, EchoMixin):
-    """
-    Type "go" message
-    """
-
-    KEY = 'root'
-    DATE_PICKER_KEY = 'date_picker'
-    DATE_PICKER_RESULT_KEY = 'dp_result'
-
     async def entry(self, ctx: Context, **kwargs):
-        botup_date_picker_result = kwargs.get(RootWidget.DATE_PICKER_RESULT_KEY)
+        botup_date_picker_result = kwargs.get(DatePicker.DEFAULT_RESULT_KEY)
         if botup_date_picker_result:
             await ctx.api.send_message(
                 chat_id=ctx.chat_id,
@@ -47,7 +36,6 @@ class RootWidget(Widget, TestMixin, EchoMixin):
 
     def build(self, dispatcher: Dispatcher):
         TestMixin.build(self, dispatcher)
-        dispatcher.register_message_handler('go', self.go_handler)
         dispatcher.register_command_handler('/start', self.cmd_start)
         dispatcher.register_callback_handler('ready', self.clb_ready)
         EchoMixin.build(self, dispatcher)
@@ -56,15 +44,14 @@ class RootWidget(Widget, TestMixin, EchoMixin):
     async def cmd_start(ctx: Context):
         message = await ctx.api.send_message(
             chat_id=ctx.chat_id,
-            text='Are you ready?',
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(callback_data='ready', text='Yeah!')]])
+            text='Click for view date picker',
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(callback_data='ready', text='Click')]])
         )
         await ctx.state_manager.set(
             chat_id=ctx.chat_id,
             key='message_id',
             value=str(message.message_id)
         )
-        return None
 
     @staticmethod
     async def clb_ready(ctx: Context):
@@ -77,28 +64,14 @@ class RootWidget(Widget, TestMixin, EchoMixin):
             Navigation.of(ctx)
         )
 
-        await nav.push(RootWidget.DATE_PICKER_KEY, message_id=int(message_id))
+        await nav.push(DatePicker.__name__, message_id=int(message_id))
 
-    @staticmethod
-    async def go_handler(ctx: Context):
-        nav = await Navigation.of(ctx)
-        await nav.push(RootWidget.DATE_PICKER_KEY)
-
-
-root_widget = RootWidget(
-    key=RootWidget.KEY,
-    children=[
-        DatePicker(
-            key=RootWidget.DATE_PICKER_KEY,
-            result_key=RootWidget.DATE_PICKER_RESULT_KEY
-        )
-    ]
-)
 
 bot = Bot(
     token=TOKEN,
-    root_widget=root_widget
+    root=RootWidget(children=[DatePicker()])
 )
+app = App()
 
 
 @app.on_event("startup")
