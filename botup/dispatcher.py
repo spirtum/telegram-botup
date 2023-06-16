@@ -36,6 +36,7 @@ from botup.constants.update_type import (
     MESSAGE_VOICE
 )
 from botup.handlers import (
+    Handler,
     MessageCommandHandler,
     CallbackQueryHandler,
     MessageTextHandler,
@@ -425,7 +426,7 @@ class Dispatcher:
             handler_key = f'_{update_type}_handler'
 
             if getattr(context, statement_key):
-                handler = getattr(self, handler_key)
+                handler: Handler = getattr(self, handler_key)
                 context.update_type = update_type
                 await handler.handle(context)
 

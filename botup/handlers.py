@@ -13,6 +13,9 @@ class Handler:
     def get_chat_id(update: Update) -> Optional[int]:
         return None
 
+    async def handle(self, context: BaseContext):
+        raise NotImplemented
+
 
 class PatternHandler(Handler):
 
@@ -22,16 +25,8 @@ class PatternHandler(Handler):
     def register(self, pattern: Union[str, Pattern], function: HandleFunction):
         self._handlers[pattern] = function
 
-    def get_handler(self, key: str) -> Optional[HandleFunction]:
-        if key in self._handlers:
-            return self._handlers[key]
-
-        for pattern in self._handlers.keys():
-            if isinstance(pattern, Pattern) and pattern.match(key):
-                return self._handlers[pattern]
-
     async def handle(self, context: BaseContext):
-        handler = self.get_handler(self.get_key(context.update))
+        handler = self._get_handler(self.get_key(context.update))
 
         if not handler:
             return
@@ -40,6 +35,14 @@ class PatternHandler(Handler):
         context.user_id = self.get_user_id(context.update)
 
         await handler(context)
+
+    def _get_handler(self, key: str) -> Optional[HandleFunction]:
+        if key in self._handlers:
+            return self._handlers[key]
+
+        for pattern in self._handlers.keys():
+            if isinstance(pattern, Pattern) and pattern.match(key):
+                return self._handlers[pattern]
 
     @staticmethod
     def get_key(update: Update) -> str:
